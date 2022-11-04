@@ -8,9 +8,14 @@ pub use error::Error;
 /// Result type for the vCard library.
 pub type Result<T> = std::result::Result<T, Error>;
 
-use std::{borrow::Cow, ops::Range};
-use logos::{Lexer, Logos};
 use language_tags::LanguageTag;
+use logos::{Lexer, Logos};
+use std::{
+    borrow::Cow,
+    fmt::{self, Debug},
+    ops::Range,
+    str::FromStr,
+};
 use url::Url;
 
 #[derive(Logos, Debug, PartialEq)]
@@ -44,7 +49,6 @@ enum Token {
 
     //#[token(",")]
     //Comma,
-
     #[regex("\\r?\\n")]
     NewLine,
 
@@ -55,6 +59,93 @@ enum Token {
     Text,
 }
 
+/// Either text or a URI.
+#[derive(Debug)]
+pub enum TextOrUri {
+    Text(Text),
+    Uri(Uri),
+}
+
+/// Enumeration of the different types of values.
+#[derive(Debug)]
+pub enum ValueType {
+    /// Text value.
+    Text,
+    /// URI value.
+    Uri,
+    /// Date value.
+    Date,
+    /// Time value.
+    Time,
+    /// Date and time value.
+    DateTime,
+    /// Date and or time value.
+    DateAndOrTime,
+    /// Timestamp value.
+    Timestamp,
+    /// Boolean value.
+    Boolean,
+    /// Integer value.
+    Integer,
+    /// Float value.
+    Float,
+    /// UTC offset value.
+    UtcOffset,
+    /// Language tag value.
+    LanguageTag,
+    /*
+    /// IANA token value.
+    IanaToken,
+    /// X-name value.
+    XName,
+    */
+}
+
+impl fmt::Display for ValueType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Text => "text",
+                Self::Uri => "uri",
+                Self::Date => "date",
+                Self::Time => "time",
+                Self::DateTime => "date-time",
+                Self::DateAndOrTime => "date-and-or-time",
+                Self::Timestamp => "timestamp",
+                Self::Boolean => "boolean",
+                Self::Integer => "integer",
+                Self::Float => "float",
+                Self::UtcOffset => "utc-offset",
+                Self::LanguageTag => "language-tag",
+            }
+        )
+    }
+}
+
+impl FromStr for ValueType {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s {
+            "text" => Ok(Self::Text),
+            "uri" => Ok(Self::Uri),
+            "date" => Ok(Self::Date),
+            "time" => Ok(Self::Time),
+            "date-time" => Ok(Self::DateTime),
+            "date-and-or-time" => Ok(Self::DateAndOrTime),
+            "timestamp" => Ok(Self::Timestamp),
+            "boolean" => Ok(Self::Boolean),
+            "integer" => Ok(Self::Integer),
+            "float" => Ok(Self::Float),
+            "utc-offset" => Ok(Self::UtcOffset),
+            "language-tag" => Ok(Self::LanguageTag),
+            _ => Err(Error::UnknownValueType(s.to_string())),
+        }
+    }
+}
+
 /// Parameters for a vCard property.
 #[derive(Debug, Default)]
 pub struct Parameters {
@@ -62,12 +153,21 @@ pub struct Parameters {
     pub language: Option<LanguageTag>,
     /// The property types.
     pub types: Option<Vec<String>>,
+    /// The value type hint for this property.
+    pub value: Option<ValueType>,
 }
 
 /// Text property value.
 #[derive(Debug)]
 pub struct Text {
     pub value: String,
+    pub parameters: Option<Parameters>,
+}
+
+/// Text list property value.
+#[derive(Debug)]
+pub struct TextList {
+    pub value: Vec<String>,
     pub parameters: Option<Parameters>,
 }
 
@@ -84,6 +184,14 @@ pub struct Vcard {
     pub formatted_name: Vec<Text>,
     pub nicknames: Vec<Text>,
     pub url: Vec<Uri>,
+
+    // Organizational
+    pub title: Vec<Text>,
+    pub role: Vec<Text>,
+    pub logo: Vec<Uri>,
+    pub org: Vec<TextList>,
+    pub member: Vec<Uri>,
+    pub related: Vec<TextOrUri>,
 }
 
 /// Parses vCards from strings.
@@ -129,9 +237,7 @@ impl VcardParser {
     }
 
     /// Parse the properties of a vCard.
-    fn parse_properties(
-        &self, lex: &mut Lexer<'_, Token>, card: &mut Vcard) -> Result<()> {
-            
+    fn parse_properties(&self, lex: &mut Lexer<'_, Token>, card: &mut Vcard) -> Result<()> {
         while let Some(first) = lex.next() {
             if first == Token::End {
                 break;
@@ -150,10 +256,10 @@ impl VcardParser {
                 } else if delimiter == Token::PropertyDelimiter {
                     self.parse_property_by_name(lex, card, name, None)?;
                 } else {
-                    return Err(Error::DelimiterExpected)
+                    return Err(Error::DelimiterExpected);
                 }
             } else {
-                return Err(Error::TokenExpected)
+                return Err(Error::TokenExpected);
             }
         }
 
@@ -161,8 +267,7 @@ impl VcardParser {
     }
 
     /// Parse property parameters.
-    fn parse_property_parameters(
-        &self, lex: &mut Lexer<'_, Token>) -> Result<Parameters> {
+    fn parse_property_parameters(&self, lex: &mut Lexer<'_, Token>) -> Result<Parameters> {
         let mut params: Parameters = Default::default();
 
         let mut next: Option<Token> = lex.next();
@@ -179,8 +284,7 @@ impl VcardParser {
 
                 let upper_name = parameter_name.to_uppercase();
 
-                let (value, next_token) = 
-                    self.parse_property_parameters_value(lex)?;
+                let (value, next_token) = self.parse_property_parameters_value(lex)?;
 
                 match &upper_name[..] {
                     "LANGUAGE" => {
@@ -188,9 +292,12 @@ impl VcardParser {
                         params.language = Some(tag);
                     }
                     "TYPE" => {
-                        let types = value.split(",")
-                            .map(|s| s.to_string()).collect::<Vec<_>>();
+                        let types = value.split(",").map(|s| s.to_string()).collect::<Vec<_>>();
                         params.types = Some(types);
+                    }
+                    "VALUE" => {
+                        let value: ValueType = value.parse()?;
+                        params.value = Some(value);
                     }
                     _ => return Err(Error::UnknownParameterName(parameter_name.to_string())),
                 }
@@ -209,7 +316,9 @@ impl VcardParser {
 
     /// Parse the raw value for a property parameter.
     fn parse_property_parameters_value<'a>(
-        &self, lex: &'a mut Lexer<'_, Token>) -> Result<(String, Token)> {
+        &self,
+        lex: &'a mut Lexer<'_, Token>,
+    ) -> Result<(String, Token)> {
         let mut first_range: Option<Range<usize>> = None;
 
         while let Some(token) = lex.next() {
@@ -220,7 +329,8 @@ impl VcardParser {
 
             if token == Token::PropertyDelimiter
                 || token == Token::ParameterDelimiter
-                || token == Token::ParameterKey {
+                || token == Token::ParameterKey
+            {
                 let source = lex.source();
                 let value = &source[first_range.unwrap().start..span.start];
                 return Ok((String::from(value), token));
@@ -241,14 +351,87 @@ impl VcardParser {
         let upper_name = name.to_uppercase();
         match &upper_name[..] {
             "FN" => {
-                card.formatted_name.push(Text { value: value.into_owned(), parameters });
+                card.formatted_name.push(Text {
+                    value: value.into_owned(),
+                    parameters,
+                });
             }
             "NICKNAME" => {
-                card.nicknames.push(Text { value: value.into_owned(), parameters });
+                card.nicknames.push(Text {
+                    value: value.into_owned(),
+                    parameters,
+                });
             }
             "URL" => {
-                let url: Url = value.as_ref().parse()?;
-                card.url.push(Uri { value: url, parameters });
+                let value: Url = value.as_ref().parse()?;
+                card.url.push(Uri { value, parameters });
+            }
+            // Organizational
+            // https://www.rfc-editor.org/rfc/rfc6350#section-6.6
+            "TITLE" => {
+                card.title.push(Text {
+                    value: value.into_owned(),
+                    parameters,
+                });
+            }
+            "ROLE" => {
+                card.role.push(Text {
+                    value: value.into_owned(),
+                    parameters,
+                });
+            }
+
+            "LOGO" => {
+                let value: Url = value.as_ref().parse()?;
+                card.logo.push(Uri { value, parameters });
+            }
+            "ORG" => {
+                let value = value
+                    .as_ref()
+                    .split(";")
+                    .map(|s| s.to_string())
+                    .collect::<Vec<_>>();
+                card.org.push(TextList {
+                    value: value,
+                    parameters,
+                });
+            }
+            "MEMBER" => {
+                let value: Url = value.as_ref().parse()?;
+                card.member.push(Uri { value, parameters });
+            }
+            "RELATED" => {
+                let value_type = if let Some(parameters) = &parameters {
+                    parameters.value.as_ref()
+                } else {
+                    None
+                };
+
+                if let Some(value_type) = value_type {
+                    if let ValueType::Text = value_type {
+                        card.related.push(TextOrUri::Text(Text {
+                            value: value.as_ref().to_string(),
+                            parameters,
+                        }));
+                    } else if let ValueType::Uri = value_type {
+                        let value: Url = value.as_ref().parse()?;
+                        card.related.push(TextOrUri::Uri(Uri { value, parameters }));
+                    } else {
+                        return Err(Error::UnknownValueType(value_type.to_string()));
+                    }
+                } else {
+                    match value.as_ref().parse::<Url>() {
+                        Ok(value) => {
+                            card.related.push(TextOrUri::Uri(Uri { value, parameters }));
+                        }
+                        Err(_) => {
+                            card.related.push(TextOrUri::Text(Text {
+                                value: value.as_ref().to_string(),
+                                parameters,
+                            }));
+                        }
+                    }
+                }
             }
             _ => return Err(Error::UnknownPropertyName(name.to_string())),
         }
@@ -428,7 +611,7 @@ END:VCARD"#;
     #[test]
     fn parse_folded_tab() -> Result<()> {
         let input = "BEGIN:VCARD\nVERSION:4.0\nFN:Mr. \n\u{0009}John Q. \n\u{0009}Public\\, \n\u{0009}Esq.\nEND:VCARD";
-        
+
         let mut vcards = parse(input)?;
         assert_eq!(1, vcards.len());
 
@@ -463,7 +646,8 @@ END:VCARD"#;
         assert_eq!(Some(tag), parameters.language);
         assert_eq!(
             &vec![String::from("work")],
-            parameters.types.as_ref().unwrap());
+            parameters.types.as_ref().unwrap()
+        );
         Ok(())
     }
 

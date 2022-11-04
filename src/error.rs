@@ -21,6 +21,9 @@ pub enum Error {
     #[error("parameter name '{0}' is not supported")]
     UnknownParameterName(String),
 
+    #[error("value type '{0}' is not supported")]
+    UnknownValueType(String),
+
     #[error(transparent)]
     LanguageParse(#[from] language_tags::ParseError),
 
