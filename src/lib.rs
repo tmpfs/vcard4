@@ -249,21 +249,22 @@ pub struct Vcard {
     // Explanatory
     pub categories: Vec<TextList>,
     pub note: Vec<Text>,
-    //pub prod_id: Option<Text>,
+    pub prod_id: Option<Text>,
 
-    //pub rev: Option<Text>,
+    //pub rev: Option<Timestamp>,
+    
     pub sound: Vec<Uri>,
+    pub uid: Option<TextOrUri>,
+
+    // Security
+    pub key: Vec<TextOrUri>,
 }
 
 /// Parses vCards from strings.
+#[derive(Default)]
 struct VcardParser {}
 
 impl VcardParser {
-    /// Create a new vCard parser.
-    fn new() -> Self {
-        Self {}
-    }
-
     /// Parse a UTF-8 encoded string into a list of vCards.
     fn parse<S: AsRef<str>>(&self, value: S) -> Result<Vec<Vcard>> {
         let mut cards = Vec::new();
@@ -483,10 +484,6 @@ impl VcardParser {
                 let value = URI::parse(value.as_ref())?.to_owned();
                 card.photo.push(Uri { value, parameters });
             }
-            "URL" => {
-                let value = URI::parse(value.as_ref())?.to_owned();
-                card.url.push(Uri { value, parameters });
-            }
 
             // Organizational
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.6
@@ -523,43 +520,9 @@ impl VcardParser {
                 card.member.push(Uri { value, parameters });
             }
             "RELATED" => {
-                let value_type = if let Some(parameters) = &parameters {
-                    parameters.value.as_ref()
-                } else {
-                    None
-                };
-
-                if let Some(value_type) = value_type {
-                    if let ValueType::Text = value_type {
-                        card.related.push(TextOrUri::Text(Text {
-                            value: value.as_ref().to_string(),
-                            parameters,
-                        }));
-                    } else if let ValueType::Uri = value_type {
-                        let value = URI::parse(value.as_ref())?.to_owned();
-                        card.related
-                            .push(TextOrUri::Uri(Uri { value, parameters }));
-                    } else {
-                        return Err(Error::UnknownValueType(
-                            value_type.to_string(),
-                        ));
-                    }
-                } else {
-                    match URI::parse(value.as_ref()) {
-                        Ok(value) => {
-                            card.related.push(TextOrUri::Uri(Uri {
-                                value: value.to_owned(),
-                                parameters,
-                            }));
-                        }
-                        Err(_) => {
-                            card.related.push(TextOrUri::Text(Text {
-                                value: value.as_ref().to_string(),
-                                parameters,
-                            }));
-                        }
-                    }
-                }
+                let text_or_uri = self.parse_text_or_uri(
+                    value.as_ref(), parameters)?;
+                card.related.push(text_or_uri);
             }
 
             // Explanatory
@@ -582,7 +545,11 @@ impl VcardParser {
                 });
             }
             "PRODID" => {
-                todo!()
+                if card.prod_id.is_some() {
+                    return Err(Error::OnlyOnce(String::from("PRODID")));
+                }
+                card.prod_id = Some(Text {value: value.into_owned(), parameters});
+
             }
             "REV" => {
                 todo!()
@@ -590,6 +557,30 @@ impl VcardParser {
             "SOUND" => {
                 let value = URI::parse(value.as_ref())?.to_owned();
                 card.sound.push(Uri { value, parameters });
+            }
+            "UID" => {
+                if card.uid.is_some() {
+                    return Err(Error::OnlyOnce(String::from("UID")));
+                }
+                let text_or_uri = self.parse_text_or_uri(
+                    value.as_ref(), parameters)?;
+                card.uid = Some(text_or_uri);
+            }
+            "CLIENTPIDMAP" => {
+                todo!()
+            }
+            "URL" => {
+                let value = URI::parse(value.as_ref())?.to_owned();
+                card.url.push(Uri { value, parameters });
+            }
+            "VERSION" => unreachable!(),
+
+            // Security
+            // https://www.rfc-editor.org/rfc/rfc6350#section-6.8
+            "KEY" => {
+                let text_or_uri = self.parse_text_or_uri(
+                    value.as_ref(), parameters)?;
+                card.key.push(text_or_uri);
             }
 
             _ => return Err(Error::UnknownPropertyName(name.to_string())),
@@ -658,6 +649,46 @@ impl VcardParser {
         }
     }
 
+    /// Parse text or URI from a value.
+    fn parse_text_or_uri<S: AsRef<str>>(
+        &self, value: S, parameters: Option<Parameters>) -> Result<TextOrUri> {
+        let value_type = if let Some(parameters) = &parameters {
+            parameters.value.as_ref()
+        } else {
+            None
+        };
+        if let Some(value_type) = value_type {
+            if let ValueType::Text = value_type {
+                Ok(TextOrUri::Text(Text {
+                    value: value.as_ref().to_string(),
+                    parameters,
+                }))
+            } else if let ValueType::Uri = value_type {
+                let value = URI::parse(value.as_ref())?.to_owned();
+                Ok(TextOrUri::Uri(Uri { value, parameters }))
+            } else {
+                Err(Error::UnknownValueType(
+                    value_type.to_string(),
+                ))
+            }
+        } else {
+            match URI::parse(value.as_ref()) {
+                Ok(value) => {
+                    Ok(TextOrUri::Uri(Uri {
+                        value: value.to_owned(),
+                        parameters,
+                    }))
+                }
+                Err(_) => {
+                    Ok(TextOrUri::Text(Text {
+                        value: value.as_ref().to_string(),
+                        parameters,
+                    }))
+                }
+            }
+        }
+    }
+
     /// Assert we have an expected token.
     fn assert_token(
         &self,
@@ -678,7 +709,7 @@ impl VcardParser {
 
 /// Parse a vCard string into a collection of vCards.
 pub fn parse<S: AsRef<str>>(input: S) -> Result<Vec<Vcard>> {
-    let parser = VcardParser::new();
+    let parser: VcardParser = Default::default();
     parser.parse(input)
 }
 
