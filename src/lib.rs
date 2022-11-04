@@ -8,9 +8,10 @@ pub use error::Error;
 /// Result type for the vCard library.
 pub type Result<T> = std::result::Result<T, Error>;
 
-use logos::{Lexer, Logos};
 use std::{borrow::Cow, ops::Range};
+use logos::{Lexer, Logos};
 use language_tags::LanguageTag;
+use url::Url;
 
 #[derive(Logos, Debug, PartialEq)]
 enum Token {
@@ -70,11 +71,19 @@ pub struct Text {
     pub parameters: Option<Parameters>,
 }
 
+/// URI property value.
+#[derive(Debug)]
+pub struct Uri {
+    pub value: Url,
+    pub parameters: Option<Parameters>,
+}
+
 /// The vCard type.
 #[derive(Debug, Default)]
 pub struct Vcard {
     pub formatted_name: Vec<Text>,
     pub nicknames: Vec<Text>,
+    pub url: Vec<Uri>,
 }
 
 /// Parses vCards from strings.
@@ -236,6 +245,10 @@ impl VcardParser {
             }
             "NICKNAME" => {
                 card.nicknames.push(Text { value: value.into_owned(), parameters });
+            }
+            "URL" => {
+                let url: Url = value.as_ref().parse()?;
+                card.url.push(Uri { value: url, parameters });
             }
             _ => return Err(Error::UnknownPropertyName(name.to_string())),
         }
@@ -451,6 +464,25 @@ END:VCARD"#;
         assert_eq!(
             &vec![String::from("work")],
             parameters.types.as_ref().unwrap());
+        Ok(())
+    }
+
+    #[test]
+    fn parse_url() -> Result<()> {
+        let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mock person
+URL: https://example.com
+END:VCARD"#;
+        let mut vcards = parse(input)?;
+        assert_eq!(1, vcards.len());
+
+        let card = vcards.remove(0);
+
+        let uri: Url = "https://example.com".parse()?;
+        let url = card.url.get(0).unwrap();
+        assert_eq!(uri, url.value);
+
         Ok(())
     }
 }

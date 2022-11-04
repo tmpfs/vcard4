@@ -23,4 +23,7 @@ pub enum Error {
 
     #[error(transparent)]
     LanguageParse(#[from] language_tags::ParseError),
+
+    #[error(transparent)]
+    UrlParse(#[from] url::ParseError),
 }
