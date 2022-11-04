@@ -24,6 +24,12 @@ pub enum Error {
     #[error("value type '{0}' is not supported")]
     UnknownValueType(String),
 
+    #[error("kind '{0}' is not supported")]
+    UnknownKind(String),
+
+    #[error("property '{0}' may only appear exactly once")]
+    OnlyOnce(String),
+
     #[error(transparent)]
     LanguageParse(#[from] language_tags::ParseError),
 

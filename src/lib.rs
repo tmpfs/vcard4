@@ -146,6 +146,51 @@ impl FromStr for ValueType {
     }
 }
 
+/// Kind of vCard.
+#[derive(Debug)]
+pub enum Kind {
+    /// An individual.
+    Individual,
+    /// A group.
+    Group,
+    /// An organization.
+    Org,
+    /// A location.
+    Location,
+
+    // TODO: x-name
+    // TODO: iana-token
+}
+
+impl fmt::Display for Kind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Individual => "individual",
+                Self::Group => "group",
+                Self::Org => "org",
+                Self::Location => "location",
+            }
+        )
+    }
+}
+
+impl FromStr for Kind {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s {
+            "individual" => Ok(Self::Individual),
+            "group" => Ok(Self::Group),
+            "org" => Ok(Self::Org),
+            "location" => Ok(Self::Location),
+            _ => Err(Error::UnknownKind(s.to_string())),
+        }
+    }
+}
+
 /// Parameters for a vCard property.
 #[derive(Debug, Default)]
 pub struct Parameters {
@@ -181,6 +226,12 @@ pub struct Uri {
 /// The vCard type.
 #[derive(Debug, Default)]
 pub struct Vcard {
+    // Organizational
+    pub source: Vec<Uri>,
+    pub kind: Option<Kind>,
+    pub xml: Vec<Text>,
+
+    // 
     pub formatted_name: Vec<Text>,
     pub nicknames: Vec<Text>,
     pub url: Vec<Uri>,
@@ -221,7 +272,11 @@ impl VcardParser {
     }
 
     /// Parse a single vCard.
-    fn parse_one(&self, lex: &mut Lexer<'_, Token>, first: Option<Token>) -> Result<Vcard> {
+    fn parse_one(
+        &self,
+        lex: &mut Lexer<'_, Token>,
+        first: Option<Token>,
+    ) -> Result<Vcard> {
         self.assert_token(first, Token::Begin)?;
         self.assert_token(lex.next(), Token::NewLine)?;
 
@@ -237,7 +292,11 @@ impl VcardParser {
     }
 
     /// Parse the properties of a vCard.
-    fn parse_properties(&self, lex: &mut Lexer<'_, Token>, card: &mut Vcard) -> Result<()> {
+    fn parse_properties(
+        &self,
+        lex: &mut Lexer<'_, Token>,
+        card: &mut Vcard,
+    ) -> Result<()> {
         while let Some(first) = lex.next() {
             if first == Token::End {
                 break;
@@ -252,7 +311,12 @@ impl VcardParser {
             if let Some(delimiter) = delimiter {
                 if delimiter == Token::ParameterDelimiter {
                     let parameters = self.parse_property_parameters(lex)?;
-                    self.parse_property_by_name(lex, card, name, Some(parameters))?;
+                    self.parse_property_by_name(
+                        lex,
+                        card,
+                        name,
+                        Some(parameters),
+                    )?;
                 } else if delimiter == Token::PropertyDelimiter {
                     self.parse_property_by_name(lex, card, name, None)?;
                 } else {
@@ -267,7 +331,10 @@ impl VcardParser {
     }
 
     /// Parse property parameters.
-    fn parse_property_parameters(&self, lex: &mut Lexer<'_, Token>) -> Result<Parameters> {
+    fn parse_property_parameters(
+        &self,
+        lex: &mut Lexer<'_, Token>,
+    ) -> Result<Parameters> {
         let mut params: Parameters = Default::default();
 
         let mut next: Option<Token> = lex.next();
@@ -284,7 +351,8 @@ impl VcardParser {
 
                 let upper_name = parameter_name.to_uppercase();
 
-                let (value, next_token) = self.parse_property_parameters_value(lex)?;
+                let (value, next_token) =
+                    self.parse_property_parameters_value(lex)?;
 
                 match &upper_name[..] {
                     "LANGUAGE" => {
@@ -292,14 +360,21 @@ impl VcardParser {
                         params.language = Some(tag);
                     }
                     "TYPE" => {
-                        let types = value.split(",").map(|s| s.to_string()).collect::<Vec<_>>();
+                        let types = value
+                            .split(",")
+                            .map(|s| s.to_string())
+                            .collect::<Vec<_>>();
                         params.types = Some(types);
                     }
                     "VALUE" => {
                         let value: ValueType = value.parse()?;
                         params.value = Some(value);
                     }
-                    _ => return Err(Error::UnknownParameterName(parameter_name.to_string())),
+                    _ => {
+                        return Err(Error::UnknownParameterName(
+                            parameter_name.to_string(),
+                        ))
+                    }
                 }
 
                 if next_token == Token::PropertyDelimiter {
@@ -350,6 +425,27 @@ impl VcardParser {
         let value = self.parse_property_value(lex)?;
         let upper_name = name.to_uppercase();
         match &upper_name[..] {
+            // General properties
+            // https://www.rfc-editor.org/rfc/rfc6350#section-6.1
+            "SOURCE" => {
+                let value: Url = value.as_ref().parse()?;
+                card.source.push(Uri { value, parameters });
+            }
+            "KIND" => {
+                if card.kind.is_some() {
+                    return Err(Error::OnlyOnce(String::from("KIND")));
+                }
+                let value: Kind = value.as_ref().parse()?;
+                card.kind = Some(value);
+            }
+            "XML" => {
+                card.xml.push(Text {
+                    value: value.into_owned(),
+                    parameters,
+                });
+            }
+            // Identification properties
+            // https://www.rfc-editor.org/rfc/rfc6350#section-6.2
             "FN" => {
                 card.formatted_name.push(Text {
                     value: value.into_owned(),
@@ -366,6 +462,7 @@ impl VcardParser {
                 let value: Url = value.as_ref().parse()?;
                 card.url.push(Uri { value, parameters });
             }
+
             // Organizational
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.6
             "TITLE" => {
@@ -415,14 +512,20 @@ impl VcardParser {
                         }));
                     } else if let ValueType::Uri = value_type {
                         let value: Url = value.as_ref().parse()?;
-                        card.related.push(TextOrUri::Uri(Uri { value, parameters }));
+                        card.related
+                            .push(TextOrUri::Uri(Uri { value, parameters }));
                     } else {
-                        return Err(Error::UnknownValueType(value_type.to_string()));
+                        return Err(Error::UnknownValueType(
+                            value_type.to_string(),
+                        ));
                     }
                 } else {
                     match value.as_ref().parse::<Url>() {
                         Ok(value) => {
-                            card.related.push(TextOrUri::Uri(Uri { value, parameters }));
+                            card.related.push(TextOrUri::Uri(Uri {
+                                value,
+                                parameters,
+                            }));
                         }
                         Err(_) => {
                             card.related.push(TextOrUri::Text(Text {
@@ -439,7 +542,10 @@ impl VcardParser {
     }
 
     /// Get the slice for the property value.
-    fn parse_property_value<'a>(&self, lex: &'a mut Lexer<'_, Token>) -> Result<Cow<'a, str>> {
+    fn parse_property_value<'a>(
+        &self,
+        lex: &'a mut Lexer<'_, Token>,
+    ) -> Result<Cow<'a, str>> {
         let mut first_range: Option<Range<usize>> = None;
         let mut last_range: Option<Range<usize>> = None;
 
@@ -497,7 +603,11 @@ impl VcardParser {
     }
 
     /// Assert we have an expected token.
-    fn assert_token(&self, value: Option<Token>, expected: Token) -> Result<()> {
+    fn assert_token(
+        &self,
+        value: Option<Token>,
+        expected: Token,
+    ) -> Result<()> {
         if let Some(value) = value {
             if value == expected {
                 Ok(())
