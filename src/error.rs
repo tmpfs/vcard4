@@ -27,6 +27,12 @@ pub enum Error {
     #[error("kind '{0}' is not supported")]
     UnknownKind(String),
 
+    #[error("sex '{0}' is not supported")]
+    UnknownSex(String),
+
+    #[error("gender value is missing sex")]
+    NoSex,
+
     #[error("property '{0}' may only appear exactly once")]
     OnlyOnce(String),
 

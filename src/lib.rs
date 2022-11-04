@@ -8,6 +8,7 @@ pub use error::Error;
 /// Result type for the vCard library.
 pub type Result<T> = std::result::Result<T, Error>;
 
+use fluent_uri::Uri as URI;
 use language_tags::LanguageTag;
 use logos::{Lexer, Logos};
 use std::{
@@ -16,7 +17,6 @@ use std::{
     ops::Range,
     str::FromStr,
 };
-use fluent_uri::{Uri as URI};
 
 #[derive(Logos, Debug, PartialEq)]
 enum Token {
@@ -146,6 +146,101 @@ impl FromStr for ValueType {
     }
 }
 
+/// Enumeration for sex.
+#[derive(Debug)]
+pub enum Sex {
+    /// No sex specified.
+    None,
+    /// Male sex.
+    Male,
+    /// Female sex.
+    Female,
+    /// Other sex.
+    Other,
+    /// Not applicable.
+    NotApplicable,
+    /// Unknown sex.
+    Unknown,
+}
+
+impl fmt::Display for Sex {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::None => "",
+                Self::Male => "M",
+                Self::Female => "F",
+                Self::Other => "O",
+                Self::NotApplicable => "N",
+                Self::Unknown => "U",
+            }
+        )
+    }
+}
+
+impl FromStr for Sex {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s {
+            "" => Ok(Self::None),
+            "M" => Ok(Self::Male),
+            "F" => Ok(Self::Female),
+            "O" => Ok(Self::Other),
+            "N" => Ok(Self::NotApplicable),
+            "U" => Ok(Self::Unknown),
+            _ => Err(Error::UnknownSex(s.to_string())),
+        }
+    }
+}
+
+/// Represents a gender associated with a vCard.
+#[derive(Debug)]
+pub struct Gender {
+    /// The sex for the gender.
+    pub sex: Sex,
+    /// The identity text.
+    pub identity: Option<String>,
+}
+
+impl fmt::Display for Gender {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(identity) = &self.identity {
+            write!(f, "{};{}", self.sex, identity)
+        } else {
+            write!(f, "{}", self.sex,)
+        }
+    }
+}
+
+impl FromStr for Gender {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        if s.is_empty() {
+            return Ok(Gender {
+                sex: Sex::None,
+                identity: None,
+            });
+        }
+
+        let mut it = s.splitn(2, ";");
+        let sex = it.next().ok_or(Error::NoSex)?;
+        let sex: Sex = sex.parse()?;
+        let mut gender = Gender {
+            sex,
+            identity: None,
+        };
+        if let Some(identity) = it.next() {
+            gender.identity = Some(identity.to_string());
+        }
+
+        Ok(gender)
+    }
+}
+
 /// Kind of vCard.
 #[derive(Debug)]
 pub enum Kind {
@@ -157,7 +252,6 @@ pub enum Kind {
     Org,
     /// A location.
     Location,
-
     // TODO: x-name
     // TODO: iana-token
 }
@@ -236,6 +330,9 @@ pub struct Vcard {
     pub name: Option<TextList>,
     pub nickname: Vec<Text>,
     pub photo: Vec<Uri>,
+    //pub bday: Vec<Uri>,
+    //pub anniversary: Vec<Uri>,
+    pub gender: Option<Gender>,
     pub url: Vec<Uri>,
 
     // Organizational
@@ -252,7 +349,6 @@ pub struct Vcard {
     pub prod_id: Option<Text>,
 
     //pub rev: Option<Timestamp>,
-    
     pub sound: Vec<Uri>,
     pub uid: Option<TextOrUri>,
 
@@ -484,6 +580,19 @@ impl VcardParser {
                 let value = URI::parse(value.as_ref())?.to_owned();
                 card.photo.push(Uri { value, parameters });
             }
+            "BDAY" => {
+                todo!()
+            }
+            "ANNIVERSARY" => {
+                todo!()
+            }
+            "GENDER" => {
+                if card.gender.is_some() {
+                    return Err(Error::OnlyOnce(String::from("GENDER")));
+                }
+                let value: Gender = value.as_ref().parse()?;
+                card.gender = Some(value);
+            }
 
             // Organizational
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.6
@@ -510,18 +619,15 @@ impl VcardParser {
                     .split(";")
                     .map(|s| s.to_string())
                     .collect::<Vec<_>>();
-                card.org.push(TextList {
-                    value,
-                    parameters,
-                });
+                card.org.push(TextList { value, parameters });
             }
             "MEMBER" => {
                 let value = URI::parse(value.as_ref())?.to_owned();
                 card.member.push(Uri { value, parameters });
             }
             "RELATED" => {
-                let text_or_uri = self.parse_text_or_uri(
-                    value.as_ref(), parameters)?;
+                let text_or_uri =
+                    self.parse_text_or_uri(value.as_ref(), parameters)?;
                 card.related.push(text_or_uri);
             }
 
@@ -533,10 +639,7 @@ impl VcardParser {
                     .split(",")
                     .map(|s| s.to_string())
                     .collect::<Vec<_>>();
-                card.categories.push(TextList {
-                    value,
-                    parameters,
-                });
+                card.categories.push(TextList { value, parameters });
             }
             "NOTE" => {
                 card.note.push(Text {
@@ -548,8 +651,10 @@ impl VcardParser {
                 if card.prod_id.is_some() {
                     return Err(Error::OnlyOnce(String::from("PRODID")));
                 }
-                card.prod_id = Some(Text {value: value.into_owned(), parameters});
-
+                card.prod_id = Some(Text {
+                    value: value.into_owned(),
+                    parameters,
+                });
             }
             "REV" => {
                 todo!()
@@ -562,8 +667,8 @@ impl VcardParser {
                 if card.uid.is_some() {
                     return Err(Error::OnlyOnce(String::from("UID")));
                 }
-                let text_or_uri = self.parse_text_or_uri(
-                    value.as_ref(), parameters)?;
+                let text_or_uri =
+                    self.parse_text_or_uri(value.as_ref(), parameters)?;
                 card.uid = Some(text_or_uri);
             }
             "CLIENTPIDMAP" => {
@@ -578,8 +683,8 @@ impl VcardParser {
             // Security
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.8
             "KEY" => {
-                let text_or_uri = self.parse_text_or_uri(
-                    value.as_ref(), parameters)?;
+                let text_or_uri =
+                    self.parse_text_or_uri(value.as_ref(), parameters)?;
                 card.key.push(text_or_uri);
             }
 
@@ -651,7 +756,10 @@ impl VcardParser {
 
     /// Parse text or URI from a value.
     fn parse_text_or_uri<S: AsRef<str>>(
-        &self, value: S, parameters: Option<Parameters>) -> Result<TextOrUri> {
+        &self,
+        value: S,
+        parameters: Option<Parameters>,
+    ) -> Result<TextOrUri> {
         let value_type = if let Some(parameters) = &parameters {
             parameters.value.as_ref()
         } else {
@@ -667,24 +775,18 @@ impl VcardParser {
                 let value = URI::parse(value.as_ref())?.to_owned();
                 Ok(TextOrUri::Uri(Uri { value, parameters }))
             } else {
-                Err(Error::UnknownValueType(
-                    value_type.to_string(),
-                ))
+                Err(Error::UnknownValueType(value_type.to_string()))
             }
         } else {
             match URI::parse(value.as_ref()) {
-                Ok(value) => {
-                    Ok(TextOrUri::Uri(Uri {
-                        value: value.to_owned(),
-                        parameters,
-                    }))
-                }
-                Err(_) => {
-                    Ok(TextOrUri::Text(Text {
-                        value: value.as_ref().to_string(),
-                        parameters,
-                    }))
-                }
+                Ok(value) => Ok(TextOrUri::Uri(Uri {
+                    value: value.to_owned(),
+                    parameters,
+                })),
+                Err(_) => Ok(TextOrUri::Text(Text {
+                    value: value.as_ref().to_string(),
+                    parameters,
+                })),
             }
         }
     }
@@ -717,7 +819,7 @@ pub fn parse<S: AsRef<str>>(input: S) -> Result<Vec<Vcard>> {
 mod tests {
     use super::*;
     use anyhow::Result;
-    use fluent_uri::{Uri as URI};
+    use fluent_uri::Uri as URI;
 
     #[test]
     fn parse_empty() -> Result<()> {
