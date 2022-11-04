@@ -231,9 +231,10 @@ pub struct Vcard {
     pub kind: Option<Kind>,
     pub xml: Vec<Text>,
 
-    // 
+    // Identification
     pub formatted_name: Vec<Text>,
-    pub nicknames: Vec<Text>,
+    pub name: Option<TextList>,
+    pub nickname: Vec<Text>,
     pub url: Vec<Uri>,
 
     // Organizational
@@ -452,8 +453,19 @@ impl VcardParser {
                     parameters,
                 });
             }
+            "N" => {
+                if card.name.is_some() {
+                    return Err(Error::OnlyOnce(String::from("N")));
+                }
+                let value = value
+                    .as_ref()
+                    .split(";")
+                    .map(|s| s.to_string())
+                    .collect::<Vec<_>>();
+                card.name = Some(TextList { value, parameters });
+            }
             "NICKNAME" => {
-                card.nicknames.push(Text {
+                card.nickname.push(Text {
                     value: value.into_owned(),
                     parameters,
                 });
@@ -489,7 +501,7 @@ impl VcardParser {
                     .map(|s| s.to_string())
                     .collect::<Vec<_>>();
                 card.org.push(TextList {
-                    value: value,
+                    value,
                     parameters,
                 });
             }
@@ -746,7 +758,7 @@ END:VCARD"#;
         let fname = card.formatted_name.get(0).unwrap();
         assert_eq!("Mr. John Q. Public, Esq.", fname.value);
 
-        let nickname = card.nicknames.get(0).unwrap();
+        let nickname = card.nickname.get(0).unwrap();
         assert_eq!("Boss", nickname.value);
         assert!(nickname.parameters.is_some());
 
