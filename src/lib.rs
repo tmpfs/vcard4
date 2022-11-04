@@ -44,7 +44,7 @@ enum Token {
     End,
 
     #[error]
-    Error,
+    Text,
 }
 
 /// Value of a property.
@@ -148,7 +148,7 @@ impl VcardParser {
         let mut first_range: Option<Range<usize>> = None;
         let mut last_range: Option<Range<usize>> = None;
 
-        let mut needs_folding = false;
+        let mut needs_transform = false;
         let mut tokens = Vec::new();
 
         while let Some(token) = lex.next() {
@@ -161,7 +161,7 @@ impl VcardParser {
                 || token == Token::EscapedSemiColon
                 || token == Token::EscapedComma
             {
-                needs_folding = true;
+                needs_transform = true;
             }
 
             if token == Token::NewLine {
@@ -173,7 +173,7 @@ impl VcardParser {
         }
 
         if let (Some(first), Some(last)) = (first_range, last_range) {
-            if needs_folding {
+            if needs_transform {
                 let mut value = String::new();
                 for (token, span) in tokens {
                     if token == Token::FoldedLine {
@@ -294,6 +294,37 @@ END:VCARD"#;
         let card = vcards.remove(0);
         let fname = card.formatted_name.get(0).unwrap();
         assert_eq!("Mr. John Q. Public; Esq.", fname);
+        Ok(())
+    }
+
+    #[test]
+    fn parse_folded_space() -> Result<()> {
+        let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. 
+ John Q. 
+ Public\, 
+ Esq.
+END:VCARD"#;
+        let mut vcards = parse(input)?;
+        assert_eq!(1, vcards.len());
+
+        let card = vcards.remove(0);
+        let fname = card.formatted_name.get(0).unwrap();
+        assert_eq!("Mr. John Q. Public, Esq.", fname);
+        Ok(())
+    }
+
+    #[test]
+    fn parse_folded_tab() -> Result<()> {
+        let input = "BEGIN:VCARD\nVERSION:4.0\nFN:Mr. \n\u{0009}John Q. \n\u{0009}Public\\, \n\u{0009}Esq.\nEND:VCARD";
+        
+        let mut vcards = parse(input)?;
+        assert_eq!(1, vcards.len());
+
+        let card = vcards.remove(0);
+        let fname = card.formatted_name.get(0).unwrap();
+        assert_eq!("Mr. John Q. Public, Esq.", fname);
         Ok(())
     }
 }
