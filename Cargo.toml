@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 thiserror = "1"
 logos = "0.12"
+language-tags = "0.3"
 
 [dev-dependencies]
 anyhow = "1"

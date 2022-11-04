@@ -10,6 +10,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 use logos::{Lexer, Logos};
 use std::{borrow::Cow, ops::Range};
+use language_tags::LanguageTag;
 
 #[derive(Logos, Debug, PartialEq)]
 enum Token {
@@ -25,6 +26,9 @@ enum Token {
     #[token(";")]
     ParameterDelimiter,
 
+    #[regex("(?i:(LANGUAGE|VALUE|PREF|ALTID|PID|TYPE|MEDIATYPE|CALSCALE|SORT-AS|GEO|TZ)=)")]
+    ParameterKey,
+
     #[token(":")]
     PropertyDelimiter,
 
@@ -37,6 +41,9 @@ enum Token {
     #[token("\\;")]
     EscapedSemiColon,
 
+    //#[token(",")]
+    //Comma,
+
     #[regex("\\r?\\n")]
     NewLine,
 
@@ -47,19 +54,27 @@ enum Token {
     Text,
 }
 
-/// Value of a property.
-pub enum Value {
-    Text(String),
+/// Parameters for a vCard property.
+#[derive(Debug, Default)]
+pub struct Parameters {
+    /// The language tag.
+    pub language: Option<LanguageTag>,
+    /// The property types.
+    pub types: Option<Vec<String>>,
 }
 
-/// Property of a vCard.
+/// Text property value.
 #[derive(Debug)]
-pub struct Property {}
+pub struct Text {
+    pub value: String,
+    pub parameters: Option<Parameters>,
+}
 
-/// Single vCard with a collection of properties.
+/// The vCard type.
 #[derive(Debug, Default)]
 pub struct Vcard {
-    formatted_name: Vec<String>,
+    pub formatted_name: Vec<Text>,
+    pub nicknames: Vec<Text>,
 }
 
 /// Parses vCards from strings.
@@ -105,7 +120,8 @@ impl VcardParser {
     }
 
     /// Parse the properties of a vCard.
-    fn parse_properties(&self, lex: &mut Lexer<'_, Token>, card: &mut Vcard) -> Result<()> {
+    fn parse_properties(
+        &self, lex: &mut Lexer<'_, Token>, card: &mut Vcard) -> Result<()> {
             
         while let Some(first) = lex.next() {
             if first == Token::End {
@@ -115,14 +131,93 @@ impl VcardParser {
             self.assert_token(Some(first), Token::PropertyName)?;
 
             let name = lex.slice();
-            let next = lex.next();
-            self.assert_token(next, Token::PropertyDelimiter)?;
 
-            self.parse_property_by_name(lex, card, name);
+            let delimiter = lex.next();
+
+            if let Some(delimiter) = delimiter {
+                if delimiter == Token::ParameterDelimiter {
+                    let parameters = self.parse_property_parameters(lex)?;
+                    self.parse_property_by_name(lex, card, name, Some(parameters))?;
+                } else if delimiter == Token::PropertyDelimiter {
+                    self.parse_property_by_name(lex, card, name, None)?;
+                } else {
+                    return Err(Error::DelimiterExpected)
+                }
+            } else {
+                return Err(Error::TokenExpected)
+            }
         }
 
-        //let first = lex.next();
         Ok(())
+    }
+
+    /// Parse property parameters.
+    fn parse_property_parameters(
+        &self, lex: &mut Lexer<'_, Token>) -> Result<Parameters> {
+        let mut params: Parameters = Default::default();
+
+        let mut next: Option<Token> = lex.next();
+
+        while let Some(token) = next.take() {
+            if token == Token::PropertyDelimiter {
+                break;
+            }
+
+            if token == Token::ParameterKey {
+                let source = lex.source();
+                let span = lex.span();
+                let parameter_name = &source[span.start..(span.end - 1)];
+
+                let upper_name = parameter_name.to_uppercase();
+
+                let (value, next_token) = 
+                    self.parse_property_parameters_value(lex)?;
+
+                match &upper_name[..] {
+                    "LANGUAGE" => {
+                        let tag: LanguageTag = value.parse()?;
+                        params.language = Some(tag);
+                    }
+                    "TYPE" => {
+                        let types = value.split(",")
+                            .map(|s| s.to_string()).collect::<Vec<_>>();
+                        params.types = Some(types);
+                    }
+                    _ => return Err(Error::UnknownParameterName(parameter_name.to_string())),
+                }
+
+                if next_token == Token::PropertyDelimiter {
+                    break;
+                } else if next_token == Token::ParameterKey {
+                    next = Some(next_token);
+                } else {
+                    next = lex.next();
+                }
+            }
+        }
+        Ok(params)
+    }
+
+    /// Parse the raw value for a property parameter.
+    fn parse_property_parameters_value<'a>(
+        &self, lex: &'a mut Lexer<'_, Token>) -> Result<(String, Token)> {
+        let mut first_range: Option<Range<usize>> = None;
+
+        while let Some(token) = lex.next() {
+            let span = lex.span();
+            if first_range.is_none() {
+                first_range = Some(span.clone());
+            }
+
+            if token == Token::PropertyDelimiter
+                || token == Token::ParameterDelimiter
+                || token == Token::ParameterKey {
+                let source = lex.source();
+                let value = &source[first_range.unwrap().start..span.start];
+                return Ok((String::from(value), token));
+            }
+        }
+        Err(Error::TokenExpected)
     }
 
     /// Parse a property by name.
@@ -131,15 +226,19 @@ impl VcardParser {
         lex: &mut Lexer<'_, Token>,
         card: &mut Vcard,
         name: &str,
+        parameters: Option<Parameters>,
     ) -> Result<()> {
         let value = self.parse_property_value(lex)?;
         let upper_name = name.to_uppercase();
-        let value = match &upper_name[..] {
+        match &upper_name[..] {
             "FN" => {
-                card.formatted_name.push(value.into_owned());
+                card.formatted_name.push(Text { value: value.into_owned(), parameters });
+            }
+            "NICKNAME" => {
+                card.nicknames.push(Text { value: value.into_owned(), parameters });
             }
             _ => return Err(Error::UnknownPropertyName(name.to_string())),
-        };
+        }
         Ok(())
     }
 
@@ -207,8 +306,6 @@ impl VcardParser {
             if value == expected {
                 Ok(())
             } else {
-                //println!("{:#?}", value);
-                //println!("{:#?}", expected);
                 Err(Error::IncorrectToken)
             }
         } else {
@@ -278,7 +375,7 @@ END:VCARD"#;
 
         let card = vcards.remove(0);
         let fname = card.formatted_name.get(0).unwrap();
-        assert_eq!("Mr. John Q. Public, Esq.", fname);
+        assert_eq!("Mr. John Q. Public, Esq.", fname.value);
         Ok(())
     }
 
@@ -293,7 +390,7 @@ END:VCARD"#;
 
         let card = vcards.remove(0);
         let fname = card.formatted_name.get(0).unwrap();
-        assert_eq!("Mr. John Q. Public; Esq.", fname);
+        assert_eq!("Mr. John Q. Public; Esq.", fname.value);
         Ok(())
     }
 
@@ -311,7 +408,7 @@ END:VCARD"#;
 
         let card = vcards.remove(0);
         let fname = card.formatted_name.get(0).unwrap();
-        assert_eq!("Mr. John Q. Public, Esq.", fname);
+        assert_eq!("Mr. John Q. Public, Esq.", fname.value);
         Ok(())
     }
 
@@ -324,7 +421,36 @@ END:VCARD"#;
 
         let card = vcards.remove(0);
         let fname = card.formatted_name.get(0).unwrap();
-        assert_eq!("Mr. John Q. Public, Esq.", fname);
+        assert_eq!("Mr. John Q. Public, Esq.", fname.value);
+        Ok(())
+    }
+
+    #[test]
+    fn parse_parameters() -> Result<()> {
+        let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+NICKNAME;LANGUAGE=en;TYPE=work:Boss
+END:VCARD"#;
+        let mut vcards = parse(input)?;
+        assert_eq!(1, vcards.len());
+
+        let card = vcards.remove(0);
+
+        let fname = card.formatted_name.get(0).unwrap();
+        assert_eq!("Mr. John Q. Public, Esq.", fname.value);
+
+        let nickname = card.nicknames.get(0).unwrap();
+        assert_eq!("Boss", nickname.value);
+        assert!(nickname.parameters.is_some());
+
+        let tag: LanguageTag = "en".parse()?;
+        let parameters = nickname.parameters.as_ref().unwrap();
+
+        assert_eq!(Some(tag), parameters.language);
+        assert_eq!(
+            &vec![String::from("work")],
+            parameters.types.as_ref().unwrap());
         Ok(())
     }
 }

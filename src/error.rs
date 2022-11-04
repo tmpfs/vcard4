@@ -14,4 +14,13 @@ pub enum Error {
 
     #[error("property value is invalid")]
     InvalidPropertyValue,
+
+    #[error("property or parameter delimiter expected")]
+    DelimiterExpected,
+
+    #[error("parameter name '{0}' is not supported")]
+    UnknownParameterName(String),
+
+    #[error(transparent)]
+    LanguageParse(#[from] language_tags::ParseError),
 }
