@@ -242,7 +242,7 @@ impl FromStr for Gender {
 }
 
 /// Kind of vCard.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Kind {
     /// An individual.
     Individual,
@@ -467,11 +467,16 @@ impl VcardParser {
                         params.language = Some(tag);
                     }
                     "TYPE" => {
-                        let types = value
+                        let mut type_values = value
                             .split(",")
                             .map(|s| s.to_string())
                             .collect::<Vec<_>>();
-                        params.types = Some(types);
+
+                        if let Some(types) = params.types.as_mut() {
+                            types.append(&mut type_values);
+                        } else {
+                            params.types = Some(type_values);
+                        }
                     }
                     "VALUE" => {
                         let value: ValueType = value.parse()?;
@@ -592,6 +597,18 @@ impl VcardParser {
                 }
                 let value: Gender = value.as_ref().parse()?;
                 card.gender = Some(value);
+            }
+
+            // Delivery Addressing
+            // https://www.rfc-editor.org/rfc/rfc6350#section-6.3
+            "ADR" => {
+                todo!()
+            }
+
+            // Communications
+            // https://www.rfc-editor.org/rfc/rfc6350#section-6.4
+            "TEL" => {
+                
             }
 
             // Organizational
@@ -966,6 +983,54 @@ END:VCARD"#;
         let uri = URI::parse("https://example.com")?.to_owned();
         let url = card.url.get(0).unwrap();
         assert_eq!(uri.as_str(), url.value.as_str());
+
+        Ok(())
+    }
+
+    // General
+        
+    #[test]
+    fn parse_source() -> Result<()> {
+        let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Jane Doe
+SOURCE:ldap://ldap.example.com/cn=Babs%20Jensen,%20o=Babsco,%20c=US
+END:VCARD"#;
+        let mut vcards = parse(input)?;
+        assert_eq!(1, vcards.len());
+        let card = vcards.remove(0);
+        let uri = URI::parse("ldap://ldap.example.com/cn=Babs%20Jensen,%20o=Babsco,%20c=US")?.to_owned();
+        let url = card.source.get(0).unwrap();
+        assert_eq!(uri.as_str(), url.value.as_str());
+
+        Ok(())
+    }
+
+    #[test]
+    fn parse_kind() -> Result<()> {
+        let input = r#"BEGIN:VCARD
+VERSION:4.0
+KIND:individual
+FN:Jane Doe
+ORG:ABC\, Inc.;North American Division;Marketing
+END:VCARD"#;
+        let mut vcards = parse(input)?;
+        assert_eq!(1, vcards.len());
+        let card = vcards.remove(0);
+
+        assert_eq!(Some(Kind::Individual), card.kind);
+
+        let input = r#"BEGIN:VCARD
+VERSION:4.0
+KIND:org
+FN:ABC Marketing
+ORG:ABC\, Inc.;North American Division;Marketing
+END:VCARD"#;
+        let mut vcards = parse(input)?;
+        assert_eq!(1, vcards.len());
+        let card = vcards.remove(0);
+
+        assert_eq!(Some(Kind::Org), card.kind);
 
         Ok(())
     }
