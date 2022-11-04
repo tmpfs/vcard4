@@ -16,7 +16,7 @@ use std::{
     ops::Range,
     str::FromStr,
 };
-use url::Url;
+use fluent_uri::{Uri as URI};
 
 #[derive(Logos, Debug, PartialEq)]
 enum Token {
@@ -219,7 +219,7 @@ pub struct TextList {
 /// URI property value.
 #[derive(Debug)]
 pub struct Uri {
-    pub value: Url,
+    pub value: URI<String>,
     pub parameters: Option<Parameters>,
 }
 
@@ -235,6 +235,7 @@ pub struct Vcard {
     pub formatted_name: Vec<Text>,
     pub name: Option<TextList>,
     pub nickname: Vec<Text>,
+    pub photo: Vec<Uri>,
     pub url: Vec<Uri>,
 
     // Organizational
@@ -244,6 +245,14 @@ pub struct Vcard {
     pub org: Vec<TextList>,
     pub member: Vec<Uri>,
     pub related: Vec<TextOrUri>,
+
+    // Explanatory
+    pub categories: Vec<TextList>,
+    pub note: Vec<Text>,
+    //pub prod_id: Option<Text>,
+
+    //pub rev: Option<Text>,
+    pub sound: Vec<Uri>,
 }
 
 /// Parses vCards from strings.
@@ -429,7 +438,7 @@ impl VcardParser {
             // General properties
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.1
             "SOURCE" => {
-                let value: Url = value.as_ref().parse()?;
+                let value = URI::parse(value.as_ref())?.to_owned();
                 card.source.push(Uri { value, parameters });
             }
             "KIND" => {
@@ -470,8 +479,12 @@ impl VcardParser {
                     parameters,
                 });
             }
+            "PHOTO" => {
+                let value = URI::parse(value.as_ref())?.to_owned();
+                card.photo.push(Uri { value, parameters });
+            }
             "URL" => {
-                let value: Url = value.as_ref().parse()?;
+                let value = URI::parse(value.as_ref())?.to_owned();
                 card.url.push(Uri { value, parameters });
             }
 
@@ -491,7 +504,7 @@ impl VcardParser {
             }
 
             "LOGO" => {
-                let value: Url = value.as_ref().parse()?;
+                let value = URI::parse(value.as_ref())?.to_owned();
                 card.logo.push(Uri { value, parameters });
             }
             "ORG" => {
@@ -506,7 +519,7 @@ impl VcardParser {
                 });
             }
             "MEMBER" => {
-                let value: Url = value.as_ref().parse()?;
+                let value = URI::parse(value.as_ref())?.to_owned();
                 card.member.push(Uri { value, parameters });
             }
             "RELATED" => {
@@ -523,7 +536,7 @@ impl VcardParser {
                             parameters,
                         }));
                     } else if let ValueType::Uri = value_type {
-                        let value: Url = value.as_ref().parse()?;
+                        let value = URI::parse(value.as_ref())?.to_owned();
                         card.related
                             .push(TextOrUri::Uri(Uri { value, parameters }));
                     } else {
@@ -532,10 +545,10 @@ impl VcardParser {
                         ));
                     }
                 } else {
-                    match value.as_ref().parse::<Url>() {
+                    match URI::parse(value.as_ref()) {
                         Ok(value) => {
                             card.related.push(TextOrUri::Uri(Uri {
-                                value,
+                                value: value.to_owned(),
                                 parameters,
                             }));
                         }
@@ -548,6 +561,37 @@ impl VcardParser {
                     }
                 }
             }
+
+            // Explanatory
+            // https://www.rfc-editor.org/rfc/rfc6350#section-6.7
+            "CATEGORIES" => {
+                let value = value
+                    .as_ref()
+                    .split(",")
+                    .map(|s| s.to_string())
+                    .collect::<Vec<_>>();
+                card.categories.push(TextList {
+                    value,
+                    parameters,
+                });
+            }
+            "NOTE" => {
+                card.note.push(Text {
+                    value: value.into_owned(),
+                    parameters,
+                });
+            }
+            "PRODID" => {
+                todo!()
+            }
+            "REV" => {
+                todo!()
+            }
+            "SOUND" => {
+                let value = URI::parse(value.as_ref())?.to_owned();
+                card.sound.push(Uri { value, parameters });
+            }
+
             _ => return Err(Error::UnknownPropertyName(name.to_string())),
         }
         Ok(())
@@ -642,6 +686,7 @@ pub fn parse<S: AsRef<str>>(input: S) -> Result<Vec<Vcard>> {
 mod tests {
     use super::*;
     use anyhow::Result;
+    use fluent_uri::{Uri as URI};
 
     #[test]
     fn parse_empty() -> Result<()> {
@@ -778,16 +823,16 @@ END:VCARD"#;
         let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Mock person
-URL: https://example.com
+URL:https://example.com
 END:VCARD"#;
         let mut vcards = parse(input)?;
         assert_eq!(1, vcards.len());
 
         let card = vcards.remove(0);
 
-        let uri: Url = "https://example.com".parse()?;
+        let uri = URI::parse("https://example.com")?.to_owned();
         let url = card.url.get(0).unwrap();
-        assert_eq!(uri, url.value);
+        assert_eq!(uri.as_str(), url.value.as_str());
 
         Ok(())
     }

@@ -34,5 +34,5 @@ pub enum Error {
     LanguageParse(#[from] language_tags::ParseError),
 
     #[error(transparent)]
-    UrlParse(#[from] url::ParseError),
+    UriParse(#[from] fluent_uri::ParseError),
 }
