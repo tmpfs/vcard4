@@ -386,8 +386,9 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    
-    if let Timezone::Text(Text { value, .. }) = card.timezone.get(0).unwrap() {
+
+    if let Timezone::Text(Text { value, .. }) = card.timezone.get(0).unwrap()
+    {
         assert_eq!("Raleigh/North America", value);
     } else {
         panic!("expecting text value for TZ");
@@ -402,8 +403,10 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    
-    if let Timezone::UtcOffset(UtcOffset { value, .. }) = card.timezone.get(0).unwrap() {
+
+    if let Timezone::UtcOffset(UtcOffset { value, .. }) =
+        card.timezone.get(0).unwrap()
+    {
         assert_eq!((-5, -0, -0), value.as_hms());
     } else {
         panic!("expecting utc-offset value for TZ");
@@ -418,7 +421,7 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    
+
     if let Timezone::Uri(Uri { value, .. }) = card.timezone.get(0).unwrap() {
         assert_eq!("https://example.com/tz-database/acdt", value.as_str());
     } else {
@@ -441,10 +444,7 @@ END:VCARD"#;
     let card = vcards.remove(0);
     let geo = card.geo.get(0).unwrap();
 
-    assert_eq!(
-        "geo:37.386013,-122.082932",
-        geo.value.as_str()
-    );
+    assert_eq!("geo:37.386013,-122.082932", geo.value.as_str());
 
     Ok(())
 }

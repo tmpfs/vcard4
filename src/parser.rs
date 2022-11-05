@@ -318,13 +318,18 @@ impl VcardParser {
                 todo!();
             }
             "EMAIL" => {
-                todo!();
+                card.email.push(Text {
+                    value: value.into_owned(),
+                    parameters,
+                });
             }
             "IMPP" => {
-                todo!();
+                let value = URI::parse(value.as_ref())?.to_owned();
+                card.impp.push(Uri { value, parameters });
             }
             "LANG" => {
-                todo!();
+                let value: LanguageTag = value.as_ref().parse()?;
+                card.lang.push(value);
             }
 
             // Geographic
@@ -367,12 +372,8 @@ impl VcardParser {
                 }
             }
             "GEO" => {
-                let value =
-                    URI::parse(value.as_ref())?.to_owned();
-                card.geo.push(Uri {
-                    value,
-                    parameters,
-                });
+                let value = URI::parse(value.as_ref())?.to_owned();
+                card.geo.push(Uri { value, parameters });
             }
 
             // Organizational

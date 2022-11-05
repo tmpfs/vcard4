@@ -12,6 +12,7 @@ use crate::{Error, Result};
 
 /// Either text or a URI.
 #[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum TextOrUri {
     /// Text value.
     Text(Text),
@@ -21,6 +22,7 @@ pub enum TextOrUri {
 
 /// Enumeration of the different types of values.
 #[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ValueType {
     /// Text value.
     Text,
@@ -101,6 +103,7 @@ impl FromStr for ValueType {
 
 /// Enumeration for sex.
 #[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Sex {
     /// No sex specified.
     None,
@@ -151,6 +154,7 @@ impl FromStr for Sex {
 
 /// Value for the `utc-offset` type.
 #[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct UtcOffset {
     /// The value for the UTC offset.
     pub value: UTCOffset,
@@ -207,6 +211,7 @@ impl FromStr for UtcOffset {
 
 /// Value for a timezone (`TZ`).
 #[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Timezone {
     /// Text value.
     Text(Text),
@@ -218,6 +223,7 @@ pub enum Timezone {
 
 /// Represents a gender associated with a vCard.
 #[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Gender {
     /// The sex for the gender.
     pub sex: Sex,
@@ -263,6 +269,7 @@ impl FromStr for Gender {
 
 /// Kind of vCard.
 #[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Kind {
     /// An individual.
     Individual,
@@ -307,6 +314,7 @@ impl FromStr for Kind {
 
 /// Parameters for a vCard property.
 #[derive(Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Parameters {
     /// The language tag.
     pub language: Option<LanguageTag>,
@@ -318,6 +326,7 @@ pub struct Parameters {
 
 /// Text property value.
 #[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Text {
     pub value: String,
     pub parameters: Option<Parameters>,
@@ -325,14 +334,63 @@ pub struct Text {
 
 /// Text list property value.
 #[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TextList {
     pub value: Vec<String>,
     pub parameters: Option<Parameters>,
 }
 
+#[cfg(feature = "serde")]
+mod uri_from_str {
+    use fluent_uri::Uri as URI;
+    use serde::{
+        de::{Deserializer, Error, Visitor},
+        ser::Serializer,
+    };
+    use std::fmt;
+
+    pub fn serialize<S>(
+        source: &URI<String>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(source.as_str())
+    }
+
+    struct UriVisitor;
+
+    impl<'de> Visitor<'de> for UriVisitor {
+        type Value = URI<String>;
+
+        fn expecting(&self, _formatter: &mut fmt::Formatter) -> fmt::Result {
+            Ok(())
+        }
+
+        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+        where
+            E: Error,
+        {
+            Ok(URI::parse(v).map_err(Error::custom)?.to_owned())
+        }
+    }
+
+    pub fn deserialize<'de, D>(
+        deserializer: D,
+    ) -> Result<URI<String>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_str(UriVisitor)
+    }
+}
+
 /// URI property value.
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Uri {
+    #[cfg_attr(feature = "serde", serde(with = "uri_from_str"))]
     pub value: URI<String>,
     pub parameters: Option<Parameters>,
 }
@@ -346,6 +404,7 @@ impl PartialEq for Uri {
 
 /// The vCard type.
 #[derive(Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Vcard {
     // General
     pub source: Vec<Uri>,
@@ -372,9 +431,9 @@ pub struct Vcard {
 
     // Communications
     //pub tel: Vec<Text>,
-    //pub email: Vec<Text>,
-    //pub impp: Vec<Text>,
-    //pub lang: Vec<Text>,
+    pub email: Vec<Text>,
+    pub impp: Vec<Uri>,
+    pub lang: Vec<LanguageTag>,
 
     // Geographic
     pub timezone: Vec<Timezone>,

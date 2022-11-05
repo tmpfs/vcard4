@@ -9,6 +9,10 @@ logos = "0.12"
 language-tags = "0.3"
 fluent-uri = "0.1"
 time = "0.3"
+serde = { version = "1", features = ["derive"], optional = true }
+
+[features]
+serde = ["dep:serde", "time/serde", "language-tags/serde"]
 
 [dev-dependencies]
 anyhow = "1"
