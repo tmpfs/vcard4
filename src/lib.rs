@@ -14,6 +14,8 @@
 //! * `LanguageTag`
 //! * `Uri`
 //! * `UtcOffset`
+//! * `OffsetDateTime`
+//! * `Time`
 //! * `Mime`
 //!
 //! Serde support can be enabled by using the `serde` feature.
