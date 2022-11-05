@@ -97,7 +97,7 @@ impl FromStr for ValueType {
 }
 
 /// Enumeration for sex.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Sex {
     /// No sex specified.
     None,

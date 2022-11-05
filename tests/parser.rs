@@ -139,7 +139,7 @@ END:VCARD"#;
 }
 
 // General
-    
+
 #[test]
 fn parse_source() -> Result<()> {
     let input = r#"BEGIN:VCARD
@@ -150,7 +150,10 @@ END:VCARD"#;
     let mut vcards = parse(input)?;
     assert_eq!(1, vcards.len());
     let card = vcards.remove(0);
-    let uri = URI::parse("ldap://ldap.example.com/cn=Babs%20Jensen,%20o=Babsco,%20c=US")?.to_owned();
+    let uri = URI::parse(
+        "ldap://ldap.example.com/cn=Babs%20Jensen,%20o=Babsco,%20c=US",
+    )?
+    .to_owned();
     let url = card.source.get(0).unwrap();
     assert_eq!(uri.as_str(), url.value.as_str());
 
@@ -217,9 +220,7 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
     let name = card.name.unwrap();
-    assert_eq!(
-        vec!["Public", "John", "Quinlan", "Mr.", "Esq."],
-        name.value);
+    assert_eq!(vec!["Public", "John", "Quinlan", "Mr.", "Esq."], name.value);
     Ok(())
 }
 
@@ -235,8 +236,207 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
     let name = card.name.unwrap();
+    assert_eq!(vec!["Public", "John", "Quinlan", "Mr.", "Esq."], name.value);
+    Ok(())
+}
+
+#[test]
+fn parse_photo() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+PHOTO:http://www.example.com/pub/photos/jqpublic.gif
+PHOTO:data:image/jpeg;base64,MIICajCCAdOgAwIBAgICBEUwDQYJKoZIhv
+ AQEEBQAwdzELMAkGA1UEBhMCVVMxLDAqBgNVBAoTI05ldHNjYXBlIENvbW11bm
+ ljYXRpb25zIENvcnBvcmF0aW9uMRwwGgYDVQQLExNJbmZvcm1hdGlvbiBTeXN0
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    assert_eq!(2, card.photo.len());
+
+    let photo1 = card.photo.get(0).unwrap();
+    let photo2 = card.photo.get(1).unwrap();
+
     assert_eq!(
-        vec!["Public", "John", "Quinlan", "Mr.", "Esq."],
-        name.value);
+        "http://www.example.com/pub/photos/jqpublic.gif",
+        photo1.value.as_str()
+    );
+
+    assert!(photo2.value.as_str().starts_with("data:image/jpeg;base64,"));
+    assert!(photo2.value.as_str().ends_with("TeXN0"));
+
+    Ok(())
+}
+
+// TODO: BDAY
+// TODO: ANNIVERSARY
+
+#[test]
+fn parse_gender() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+GENDER:M
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    assert_eq!(Sex::Male, card.gender.as_ref().unwrap().sex);
+    assert_eq!(None, card.gender.as_ref().unwrap().identity);
+
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+GENDER:F
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    assert_eq!(Sex::Female, card.gender.as_ref().unwrap().sex);
+    assert_eq!(None, card.gender.as_ref().unwrap().identity);
+
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+GENDER:M;Fellow
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    assert_eq!(Sex::Male, card.gender.as_ref().unwrap().sex);
+    assert_eq!(
+        "Fellow",
+        card.gender.as_ref().unwrap().identity.as_ref().unwrap()
+    );
+
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+GENDER:F;grrrl
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    assert_eq!(Sex::Female, card.gender.as_ref().unwrap().sex);
+    assert_eq!(
+        "grrrl",
+        card.gender.as_ref().unwrap().identity.as_ref().unwrap()
+    );
+
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+GENDER:O;intersex
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    assert_eq!(Sex::Other, card.gender.as_ref().unwrap().sex);
+    assert_eq!(
+        "intersex",
+        card.gender.as_ref().unwrap().identity.as_ref().unwrap()
+    );
+
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+GENDER:;it's complicated
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    assert_eq!(Sex::None, card.gender.as_ref().unwrap().sex);
+    assert_eq!(
+        "it's complicated",
+        card.gender.as_ref().unwrap().identity.as_ref().unwrap()
+    );
+
+    Ok(())
+}
+
+// Delivery Addressing
+
+// TODO: ADR
+
+// Communications Properties
+
+// TODO: TEL
+// TODO: EMAIL
+// TODO: IMPP
+// TODO: LANG
+
+// Geographic Properties
+
+// TODO: TZ
+// TODO: GEO
+
+// Organizational Properties
+
+#[test]
+fn parse_title() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+TITLE:Research Scientist
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    assert_eq!("Research Scientist", card.title.get(0).unwrap().value);
+    Ok(())
+}
+
+#[test]
+fn parse_role() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+ROLE:Project Leader
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    assert_eq!("Project Leader", card.role.get(0).unwrap().value);
+    Ok(())
+}
+
+#[test]
+fn parse_logo() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+LOGO:http://www.example.com/pub/logos/abccorp.jpg
+LOGO:data:image/jpeg;base64,MIICajCCAdOgAwIBAgICBEUwDQYJKoZIhvc
+ AQEEBQAwdzELMAkGA1UEBhMCVVMxLDAqBgNVBAoTI05ldHNjYXBlIENvbW11bm
+ ljYXRpb25zIENvcnBvcmF0aW9uMRwwGgYDVQQLExNJbmZvcm1hdGlvbiBTeXN0
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+
+    assert_eq!(2, card.logo.len());
+
+    let logo1 = card.logo.get(0).unwrap();
+    let logo2 = card.logo.get(1).unwrap();
+
+    assert_eq!(
+        "http://www.example.com/pub/logos/abccorp.jpg",
+        logo1.value.as_str()
+    );
+
+    assert!(logo2.value.as_str().starts_with("data:image/jpeg;base64,"));
+    assert!(logo2.value.as_str().ends_with("TeXN0"));
+
     Ok(())
 }

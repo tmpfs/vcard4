@@ -3,10 +3,7 @@
 use fluent_uri::Uri as URI;
 use language_tags::LanguageTag;
 use logos::{Lexer, Logos};
-use std::{
-    borrow::Cow,
-    ops::Range,
-};
+use std::{borrow::Cow, ops::Range};
 
 //use crate::{Error, Result, Vcard};
 use crate::*;
@@ -52,20 +49,22 @@ enum Token {
     Text,
 }
 
-
 /// Parses vCards from strings.
 #[derive(Default)]
 pub(crate) struct VcardParser {}
 
 impl VcardParser {
     /// Parse a UTF-8 encoded string into a list of vCards.
-    pub(crate) fn parse<S: AsRef<str>>(&self, value: S) -> Result<Vec<Vcard>> {
+    pub(crate) fn parse<S: AsRef<str>>(
+        &self,
+        value: S,
+    ) -> Result<Vec<Vcard>> {
         let mut cards = Vec::new();
         let mut lex = Token::lexer(value.as_ref());
 
         while let Some(first) = lex.next() {
             let card = self.parse_one(&mut lex, Some(first))?;
-            
+
             if card.formatted_name.is_empty() {
                 return Err(Error::NoFormattedName);
             }
@@ -309,9 +308,7 @@ impl VcardParser {
 
             // Communications
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.4
-            "TEL" => {
-                
-            }
+            "TEL" => {}
 
             // Organizational
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.6
