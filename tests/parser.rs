@@ -204,7 +204,7 @@ ORG:ABC\, Inc.;North American Division;Marketing
 END:VCARD"#;
     let mut vcards = parse(input)?;
     assert_eq!(1, vcards.len());
-    let card = vcards.remove(0); 
+    let card = vcards.remove(0);
 
     assert_eq!(Kind::Org, card.kind.as_ref().unwrap().value);
 
@@ -306,8 +306,8 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    assert_eq!(Sex::Male, card.gender.as_ref().unwrap().sex);
-    assert_eq!(None, card.gender.as_ref().unwrap().identity);
+    assert_eq!(Sex::Male, card.gender.as_ref().unwrap().value.sex);
+    assert_eq!(None, card.gender.as_ref().unwrap().value.identity);
 
     let input = r#"BEGIN:VCARD
 VERSION:4.0
@@ -318,8 +318,8 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    assert_eq!(Sex::Female, card.gender.as_ref().unwrap().sex);
-    assert_eq!(None, card.gender.as_ref().unwrap().identity);
+    assert_eq!(Sex::Female, card.gender.as_ref().unwrap().value.sex);
+    assert_eq!(None, card.gender.as_ref().unwrap().value.identity);
 
     let input = r#"BEGIN:VCARD
 VERSION:4.0
@@ -330,10 +330,16 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    assert_eq!(Sex::Male, card.gender.as_ref().unwrap().sex);
+    assert_eq!(Sex::Male, card.gender.as_ref().unwrap().value.sex);
     assert_eq!(
         "Fellow",
-        card.gender.as_ref().unwrap().identity.as_ref().unwrap()
+        card.gender
+            .as_ref()
+            .unwrap()
+            .value
+            .identity
+            .as_ref()
+            .unwrap()
     );
 
     let input = r#"BEGIN:VCARD
@@ -345,10 +351,16 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    assert_eq!(Sex::Female, card.gender.as_ref().unwrap().sex);
+    assert_eq!(Sex::Female, card.gender.as_ref().unwrap().value.sex);
     assert_eq!(
         "grrrl",
-        card.gender.as_ref().unwrap().identity.as_ref().unwrap()
+        card.gender
+            .as_ref()
+            .unwrap()
+            .value
+            .identity
+            .as_ref()
+            .unwrap()
     );
 
     let input = r#"BEGIN:VCARD
@@ -360,10 +372,16 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    assert_eq!(Sex::Other, card.gender.as_ref().unwrap().sex);
+    assert_eq!(Sex::Other, card.gender.as_ref().unwrap().value.sex);
     assert_eq!(
         "intersex",
-        card.gender.as_ref().unwrap().identity.as_ref().unwrap()
+        card.gender
+            .as_ref()
+            .unwrap()
+            .value
+            .identity
+            .as_ref()
+            .unwrap()
     );
 
     let input = r#"BEGIN:VCARD
@@ -375,10 +393,16 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    assert_eq!(Sex::None, card.gender.as_ref().unwrap().sex);
+    assert_eq!(Sex::None, card.gender.as_ref().unwrap().value.sex);
     assert_eq!(
         "it's complicated",
-        card.gender.as_ref().unwrap().identity.as_ref().unwrap()
+        card.gender
+            .as_ref()
+            .unwrap()
+            .value
+            .identity
+            .as_ref()
+            .unwrap()
     );
 
     Ok(())
@@ -409,7 +433,7 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
 
-    if let TimeZoneProperty::Text(Text { value, .. }) =
+    if let TimeZoneProperty::Text(TextProperty { value, .. }) =
         card.timezone.get(0).unwrap()
     {
         assert_eq!("Raleigh/North America", value);
@@ -704,7 +728,7 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    if let TextOrUriProperty::Text(Text { value, parameters }) =
+    if let TextOrUriProperty::Text(TextProperty { value, parameters }) =
         card.related.get(0).unwrap()
     {
         assert_eq!(

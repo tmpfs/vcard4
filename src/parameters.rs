@@ -7,9 +7,7 @@ use std::{
     fmt::{self, Debug},
     str::FromStr,
 };
-use time::{
-    UtcOffset as UTCOffset,
-};
+use time::UtcOffset as UTCOffset;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};

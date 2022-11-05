@@ -7,8 +7,7 @@ use mime::Mime;
 use std::{borrow::Cow, ops::Range};
 use time::{format_description::well_known::Iso8601, OffsetDateTime};
 
-use crate::values::*;
-use crate::{property::*, parameters::*, Error, Result, Vcard};
+use crate::{parameters::*, property::*, types::*, Error, Result, Vcard};
 
 #[derive(Logos, Debug, PartialEq)]
 enum Token {
@@ -330,10 +329,10 @@ impl VcardParser {
                     return Err(Error::OnlyOnce(String::from("KIND")));
                 }
                 let value: Kind = value.as_ref().parse()?;
-                card.kind = Some(KindProperty {value, parameters});
+                card.kind = Some(KindProperty { value, parameters });
             }
             "XML" => {
-                card.xml.push(Text {
+                card.xml.push(TextProperty {
                     value: value.into_owned(),
                     parameters,
                 });
@@ -341,7 +340,7 @@ impl VcardParser {
             // Identification properties
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.2
             "FN" => {
-                card.formatted_name.push(Text {
+                card.formatted_name.push(TextProperty {
                     value: value.into_owned(),
                     parameters,
                 });
@@ -358,7 +357,7 @@ impl VcardParser {
                 card.name = Some(TextListProperty { value, parameters });
             }
             "NICKNAME" => {
-                card.nickname.push(Text {
+                card.nickname.push(TextProperty {
                     value: value.into_owned(),
                     parameters,
                 });
@@ -393,7 +392,7 @@ impl VcardParser {
                     return Err(Error::OnlyOnce(String::from("GENDER")));
                 }
                 let value: Gender = value.as_ref().parse()?;
-                card.gender = Some(value);
+                card.gender = Some(GenderProperty { value, parameters });
             }
 
             // Delivery Addressing
@@ -408,7 +407,7 @@ impl VcardParser {
                 todo!();
             }
             "EMAIL" => {
-                card.email.push(Text {
+                card.email.push(TextProperty {
                     value: value.into_owned(),
                     parameters,
                 });
@@ -419,7 +418,7 @@ impl VcardParser {
             }
             "LANG" => {
                 let value: LanguageTag = value.as_ref().parse()?;
-                card.lang.push(value);
+                card.lang.push(LanguageProperty { value, parameters });
             }
 
             // Geographic
@@ -443,10 +442,9 @@ impl VcardParser {
                         ValueType::Uri => {
                             let value =
                                 Uri::parse(value.as_ref())?.to_owned();
-                            card.timezone.push(TimeZoneProperty::Uri(UriProperty {
-                                value,
-                                parameters,
-                            }));
+                            card.timezone.push(TimeZoneProperty::Uri(
+                                UriProperty { value, parameters },
+                            ));
                         }
                         _ => {
                             return Err(Error::UnsupportedValueType(
@@ -456,10 +454,12 @@ impl VcardParser {
                         }
                     }
                 } else {
-                    card.timezone.push(TimeZoneProperty::Text(Text {
-                        value: value.into_owned(),
-                        parameters,
-                    }));
+                    card.timezone.push(TimeZoneProperty::Text(
+                        TextProperty {
+                            value: value.into_owned(),
+                            parameters,
+                        },
+                    ));
                 }
             }
             "GEO" => {
@@ -470,13 +470,13 @@ impl VcardParser {
             // Organizational
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.6
             "TITLE" => {
-                card.title.push(Text {
+                card.title.push(TextProperty {
                     value: value.into_owned(),
                     parameters,
                 });
             }
             "ROLE" => {
-                card.role.push(Text {
+                card.role.push(TextProperty {
                     value: value.into_owned(),
                     parameters,
                 });
@@ -524,7 +524,7 @@ impl VcardParser {
                 card.categories.push(TextListProperty { value, parameters });
             }
             "NOTE" => {
-                card.note.push(Text {
+                card.note.push(TextProperty {
                     value: value.into_owned(),
                     parameters,
                 });
@@ -533,7 +533,7 @@ impl VcardParser {
                 if card.prod_id.is_some() {
                     return Err(Error::OnlyOnce(String::from("PRODID")));
                 }
-                card.prod_id = Some(Text {
+                card.prod_id = Some(TextProperty {
                     value: value.into_owned(),
                     parameters,
                 });
@@ -542,8 +542,8 @@ impl VcardParser {
                 if card.rev.is_some() {
                     return Err(Error::OnlyOnce(String::from("REV")));
                 }
-                let rev = OffsetDateTime::parse(&value, &Iso8601::DEFAULT)?;
-                card.rev = Some(rev);
+                let value = OffsetDateTime::parse(&value, &Iso8601::DEFAULT)?;
+                card.rev = Some(DateTimeProperty { value, parameters });
             }
             "SOUND" => {
                 let value = Uri::parse(value.as_ref())?.to_owned();
@@ -658,7 +658,7 @@ impl VcardParser {
         };
         if let Some(value_type) = value_type {
             if let ValueType::Text = value_type {
-                Ok(TextOrUriProperty::Text(Text {
+                Ok(TextOrUriProperty::Text(TextProperty {
                     value: value.as_ref().to_string(),
                     parameters,
                 }))
@@ -674,7 +674,7 @@ impl VcardParser {
                     value: value.to_owned(),
                     parameters,
                 })),
-                Err(_) => Ok(TextOrUriProperty::Text(Text {
+                Err(_) => Ok(TextOrUriProperty::Text(TextProperty {
                     value: value.as_ref().to_string(),
                     parameters,
                 })),
@@ -713,10 +713,12 @@ fn parse_date_time_or_text<'a>(
 
     if let Some(value_type) = value_type {
         match value_type {
-            ValueType::Text => Ok(DateTimeOrTextProperty::Text(Text {
-                value: value.into_owned(),
-                parameters,
-            })),
+            ValueType::Text => {
+                Ok(DateTimeOrTextProperty::Text(TextProperty {
+                    value: value.into_owned(),
+                    parameters,
+                }))
+            }
             ValueType::DateAndOrTime => {
                 let value: DateAndOrTime = value.parse()?;
                 Ok(DateTimeOrTextProperty::DateTime(DateAndOrTimeProperty {

@@ -1,10 +1,5 @@
-//! The vCard struct and types for vCard properties and values.
-
-use language_tags::LanguageTag;
-use std::{
-    fmt::Debug,
-    str::FromStr,
-};
+//! Custom data types.
+use std::{fmt::Debug, str::FromStr};
 use time::{
     format_description::well_known::Iso8601, Date, OffsetDateTime, Time,
 };
@@ -12,10 +7,7 @@ use time::{
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "zeroize")]
-use zeroize::{Zeroize, ZeroizeOnDrop};
-
-use crate::{property::*, Error, Result};
+use crate::{Error, Result};
 
 fn parse_time(s: &str) -> Result<Time> {
     Ok(Time::parse(s, &Iso8601::DEFAULT)?)
@@ -60,89 +52,6 @@ impl FromStr for DateAndOrTime {
             },
         }
     }
-}
-
-/// The vCard type.
-#[derive(Debug, Default, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
-pub struct Vcard {
-    // General
-    /// Value of the SOURCE property.
-    pub source: Vec<UriProperty>,
-    /// Value of the KIND property.
-    pub kind: Option<KindProperty>,
-    /// Value of the XML property.
-    pub xml: Vec<Text>,
-
-    // Identification
-    /// Value of the FN property.
-    pub formatted_name: Vec<Text>,
-    /// Value of the N property.
-    pub name: Option<TextListProperty>,
-    /// Value of the NICKNAME property.
-    pub nickname: Vec<Text>,
-    /// Value of the PHOTO property.
-    pub photo: Vec<UriProperty>,
-    /// Value of the BDAY property.
-    pub bday: Option<DateTimeOrTextProperty>,
-    /// Value of the ANNIVERSARY property.
-    pub anniversary: Option<DateTimeOrTextProperty>,
-    /// Value of the GENDER property.
-    pub gender: Option<Gender>,
-    /// Value of the URL property.
-    pub url: Vec<UriProperty>,
-
-    // Organizational
-    /// Value of the TITLE property.
-    pub title: Vec<Text>,
-    /// Value of the ROLE property.
-    pub role: Vec<Text>,
-    /// Value of the LOGO property.
-    pub logo: Vec<UriProperty>,
-    /// Value of the ORG property.
-    pub org: Vec<TextListProperty>,
-    /// Value of the MEMBER property.
-    pub member: Vec<UriProperty>,
-    /// Value of the RELATED property.
-    pub related: Vec<TextOrUriProperty>,
-
-    // Communications
-    //pub tel: Vec<Text>,
-    /// Value of the EMAIL property.
-    pub email: Vec<Text>,
-    /// Value of the IMPP property.
-    pub impp: Vec<UriProperty>,
-    /// Value of the LANG property.
-    #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    pub lang: Vec<LanguageTag>,
-
-    // Geographic
-    /// Value of the TZ property.
-    pub timezone: Vec<TimeZoneProperty>,
-    /// Value of the GEO property.
-    pub geo: Vec<UriProperty>,
-
-    // Explanatory
-    /// Value of the CATEGORIES property.
-    pub categories: Vec<TextListProperty>,
-    /// Value of the NOTE property.
-    pub note: Vec<Text>,
-    /// Value of the PRODID property.
-    pub prod_id: Option<Text>,
-    /// Value of the REV property.
-    #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    pub rev: Option<OffsetDateTime>,
-
-    //pub rev: Option<Timestamp>,
-    /// Value of the SOUND property.
-    pub sound: Vec<UriProperty>,
-    /// Value of the UID property.
-    pub uid: Option<TextOrUriProperty>,
-
-    // Security
-    /// Value of the KEY property.
-    pub key: Vec<TextOrUriProperty>,
 }
 
 #[cfg(test)]

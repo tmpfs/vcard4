@@ -1,11 +1,12 @@
 //! Types for properties.
 
+use language_tags::LanguageTag;
 use fluent_uri::Uri;
 use std::{
     fmt::{self, Debug},
     str::FromStr,
 };
-use time::UtcOffset as UTCOffset;
+use time::{OffsetDateTime, UtcOffset as UTCOffset};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -13,7 +14,31 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "zeroize")]
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-use crate::{DateAndOrTime, Error, parameters::Parameters, Result};
+use crate::{parameters::Parameters, types::DateAndOrTime, Error, Result};
+
+/// Language property.
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+pub struct LanguageProperty {
+    /// The value for the property.
+    #[cfg_attr(feature = "zeroize", zeroize(skip))]
+    pub value: LanguageTag,
+    /// The property parameters.
+    pub parameters: Option<Parameters>,
+}
+
+/// Date time property.
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+pub struct DateTimeProperty {
+    /// The value for the property.
+    #[cfg_attr(feature = "zeroize", zeroize(skip))]
+    pub value: OffsetDateTime,
+    /// The property parameters.
+    pub parameters: Option<Parameters>,
+}
 
 /// Date and or time property.
 #[derive(Debug, PartialEq)]
@@ -31,7 +56,7 @@ pub struct DateAndOrTimeProperty {
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub enum TextOrUriProperty {
     /// Text value.
-    Text(Text),
+    Text(TextProperty),
     /// Uri value.
     Uri(UriProperty),
 }
@@ -45,7 +70,7 @@ pub enum DateTimeOrTextProperty {
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     DateTime(DateAndOrTimeProperty),
     /// Text value.
-    Text(Text),
+    Text(TextProperty),
 }
 
 /// Value for a UTC offset property.
@@ -113,7 +138,7 @@ impl FromStr for UtcOffsetProperty {
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub enum TimeZoneProperty {
     /// Text value.
-    Text(Text),
+    Text(TextProperty),
     /// Uri value.
     Uri(UriProperty),
     /// UTC offset value.
@@ -124,7 +149,7 @@ pub enum TimeZoneProperty {
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
-pub struct Text {
+pub struct TextProperty {
     /// Value for this property.
     pub value: String,
 
@@ -146,7 +171,7 @@ pub struct TextListProperty {
 
 #[cfg(feature = "serde")]
 mod uri_from_str {
-    use fluent_uri::Uri as Uri;
+    use fluent_uri::Uri;
     use serde::{
         de::{Deserializer, Error, Visitor},
         ser::Serializer,
@@ -211,7 +236,7 @@ impl PartialEq for UriProperty {
     }
 }
 
-/// Property for KIND.
+/// Property for a vCard kind.
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
@@ -266,6 +291,17 @@ impl FromStr for Kind {
             _ => Err(Error::UnknownKind(s.to_string())),
         }
     }
+}
+
+/// Property for a vCard gender.
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+pub struct GenderProperty {
+    /// The value for the property.
+    pub value: Gender,
+    /// The property parameters.
+    pub parameters: Option<Parameters>,
 }
 
 /// Represents a gender associated with a vCard.
@@ -366,7 +402,6 @@ impl FromStr for Sex {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
