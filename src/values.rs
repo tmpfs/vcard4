@@ -502,6 +502,8 @@ pub struct Parameters {
     pub media_type: Option<Mime>,
     /// The CALSCALE parameter.
     pub calscale: Option<String>,
+    /// The SORT-AS parameter.
+    pub sort_as: Option<Vec<String>>,
     /// The TYPE parameter.
     pub types: Option<Vec<String>>,
 }

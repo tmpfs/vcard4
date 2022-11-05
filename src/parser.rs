@@ -211,6 +211,13 @@ impl VcardParser {
                     "CALSCALE" => {
                         params.calscale = Some(value);
                     }
+                    "SORT-AS" => {
+                        let sort_values = value
+                            .split(",")
+                            .map(|s| s.to_string())
+                            .collect::<Vec<_>>();
+                        params.sort_as = Some(sort_values);
+                    }
                     _ => {
                         return Err(Error::UnknownParameterName(
                             parameter_name.to_string(),
@@ -248,7 +255,17 @@ impl VcardParser {
                 || token == Token::ParameterKey
             {
                 let source = lex.source();
-                let value = &source[first_range.unwrap().start..span.start];
+                let begin = first_range.unwrap().start;
+                let end = span.start;
+                let mut value = &source[begin..end];
+
+                // Remove double quotes if necessary
+                if value.len() >= 2
+                    && &value[0..1] == "\""
+                    && &value[value.len()-1..] == "\"" {
+                    value = &source[begin+1..end-1];
+                }
+
                 return Ok((String::from(value), token));
             }
         }
