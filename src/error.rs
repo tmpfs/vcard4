@@ -36,6 +36,9 @@ pub enum Error {
     #[error("property '{0}' may only appear exactly once")]
     OnlyOnce(String),
 
+    #[error("formatted name (FN) is required")]
+    NoFormattedName,
+
     #[error(transparent)]
     LanguageParse(#[from] language_tags::ParseError),
 
