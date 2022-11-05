@@ -77,6 +77,28 @@ END:VCARD"#;
 }
 
 #[test]
+fn parse_newline() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+NOTE:Mythical Manager\NHyjinx Software Division\n
+ BabsCo\, Inc.\N
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    let expected = r#"Mythical Manager
+Hyjinx Software Division
+BabsCo, Inc.
+"#;
+
+    let note = &card.note.get(0).unwrap().value;
+    assert_eq!(expected, note);
+    Ok(())
+}
+
+#[test]
 fn parse_folded_tab() -> Result<()> {
     let input = "BEGIN:VCARD\nVERSION:4.0\nFN:Mr. \n\u{0009}John Q. \n\u{0009}Public\\, \n\u{0009}Esq.\nEND:VCARD";
 

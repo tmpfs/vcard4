@@ -39,6 +39,9 @@ enum Token {
     #[token("\\;")]
     EscapedSemiColon,
 
+    #[regex("(?i:\\\\n)")]
+    EscapedNewLine,
+
     //#[token(",")]
     //Comma,
     #[regex("\\r?\\n")]
@@ -596,6 +599,7 @@ impl VcardParser {
             if token == Token::FoldedLine
                 || token == Token::EscapedSemiColon
                 || token == Token::EscapedComma
+                || token == Token::EscapedNewLine
             {
                 needs_transform = true;
             }
@@ -621,6 +625,10 @@ impl VcardParser {
                     }
                     if token == Token::EscapedSemiColon {
                         value.push(';');
+                        continue;
+                    }
+                    if token == Token::EscapedNewLine {
+                        value.push('\n');
                         continue;
                     }
 
