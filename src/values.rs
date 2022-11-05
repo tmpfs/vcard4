@@ -435,7 +435,10 @@ pub struct Parameters {
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Text {
+    /// Value for this property.
     pub value: String,
+
+    /// Parameters for this property.
     pub parameters: Option<Parameters>,
 }
 
@@ -443,7 +446,10 @@ pub struct Text {
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TextList {
+    /// Value for this property.
     pub value: Vec<String>,
+
+    /// Parameters for this property.
     pub parameters: Option<Parameters>,
 }
 
@@ -497,8 +503,11 @@ mod uri_from_str {
 #[derive(Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Uri {
+    /// Value for this property.
     #[cfg_attr(feature = "serde", serde(with = "uri_from_str"))]
     pub value: URI<String>,
+
+    /// Parameters for this property.
     pub parameters: Option<Parameters>,
 }
 
@@ -514,48 +523,75 @@ impl PartialEq for Uri {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Vcard {
     // General
+    /// Value of the SOURCE property.
     pub source: Vec<Uri>,
+    /// Value of the KIND property.
     pub kind: Option<Kind>,
+    /// Value of the XML property.
     pub xml: Vec<Text>,
 
     // Identification
+    /// Value of the FN property.
     pub formatted_name: Vec<Text>,
+    /// Value of the N property.
     pub name: Option<TextList>,
+    /// Value of the NICKNAME property.
     pub nickname: Vec<Text>,
+    /// Value of the PHOTO property.
     pub photo: Vec<Uri>,
     //pub bday: Vec<Uri>,
     //pub anniversary: Vec<Uri>,
+    /// Value of the GENDER property.
     pub gender: Option<Gender>,
+    /// Value of the URL property.
     pub url: Vec<Uri>,
 
     // Organizational
+    /// Value of the TITLE property.
     pub title: Vec<Text>,
+    /// Value of the ROLE property.
     pub role: Vec<Text>,
+    /// Value of the LOGO property.
     pub logo: Vec<Uri>,
+    /// Value of the ORG property.
     pub org: Vec<TextList>,
+    /// Value of the MEMBER property.
     pub member: Vec<Uri>,
+    /// Value of the RELATED property.
     pub related: Vec<TextOrUri>,
 
     // Communications
     //pub tel: Vec<Text>,
+    /// Value of the EMAIL property.
     pub email: Vec<Text>,
+    /// Value of the IMPP property.
     pub impp: Vec<Uri>,
+    /// Value of the LANG property.
     pub lang: Vec<LanguageTag>,
 
     // Geographic
+    /// Value of the TZ property.
     pub timezone: Vec<Timezone>,
+    /// Value of the GEO property.
     pub geo: Vec<Uri>,
 
     // Explanatory
+    /// Value of the CATEGORIES property.
     pub categories: Vec<TextList>,
+    /// Value of the NOTE property.
     pub note: Vec<Text>,
+    /// Value of the PRODID property.
     pub prod_id: Option<Text>,
 
     //pub rev: Option<Timestamp>,
+
+    /// Value of the SOUND property.
     pub sound: Vec<Uri>,
+    /// Value of the UID property.
     pub uid: Option<TextOrUri>,
 
     // Security
+    /// Value of the KEY property.
     pub key: Vec<TextOrUri>,
 }
 

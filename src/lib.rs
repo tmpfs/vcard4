@@ -1,5 +1,5 @@
 #![forbid(unsafe_code)]
-//#![deny(missing_docs)]
+#![deny(missing_docs)]
 
 //! Compact, fast and correct vCard parser based
 //! on [RFC6350](https://www.rfc-editor.org/rfc/rfc6350).
