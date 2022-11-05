@@ -16,6 +16,53 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{Error, Result};
 
+/// Values for a PID parameter.
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+pub struct Pid {
+    /// Digits before a period.
+    pub major: u64,
+    /// Digits after a period.
+    pub minor: Option<u64>,
+}
+
+impl fmt::Display for Pid {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(minor) = self.minor {
+            write!(
+                f,
+                "{}.{}",
+                self.major,
+                minor,
+            )
+        } else {
+            write!(
+                f,
+                "{}",
+                self.major,
+            )
+        }
+    }
+}
+
+impl FromStr for Pid {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let mut parts = s.splitn(2, ".");
+        let major = parts.next()
+            .ok_or(Error::InvalidPid(s.to_string()))?;
+        let major: u64 = major.parse().map_err(|_| Error::InvalidPid(s.to_string()))?;
+        let mut pid = Pid { major: major, minor: None };
+        if let Some(minor) = parts.next() {
+            let minor: u64 = minor.parse().map_err(|_| Error::InvalidPid(s.to_string()))?;
+            pid.minor = Some(minor);
+        }
+        Ok(pid)
+    }
+}
+
 /// Either text or a URI.
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -447,6 +494,8 @@ pub struct Parameters {
     pub pref: Option<u8>,
     /// The ALTID tag.
     pub alt_id: Option<String>,
+    /// The PID value.
+    pub pid: Option<Pid>,
     /// The property TYPE.
     pub types: Option<Vec<String>>,
 }

@@ -187,6 +187,10 @@ impl VcardParser {
                     "ALTID" => {
                         params.alt_id = Some(value);
                     }
+                    "PID" => {
+                        let pid: Pid = value.parse()?;
+                        params.pid = Some(pid);
+                    }
                     "TYPE" => {
                         let mut type_values = value
                             .split(",")
