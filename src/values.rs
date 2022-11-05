@@ -438,14 +438,16 @@ impl FromStr for Kind {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct Parameters {
-    /// The language tag.
+    /// The LANGUAGE tag.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     pub language: Option<LanguageTag>,
-    /// The value type hint for this property.
+    /// The VALUE type hint.
     pub value: Option<ValueType>,
-    /// The preference hint.
+    /// The PREF hint.
     pub pref: Option<u8>,
-    /// The property types.
+    /// The ALTID tag.
+    pub alt_id: Option<String>,
+    /// The property TYPE.
     pub types: Option<Vec<String>>,
 }
 

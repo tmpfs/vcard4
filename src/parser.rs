@@ -184,6 +184,9 @@ impl VcardParser {
                         }
                         params.pref = Some(value);
                     }
+                    "ALTID" => {
+                        params.alt_id = Some(value);
+                    }
                     "TYPE" => {
                         let mut type_values = value
                             .split(",")
