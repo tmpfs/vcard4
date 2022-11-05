@@ -387,7 +387,8 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
 
-    if let TimeZone::Text(Text { value, .. }) = card.timezone.get(0).unwrap()
+    if let TimeZoneProperty::Text(Text { value, .. }) =
+        card.timezone.get(0).unwrap()
     {
         assert_eq!("Raleigh/North America", value);
     } else {
@@ -404,7 +405,7 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
 
-    if let TimeZone::UtcOffset(UtcOffset { value, .. }) =
+    if let TimeZoneProperty::UtcOffset(UtcOffset { value, .. }) =
         card.timezone.get(0).unwrap()
     {
         assert_eq!((-5, -0, -0), value.as_hms());
@@ -422,7 +423,9 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
 
-    if let TimeZone::Uri(Uri { value, .. }) = card.timezone.get(0).unwrap() {
+    if let TimeZoneProperty::Uri(Uri { value, .. }) =
+        card.timezone.get(0).unwrap()
+    {
         assert_eq!("https://example.com/tz-database/acdt", value.as_str());
     } else {
         panic!("expecting uri value for TZ");
@@ -625,7 +628,9 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    if let TextOrUri::Uri(Uri { value, parameters }) = card.related.get(0).unwrap() {
+    if let TextOrUri::Uri(Uri { value, parameters }) =
+        card.related.get(0).unwrap()
+    {
         assert_eq!(
             "urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6",
             value.as_str()
@@ -634,8 +639,8 @@ END:VCARD"#;
         let params = parameters.as_ref().unwrap();
         assert_eq!(
             Some(&String::from("friend")),
-            params.types.as_ref().unwrap().get(0));
-
+            params.types.as_ref().unwrap().get(0)
+        );
     } else {
         panic!("expecting URI for RELATED prop");
     }
@@ -649,17 +654,16 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    if let TextOrUri::Uri(Uri { value, parameters }) = card.related.get(0).unwrap() {
-        assert_eq!(
-            "http://example.com/directory/jdoe.vcf",
-            value.as_str()
-        );
+    if let TextOrUri::Uri(Uri { value, parameters }) =
+        card.related.get(0).unwrap()
+    {
+        assert_eq!("http://example.com/directory/jdoe.vcf", value.as_str());
 
         let params = parameters.as_ref().unwrap();
         assert_eq!(
             Some(&String::from("contact")),
-            params.types.as_ref().unwrap().get(0));
-
+            params.types.as_ref().unwrap().get(0)
+        );
     } else {
         panic!("expecting URI for RELATED prop");
     }
@@ -674,7 +678,9 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    if let TextOrUri::Text(Text { value, parameters }) = card.related.get(0).unwrap() {
+    if let TextOrUri::Text(Text { value, parameters }) =
+        card.related.get(0).unwrap()
+    {
         assert_eq!(
             "Please contact my assistant Jane Doe for any inquiries.",
             value.as_str()
@@ -683,8 +689,8 @@ END:VCARD"#;
         let params = parameters.as_ref().unwrap();
         assert_eq!(
             Some(&String::from("co-worker")),
-            params.types.as_ref().unwrap().get(0));
-
+            params.types.as_ref().unwrap().get(0)
+        );
     } else {
         panic!("expecting TEXT for RELATED prop");
     }

@@ -5,9 +5,10 @@ use language_tags::LanguageTag;
 use logos::{Lexer, Logos};
 use mime::Mime;
 use std::{borrow::Cow, ops::Range};
+use time::{OffsetDateTime, format_description::well_known::Iso8601};
 
-use crate::{Error, Result, Vcard};
 use crate::values::*;
+use crate::{Error, Result, Vcard};
 
 #[derive(Logos, Debug, PartialEq)]
 enum Token {
@@ -166,7 +167,7 @@ impl VcardParser {
 
                 let upper_name = parameter_name.to_uppercase();
 
-                let (value, next_token) =
+                let (value, next_token, quoted) =
                     self.parse_property_parameters_value(lex)?;
 
                 match &upper_name[..] {
@@ -218,6 +219,35 @@ impl VcardParser {
                             .collect::<Vec<_>>();
                         params.sort_as = Some(sort_values);
                     }
+                    "GEO" => {
+                        if !quoted {
+                            return Err(Error::NotQuoted(String::from(
+                                "GEO",
+                            )));
+                        }
+                        let geo = URI::parse(&value)?.to_owned();
+                        params.geo = Some(geo);
+                    }
+                    "TZ" => {
+                        if quoted {
+                            let value = URI::parse(&value)?.to_owned();
+                            params.timezone =
+                                Some(TimeZoneParameter::Uri(value));
+                        } else {
+                            match value.parse::<UtcOffset>() {
+                                Ok(offset) => {
+                                    params.timezone =
+                                        Some(TimeZoneParameter::UtcOffset(
+                                            offset.value,
+                                        ));
+                                }
+                                Err(_) => {
+                                    params.timezone =
+                                        Some(TimeZoneParameter::Text(value));
+                                }
+                            }
+                        }
+                    }
                     _ => {
                         return Err(Error::UnknownParameterName(
                             parameter_name.to_string(),
@@ -241,7 +271,7 @@ impl VcardParser {
     fn parse_property_parameters_value<'a>(
         &self,
         lex: &'a mut Lexer<'_, Token>,
-    ) -> Result<(String, Token)> {
+    ) -> Result<(String, Token, bool)> {
         let mut first_range: Option<Range<usize>> = None;
 
         while let Some(token) = lex.next() {
@@ -254,6 +284,7 @@ impl VcardParser {
                 || token == Token::ParameterDelimiter
                 || token == Token::ParameterKey
             {
+                let mut quoted = false;
                 let source = lex.source();
                 let begin = first_range.unwrap().start;
                 let end = span.start;
@@ -262,11 +293,13 @@ impl VcardParser {
                 // Remove double quotes if necessary
                 if value.len() >= 2
                     && &value[0..1] == "\""
-                    && &value[value.len()-1..] == "\"" {
-                    value = &source[begin+1..end-1];
+                    && &value[value.len() - 1..] == "\""
+                {
+                    value = &source[begin + 1..end - 1];
+                    quoted = true;
                 }
 
-                return Ok((String::from(value), token));
+                return Ok((String::from(value), token, quoted));
             }
         }
         Err(Error::TokenExpected)
@@ -386,12 +419,13 @@ impl VcardParser {
                             let mut value: UtcOffset =
                                 value.as_ref().parse()?;
                             value.parameters = parameters;
-                            card.timezone.push(TimeZone::UtcOffset(value));
+                            card.timezone
+                                .push(TimeZoneProperty::UtcOffset(value));
                         }
                         ValueType::Uri => {
                             let value =
                                 URI::parse(value.as_ref())?.to_owned();
-                            card.timezone.push(TimeZone::Uri(Uri {
+                            card.timezone.push(TimeZoneProperty::Uri(Uri {
                                 value,
                                 parameters,
                             }));
@@ -404,7 +438,7 @@ impl VcardParser {
                         }
                     }
                 } else {
-                    card.timezone.push(TimeZone::Text(Text {
+                    card.timezone.push(TimeZoneProperty::Text(Text {
                         value: value.into_owned(),
                         parameters,
                     }));
@@ -487,7 +521,12 @@ impl VcardParser {
                 });
             }
             "REV" => {
-                todo!()
+                if card.rev.is_some() {
+                    return Err(Error::OnlyOnce(String::from("REV")));
+                }
+                let rev = OffsetDateTime::parse(
+                    &value, &Iso8601::DEFAULT)?;
+                card.rev = Some(rev);
             }
             "SOUND" => {
                 let value = URI::parse(value.as_ref())?.to_owned();

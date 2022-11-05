@@ -7,10 +7,10 @@ use std::{
     fmt::{self, Debug},
     str::FromStr,
 };
-use time::UtcOffset as UTCOffset;
+use time::{UtcOffset as UTCOffset, OffsetDateTime};
 
 #[cfg(feature = "serde")]
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "zeroize")]
 use zeroize::{Zeroize, ZeroizeOnDrop};
@@ -31,18 +31,9 @@ pub struct Pid {
 impl fmt::Display for Pid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(minor) = self.minor {
-            write!(
-                f,
-                "{}.{}",
-                self.major,
-                minor,
-            )
+            write!(f, "{}.{}", self.major, minor,)
         } else {
-            write!(
-                f,
-                "{}",
-                self.major,
-            )
+            write!(f, "{}", self.major,)
         }
     }
 }
@@ -52,12 +43,18 @@ impl FromStr for Pid {
 
     fn from_str(s: &str) -> Result<Self> {
         let mut parts = s.splitn(2, ".");
-        let major = parts.next()
-            .ok_or(Error::InvalidPid(s.to_string()))?;
-        let major: u64 = major.parse().map_err(|_| Error::InvalidPid(s.to_string()))?;
-        let mut pid = Pid { major: major, minor: None };
+        let major = parts.next().ok_or(Error::InvalidPid(s.to_string()))?;
+        let major: u64 = major
+            .parse()
+            .map_err(|_| Error::InvalidPid(s.to_string()))?;
+        let mut pid = Pid {
+            major: major,
+            minor: None,
+        };
         if let Some(minor) = parts.next() {
-            let minor: u64 = minor.parse().map_err(|_| Error::InvalidPid(s.to_string()))?;
+            let minor: u64 = minor
+                .parse()
+                .map_err(|_| Error::InvalidPid(s.to_string()))?;
             pid.minor = Some(minor);
         }
         Ok(pid)
@@ -180,7 +177,6 @@ impl FromStr for RelatedTypeValue {
         }
     }
 }
-
 
 /// Enumeration of the different types of values.
 #[derive(Debug, PartialEq)]
@@ -375,17 +371,47 @@ impl FromStr for UtcOffset {
     }
 }
 
-/// Value for a timezone (`TZ`).
+/// Value for a timezone property.
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
-pub enum TimeZone {
+pub enum TimeZoneProperty {
     /// Text value.
     Text(Text),
     /// URI value.
     Uri(Uri),
     /// UTC offset value.
     UtcOffset(UtcOffset),
+}
+
+/// Value for a timezone parameter.
+///
+/// This is a different type so that we do not
+/// create infinite type recursion in `Parameters` which would
+/// require us to wrap it in a `Box`.
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+pub enum TimeZoneParameter {
+    /// Text value.
+    Text(String),
+    /// URI value.
+    #[cfg_attr(feature = "zeroize", zeroize(skip))]
+    Uri(URI<String>),
+    /// UTC offset value.
+    #[cfg_attr(feature = "zeroize", zeroize(skip))]
+    UtcOffset(UTCOffset),
+}
+
+impl PartialEq for TimeZoneParameter {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Text(a), Self::Text(b)) => a.eq(b),
+            (Self::Uri(a), Self::Uri(b)) => a.as_str().eq(b.as_str()),
+            (Self::UtcOffset(a), Self::UtcOffset(b)) => a.eq(b),
+            _ => false,
+        }
+    }
 }
 
 /// Represents a gender associated with a vCard.
@@ -482,7 +508,7 @@ impl FromStr for Kind {
 }
 
 /// Parameters for a vCard property.
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct Parameters {
@@ -497,6 +523,8 @@ pub struct Parameters {
     pub alt_id: Option<String>,
     /// The PID value.
     pub pid: Option<Pid>,
+    /// The TYPE parameter.
+    pub types: Option<Vec<String>>,
     /// The MEDIATYPE value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     pub media_type: Option<Mime>,
@@ -504,8 +532,32 @@ pub struct Parameters {
     pub calscale: Option<String>,
     /// The SORT-AS parameter.
     pub sort_as: Option<Vec<String>>,
-    /// The TYPE parameter.
-    pub types: Option<Vec<String>>,
+    /// The GEO parameter.
+    #[cfg_attr(feature = "zeroize", zeroize(skip))]
+    pub geo: Option<URI<String>>,
+    /// The TZ parameter.
+    pub timezone: Option<TimeZoneParameter>,
+}
+
+impl PartialEq for Parameters {
+    fn eq(&self, other: &Self) -> bool {
+        let geo = if let (Some(a), Some(b)) = (&self.geo, &other.geo) {
+            a.as_str() == b.as_str()
+        } else {
+            true
+        };
+
+        self.language == other.language
+            && self.value == other.value
+            && self.pref == other.pref
+            && self.alt_id == other.alt_id
+            && self.pid == other.pid
+            && self.media_type == other.media_type
+            && self.calscale == other.calscale
+            && self.sort_as == other.sort_as
+            && self.types == other.types
+            && geo
+    }
 }
 
 /// Text property value.
@@ -649,13 +701,12 @@ pub struct Vcard {
     /// Value of the IMPP property.
     pub impp: Vec<Uri>,
     /// Value of the LANG property.
-    
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     pub lang: Vec<LanguageTag>,
 
     // Geographic
     /// Value of the TZ property.
-    pub timezone: Vec<TimeZone>,
+    pub timezone: Vec<TimeZoneProperty>,
     /// Value of the GEO property.
     pub geo: Vec<Uri>,
 
@@ -666,9 +717,11 @@ pub struct Vcard {
     pub note: Vec<Text>,
     /// Value of the PRODID property.
     pub prod_id: Option<Text>,
+    /// Value of the REV property.
+    #[cfg_attr(feature = "zeroize", zeroize(skip))]
+    pub rev: Option<OffsetDateTime>,
 
     //pub rev: Option<Timestamp>,
-
     /// Value of the SOUND property.
     pub sound: Vec<Uri>,
     /// Value of the UID property.
