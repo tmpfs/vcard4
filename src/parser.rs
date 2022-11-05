@@ -347,12 +347,12 @@ impl VcardParser {
                             let mut value: UtcOffset =
                                 value.as_ref().parse()?;
                             value.parameters = parameters;
-                            card.timezone.push(Timezone::UtcOffset(value));
+                            card.timezone.push(TimeZone::UtcOffset(value));
                         }
                         ValueType::Uri => {
                             let value =
                                 URI::parse(value.as_ref())?.to_owned();
-                            card.timezone.push(Timezone::Uri(Uri {
+                            card.timezone.push(TimeZone::Uri(Uri {
                                 value,
                                 parameters,
                             }));
@@ -365,7 +365,7 @@ impl VcardParser {
                         }
                     }
                 } else {
-                    card.timezone.push(Timezone::Text(Text {
+                    card.timezone.push(TimeZone::Text(Text {
                         value: value.into_owned(),
                         parameters,
                     }));

@@ -8,11 +8,18 @@ use std::{
 };
 use time::UtcOffset as UTCOffset;
 
+#[cfg(feature = "serde")]
+use serde::{Serialize, Deserialize};
+
+#[cfg(feature = "zeroize")]
+use zeroize::{Zeroize, ZeroizeOnDrop};
+
 use crate::{Error, Result};
 
 /// Either text or a URI.
 #[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub enum TextOrUri {
     /// Text value.
     Text(Text),
@@ -129,7 +136,8 @@ impl FromStr for RelatedTypeValue {
 
 /// Enumeration of the different types of values.
 #[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub enum ValueType {
     /// Text value.
     Text,
@@ -210,7 +218,8 @@ impl FromStr for ValueType {
 
 /// Enumeration for sex.
 #[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub enum Sex {
     /// No sex specified.
     None,
@@ -261,9 +270,11 @@ impl FromStr for Sex {
 
 /// Value for the `utc-offset` type.
 #[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct UtcOffset {
     /// The value for the UTC offset.
+    #[cfg_attr(feature = "zeroize", zeroize(skip))]
     pub value: UTCOffset,
     /// The parameters for the property.
     pub parameters: Option<Parameters>,
@@ -318,8 +329,9 @@ impl FromStr for UtcOffset {
 
 /// Value for a timezone (`TZ`).
 #[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum Timezone {
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+pub enum TimeZone {
     /// Text value.
     Text(Text),
     /// URI value.
@@ -330,7 +342,8 @@ pub enum Timezone {
 
 /// Represents a gender associated with a vCard.
 #[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct Gender {
     /// The sex for the gender.
     pub sex: Sex,
@@ -376,7 +389,8 @@ impl FromStr for Gender {
 
 /// Kind of vCard.
 #[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub enum Kind {
     /// An individual.
     Individual,
@@ -421,9 +435,11 @@ impl FromStr for Kind {
 
 /// Parameters for a vCard property.
 #[derive(Debug, Default, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct Parameters {
     /// The language tag.
+    #[cfg_attr(feature = "zeroize", zeroize(skip))]
     pub language: Option<LanguageTag>,
     /// The property types.
     pub types: Option<Vec<String>>,
@@ -434,6 +450,7 @@ pub struct Parameters {
 /// Text property value.
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct Text {
     /// Value for this property.
     pub value: String,
@@ -445,6 +462,7 @@ pub struct Text {
 /// Text list property value.
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct TextList {
     /// Value for this property.
     pub value: Vec<String>,
@@ -501,10 +519,12 @@ mod uri_from_str {
 
 /// URI property value.
 #[derive(Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct Uri {
     /// Value for this property.
     #[cfg_attr(feature = "serde", serde(with = "uri_from_str"))]
+    #[cfg_attr(feature = "zeroize", zeroize(skip))]
     pub value: URI<String>,
 
     /// Parameters for this property.
@@ -520,7 +540,8 @@ impl PartialEq for Uri {
 
 /// The vCard type.
 #[derive(Debug, Default, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct Vcard {
     // General
     /// Value of the SOURCE property.
@@ -567,11 +588,13 @@ pub struct Vcard {
     /// Value of the IMPP property.
     pub impp: Vec<Uri>,
     /// Value of the LANG property.
+    
+    #[cfg_attr(feature = "zeroize", zeroize(skip))]
     pub lang: Vec<LanguageTag>,
 
     // Geographic
     /// Value of the TZ property.
-    pub timezone: Vec<Timezone>,
+    pub timezone: Vec<TimeZone>,
     /// Value of the GEO property.
     pub geo: Vec<Uri>,
 

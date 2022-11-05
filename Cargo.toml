@@ -10,9 +10,12 @@ language-tags = "0.3"
 fluent-uri = "0.1"
 time = "0.3"
 serde = { version = "1", features = ["derive"], optional = true }
+zeroize = { version = "1.5", features = ["derive"], optional = true }
 
 [features]
+default = ["zeroize"]
 serde = ["dep:serde", "time/serde", "language-tags/serde"]
+zeroize = ["dep:zeroize"]
 
 [dev-dependencies]
 anyhow = "1"

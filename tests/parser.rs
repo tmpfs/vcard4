@@ -219,7 +219,7 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    let name = card.name.unwrap();
+    let name = card.name.as_ref().unwrap();
     assert_eq!(vec!["Public", "John", "Quinlan", "Mr.", "Esq."], name.value);
     Ok(())
 }
@@ -235,7 +235,7 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    let name = card.name.unwrap();
+    let name = card.name.as_ref().unwrap();
     assert_eq!(vec!["Public", "John", "Quinlan", "Mr.", "Esq."], name.value);
     Ok(())
 }
@@ -387,7 +387,7 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
 
-    if let Timezone::Text(Text { value, .. }) = card.timezone.get(0).unwrap()
+    if let TimeZone::Text(Text { value, .. }) = card.timezone.get(0).unwrap()
     {
         assert_eq!("Raleigh/North America", value);
     } else {
@@ -404,7 +404,7 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
 
-    if let Timezone::UtcOffset(UtcOffset { value, .. }) =
+    if let TimeZone::UtcOffset(UtcOffset { value, .. }) =
         card.timezone.get(0).unwrap()
     {
         assert_eq!((-5, -0, -0), value.as_hms());
@@ -422,7 +422,7 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
 
-    if let Timezone::Uri(Uri { value, .. }) = card.timezone.get(0).unwrap() {
+    if let TimeZone::Uri(Uri { value, .. }) = card.timezone.get(0).unwrap() {
         assert_eq!("https://example.com/tz-database/acdt", value.as_str());
     } else {
         panic!("expecting uri value for TZ");

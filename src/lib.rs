@@ -4,6 +4,17 @@
 //! Compact, fast and correct vCard parser based
 //! on [RFC6350](https://www.rfc-editor.org/rfc/rfc6350).
 //!
+//! vCards inherently contain private information so this library 
+//! implements a `zeroize` feature (which is enabled by default) to 
+//! securely zero the memory for all the data in a vCard when it is 
+//! dropped.
+//!
+//! Certain external types cannot be zeroize'd and are therefore exempt:
+//!
+//! * `LanguageTag`
+//! * `Uri`
+//! * `UtcOffset`
+//!
 //! Serde support can be enabled by using the `serde` feature.
 
 mod error;
