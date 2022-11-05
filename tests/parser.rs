@@ -678,8 +678,9 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    if let TextOrUriProperty::Uri(UriProperty { value, parameters, .. }) =
-        card.related.get(0).unwrap()
+    if let TextOrUriProperty::Uri(UriProperty {
+        value, parameters, ..
+    }) = card.related.get(0).unwrap()
     {
         assert_eq!(
             "urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6",
@@ -704,8 +705,9 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    if let TextOrUriProperty::Uri(UriProperty { value, parameters, .. }) =
-        card.related.get(0).unwrap()
+    if let TextOrUriProperty::Uri(UriProperty {
+        value, parameters, ..
+    }) = card.related.get(0).unwrap()
     {
         assert_eq!("http://example.com/directory/jdoe.vcf", value.as_str());
 
@@ -728,8 +730,9 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    if let TextOrUriProperty::Text(TextProperty { value, parameters, .. }) =
-        card.related.get(0).unwrap()
+    if let TextOrUriProperty::Text(TextProperty {
+        value, parameters, ..
+    }) = card.related.get(0).unwrap()
     {
         assert_eq!(
             "Please contact my assistant Jane Doe for any inquiries.",

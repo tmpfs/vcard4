@@ -7,18 +7,34 @@ use time::{
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "zeroize")]
+use zeroize::{Zeroize, ZeroizeOnDrop};
+
 use crate::{Error, Result};
 
-fn parse_time(s: &str) -> Result<Time> {
+pub(crate) fn parse_time(s: &str) -> Result<Time> {
     Ok(Time::parse(s, &Iso8601::DEFAULT)?)
 }
 
-fn parse_date(s: &str) -> Result<Date> {
+pub(crate) fn parse_date(s: &str) -> Result<Date> {
     Ok(Date::parse(s, &Iso8601::DEFAULT)?)
 }
 
-fn parse_date_time(s: &str) -> Result<OffsetDateTime> {
+pub(crate) fn parse_date_time(s: &str) -> Result<OffsetDateTime> {
     Ok(OffsetDateTime::parse(s, &Iso8601::DEFAULT)?)
+}
+
+pub(crate) fn parse_timestamp(s: &str) -> Result<OffsetDateTime> {
+    parse_date_time(s)
+    //Ok(OffsetDateTime::parse(s, &Iso8601::DEFAULT)?)
+}
+
+pub(crate) fn parse_boolean(s: &str) -> Result<bool> {
+    match s {
+        "true" | "TRUE" => Ok(true),
+        "false" | "FALSE" => Ok(false),
+        _ => Err(Error::InvalidBoolean(s.to_string())),
+    }
 }
 
 /// Date and or time.
@@ -50,6 +66,62 @@ impl FromStr for DateAndOrTime {
                     Err(e) => Err(e.into()),
                 },
             },
+        }
+    }
+}
+
+/// Integer type; may be a comma separated list.
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+pub enum Integer {
+    /// Single integer.
+    One(i64),
+    /// Multiple integers.
+    Many(Vec<i64>),
+}
+
+impl FromStr for Integer {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        if s.contains(",") {
+            let mut value = Vec::new();
+            for val in s.split(",") {
+                let val: i64 = val.parse()?;
+                value.push(val);
+            }
+            Ok(Self::Many(value))
+        } else {
+            Ok(Self::One(s.parse()?))
+        }
+    }
+}
+
+/// Float type; may be a comma separated list.
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+pub enum Float {
+    /// Single float.
+    One(f64),
+    /// Multiple floats.
+    Many(Vec<f64>),
+}
+
+impl FromStr for Float {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        if s.contains(",") {
+            let mut value = Vec::new();
+            for val in s.split(",") {
+                let val: f64 = val.parse()?;
+                value.push(val);
+            }
+            Ok(Self::Many(value))
+        } else {
+            Ok(Self::One(s.parse()?))
         }
     }
 }

@@ -30,8 +30,8 @@ pub use error::Error;
 
 pub use fluent_uri;
 pub use language_tags;
-pub use time;
 pub use mime;
+pub use time;
 
 use std::fmt::Debug;
 
@@ -141,4 +141,8 @@ pub struct Vcard {
     pub cal_adr_uri: Vec<UriProperty>,
     /// Value of the CALURI property.
     pub cal_uri: Vec<UriProperty>,
+
+    // Extensions
+    /// Private property extensions (`X-`).
+    pub extensions: Vec<ExtensionProperty>,
 }

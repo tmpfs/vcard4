@@ -7,7 +7,7 @@ use std::{
     fmt::{self, Debug},
     str::FromStr,
 };
-use time::UtcOffset as UTCOffset;
+use time::UtcOffset;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -265,7 +265,7 @@ pub enum TimeZoneParameter {
     Uri(Uri<String>),
     /// UTC offset value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    UtcOffset(UTCOffset),
+    UtcOffset(UtcOffset),
 }
 
 impl PartialEq for TimeZoneParameter {

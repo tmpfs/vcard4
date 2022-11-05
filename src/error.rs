@@ -20,6 +20,10 @@ pub enum Error {
     #[error("property value is invalid")]
     InvalidPropertyValue,
 
+    /// Error generated when a boolean is invalid.
+    #[error("value '{0}' is not a valid boolean")]
+    InvalidBoolean(String),
+
     /// Error generated when a property or parameter delimiter was expected.
     #[error("property or parameter delimiter expected")]
     DelimiterExpected,
@@ -96,6 +100,10 @@ pub enum Error {
     /// Error generated parsing a string to an integer.
     #[error(transparent)]
     ParseInt(#[from] std::num::ParseIntError),
+
+    /// Error generated parsing a string to a float.
+    #[error(transparent)]
+    ParseFloat(#[from] std::num::ParseFloatError),
 
     /// Error generated parsing a media type.
     #[error(transparent)]
