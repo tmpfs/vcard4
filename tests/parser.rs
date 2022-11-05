@@ -440,3 +440,106 @@ END:VCARD"#;
 
     Ok(())
 }
+
+#[test]
+fn parse_org() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+ORG:ABC\, Inc.;North American Division;Marketing
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    assert_eq!(
+        vec!["ABC, Inc.", "North American Division", "Marketing"],
+        card.org.get(0).unwrap().value
+    );
+    Ok(())
+}
+
+
+#[test]
+fn parse_member() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+KIND:group
+FN:The Doe family
+MEMBER:urn:uuid:03a0e51f-d1aa-4385-8a53-e29025acd8af
+MEMBER:urn:uuid:b8767877-b4a1-4c70-9acc-505d3819e519
+END:VCARD
+BEGIN:VCARD
+VERSION:4.0
+FN:John Doe
+UID:urn:uuid:03a0e51f-d1aa-4385-8a53-e29025acd8af
+END:VCARD
+BEGIN:VCARD
+VERSION:4.0
+FN:Jane Doe
+UID:urn:uuid:b8767877-b4a1-4c70-9acc-505d3819e519
+END:VCARD
+
+BEGIN:VCARD
+VERSION:4.0
+KIND:group
+FN:Funky distribution list
+MEMBER:mailto:subscriber1@example.com
+MEMBER:xmpp:subscriber2@example.com
+MEMBER:sip:subscriber3@example.com
+MEMBER:tel:+1-418-555-5555
+END:VCARD"#;
+
+    let mut vcards = parse(input)?;
+    assert_eq!(4, vcards.len());
+
+    let card = vcards.remove(0);
+    assert_eq!(
+        "urn:uuid:03a0e51f-d1aa-4385-8a53-e29025acd8af",
+        card.member.get(0).unwrap().value.as_str()
+    );
+    assert_eq!(
+        "urn:uuid:b8767877-b4a1-4c70-9acc-505d3819e519",
+        card.member.get(1).unwrap().value.as_str()
+    );
+
+    let card = vcards.remove(0);
+    if let TextOrUri::Uri(Uri {value, ..}) = card.uid.as_ref().unwrap() {
+        assert_eq!(
+            "urn:uuid:03a0e51f-d1aa-4385-8a53-e29025acd8af",
+            value.as_str()
+        );
+    } else {
+        panic!("expecting URI for UID value");
+    }
+
+    let card = vcards.remove(0);
+    if let TextOrUri::Uri(Uri {value, ..}) = card.uid.as_ref().unwrap() {
+        assert_eq!(
+            "urn:uuid:b8767877-b4a1-4c70-9acc-505d3819e519",
+            value.as_str()
+        );
+    } else {
+        panic!("expecting URI for UID value");
+    }
+
+    let card = vcards.remove(0);
+    assert_eq!(
+        "mailto:subscriber1@example.com",
+        card.member.get(0).unwrap().value.as_str()
+    );
+    assert_eq!(
+        "xmpp:subscriber2@example.com",
+        card.member.get(1).unwrap().value.as_str()
+    );
+    assert_eq!(
+        "sip:subscriber3@example.com",
+        card.member.get(2).unwrap().value.as_str()
+    );
+    assert_eq!(
+        "tel:+1-418-555-5555",
+        card.member.get(3).unwrap().value.as_str()
+    );
+
+    Ok(())
+}

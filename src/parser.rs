@@ -63,6 +63,12 @@ impl VcardParser {
         let mut lex = Token::lexer(value.as_ref());
 
         while let Some(first) = lex.next() {
+            // Allow leading newlines and newlines between
+            // vCard definitions
+            if first == Token::NewLine {
+                continue;
+            }
+
             let card = self.parse_one(&mut lex, Some(first))?;
 
             if card.formatted_name.is_empty() {
@@ -83,8 +89,9 @@ impl VcardParser {
     fn parse_one(
         &self,
         lex: &mut Lexer<'_, Token>,
-        first: Option<Token>,
+        mut first: Option<Token>,
     ) -> Result<Vcard> {
+            
         self.assert_token(first, Token::Begin)?;
         self.assert_token(lex.next(), Token::NewLine)?;
 

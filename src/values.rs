@@ -270,7 +270,7 @@ pub struct Uri {
 /// The vCard type.
 #[derive(Debug, Default)]
 pub struct Vcard {
-    // Organizational
+    // General
     pub source: Vec<Uri>,
     pub kind: Option<Kind>,
     pub xml: Vec<Text>,
