@@ -441,10 +441,12 @@ pub struct Parameters {
     /// The language tag.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     pub language: Option<LanguageTag>,
-    /// The property types.
-    pub types: Option<Vec<String>>,
     /// The value type hint for this property.
     pub value: Option<ValueType>,
+    /// The preference hint.
+    pub pref: Option<u8>,
+    /// The property types.
+    pub types: Option<Vec<String>>,
 }
 
 /// Text property value.

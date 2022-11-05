@@ -173,6 +173,17 @@ impl VcardParser {
                         let tag: LanguageTag = value.parse()?;
                         params.language = Some(tag);
                     }
+                    "VALUE" => {
+                        let value: ValueType = value.parse()?;
+                        params.value = Some(value);
+                    }
+                    "PREF" => {
+                        let value: u8 = value.parse()?;
+                        if value < 1 || value > 100 {
+                            return Err(Error::PrefOutOfRange(value));
+                        }
+                        params.pref = Some(value);
+                    }
                     "TYPE" => {
                         let mut type_values = value
                             .split(",")
@@ -184,10 +195,6 @@ impl VcardParser {
                         } else {
                             params.types = Some(type_values);
                         }
-                    }
-                    "VALUE" => {
-                        let value: ValueType = value.parse()?;
-                        params.value = Some(value);
                     }
                     _ => {
                         return Err(Error::UnknownParameterName(
