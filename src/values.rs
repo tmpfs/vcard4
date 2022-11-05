@@ -20,6 +20,113 @@ pub enum TextOrUri {
     Uri(Uri),
 }
 
+/// Enumeration of related types.
+#[derive(Debug, PartialEq)]
+pub enum RelatedTypeValue {
+    /// Contact relationship.
+    Contact,
+    /// Acquaintance relationship.
+    Acquaintance,
+    /// Friend relationship.
+    Friend,
+    /// Met relationship.
+    Met,
+    /// Co-worker relationship.
+    CoWorker,
+    /// Colleague relationship.
+    Colleague,
+    /// Co-resident relationship.
+    CoResident,
+    /// Neighbor relationship.
+    Neighbor,
+    /// Child relationship.
+    Child,
+    /// Parent relationship.
+    Parent,
+    /// Sibling relationship.
+    Sibling,
+    /// Spouse relationship.
+    Spouse,
+    /// Kin relationship.
+    Kin,
+    /// Muse relationship.
+    Muse,
+    /// Crush relationship.
+    Crush,
+    /// Date relationship.
+    Date,
+    /// Sweetheart relationship.
+    Sweetheart,
+    /// Oneself.
+    Me,
+    /// Agent relationship.
+    Agent,
+    /// Emergency relationship.
+    Emergency,
+}
+
+impl fmt::Display for RelatedTypeValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Contact => "contact",
+                Self::Acquaintance => "acquaintance",
+                Self::Friend => "friend",
+                Self::Met => "met",
+                Self::CoWorker => "co-worker",
+                Self::Colleague => "colleague",
+                Self::CoResident => "co-resident",
+                Self::Neighbor => "neighbor",
+                Self::Child => "child",
+                Self::Parent => "parent",
+                Self::Sibling => "sibling",
+                Self::Spouse => "spouse",
+                Self::Kin => "kin",
+                Self::Muse => "muse",
+                Self::Crush => "crush",
+                Self::Date => "date",
+                Self::Sweetheart => "sweetheart",
+                Self::Me => "me",
+                Self::Agent => "agent",
+                Self::Emergency => "emergency",
+            }
+        )
+    }
+}
+
+impl FromStr for RelatedTypeValue {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s {
+            "contact" => Ok(Self::Contact),
+            "acquaintance" => Ok(Self::Acquaintance),
+            "friend" => Ok(Self::Friend),
+            "met" => Ok(Self::Met),
+            "co-worker" => Ok(Self::CoWorker),
+            "colleague" => Ok(Self::Colleague),
+            "co-resident" => Ok(Self::CoResident),
+            "neighbor" => Ok(Self::Neighbor),
+            "child" => Ok(Self::Child),
+            "parent" => Ok(Self::Parent),
+            "sibling" => Ok(Self::Sibling),
+            "spouse" => Ok(Self::Spouse),
+            "kin" => Ok(Self::Kin),
+            "muse" => Ok(Self::Muse),
+            "crush" => Ok(Self::Crush),
+            "date" => Ok(Self::Date),
+            "sweetheart" => Ok(Self::Sweetheart),
+            "me" => Ok(Self::Me),
+            "agent" => Ok(Self::Agent),
+            "emergency" => Ok(Self::Emergency),
+            _ => Err(Error::UnknownRelatedTypeValue(s.to_string())),
+        }
+    }
+}
+
+
 /// Enumeration of the different types of values.
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

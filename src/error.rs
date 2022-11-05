@@ -24,6 +24,9 @@ pub enum Error {
     #[error("value type '{0}' is not supported")]
     UnknownValueType(String),
 
+    #[error("related type value '{0}' is not supported")]
+    UnknownRelatedTypeValue(String),
+
     #[error("value type '{0}' is not supported in this context '{1}'")]
     UnsupportedValueType(String, String),
 

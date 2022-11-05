@@ -5,8 +5,8 @@ use language_tags::LanguageTag;
 use logos::{Lexer, Logos};
 use std::{borrow::Cow, ops::Range};
 
-//use crate::{Error, Result, Vcard};
-use crate::*;
+use crate::{Error, Result, Vcard};
+use crate::values::*;
 
 #[derive(Logos, Debug, PartialEq)]
 enum Token {
