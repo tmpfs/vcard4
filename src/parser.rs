@@ -5,7 +5,7 @@ use language_tags::LanguageTag;
 use logos::{Lexer, Logos};
 use mime::Mime;
 use std::{borrow::Cow, ops::Range};
-use time::{OffsetDateTime, format_description::well_known::Iso8601};
+use time::{format_description::well_known::Iso8601, OffsetDateTime};
 
 use crate::values::*;
 use crate::{Error, Result, Vcard};
@@ -365,7 +365,43 @@ impl VcardParser {
                 card.photo.push(Uri { value, parameters });
             }
             "BDAY" => {
-                todo!()
+                if card.bday.is_some() {
+                    return Err(Error::OnlyOnce(String::from("BDAY")));
+                }
+
+                let value_type = if let Some(parameters) = &parameters {
+                    parameters.value.as_ref()
+                } else {
+                    None
+                };
+
+                if let Some(value_type) = value_type {
+                    match value_type {
+                        ValueType::Text => {
+                            card.bday = Some(DateTimeOrText::Text(Text {
+                                value: value.into_owned(),
+                                parameters,
+                            }));
+                        }
+                        ValueType::DateAndOrTime => {
+                            let value: DateAndOrTime = value.parse()?;
+                            card.bday = Some(DateTimeOrText::DateTime(
+                                DateAndOrTimeProperty { value, parameters },
+                            ));
+                        }
+                        _ => {
+                            return Err(Error::UnsupportedValueType(
+                                value_type.to_string(),
+                                String::from("BDAY"),
+                            ))
+                        }
+                    }
+                } else {
+                    let value: DateAndOrTime = value.parse()?;
+                    card.bday = Some(DateTimeOrText::DateTime(
+                        DateAndOrTimeProperty { value, parameters },
+                    ));
+                }
             }
             "ANNIVERSARY" => {
                 todo!()
@@ -524,8 +560,7 @@ impl VcardParser {
                 if card.rev.is_some() {
                     return Err(Error::OnlyOnce(String::from("REV")));
                 }
-                let rev = OffsetDateTime::parse(
-                    &value, &Iso8601::DEFAULT)?;
+                let rev = OffsetDateTime::parse(&value, &Iso8601::DEFAULT)?;
                 card.rev = Some(rev);
             }
             "SOUND" => {

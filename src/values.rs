@@ -7,7 +7,10 @@ use std::{
     fmt::{self, Debug},
     str::FromStr,
 };
-use time::{UtcOffset as UTCOffset, Date, OffsetDateTime, Time, format_description::well_known::Iso8601};
+use time::{
+    format_description::well_known::Iso8601, Date, OffsetDateTime, Time,
+    UtcOffset as UTCOffset,
+};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -41,6 +44,16 @@ pub enum DateAndOrTime {
     Time(Time),
 }
 
+/// Date and or time property.
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct DateAndOrTimeProperty {
+    /// The value for the property.
+    pub value: DateAndOrTime,
+    /// The property parameters.
+    pub parameters: Option<Parameters>,
+}
+
 impl FromStr for DateAndOrTime {
     type Err = Error;
 
@@ -51,20 +64,13 @@ impl FromStr for DateAndOrTime {
 
         match parse_date_time(s) {
             Ok(value) => Ok(Self::DateTime(value)),
-            Err(_) => {
-                match parse_date(s) {
-                    Ok(value) => Ok(Self::Date(value)),
-                    Err(_) => {
-                        match parse_time(s) {
-                            Ok(value) => {
-                                Ok(Self::Time(value))
-                            }
-                            Err(e) => Err(e.into()),
-                        }
-                    },
-                }
-
-            }
+            Err(_) => match parse_date(s) {
+                Ok(value) => Ok(Self::Date(value)),
+                Err(_) => match parse_time(s) {
+                    Ok(value) => Ok(Self::Time(value)),
+                    Err(e) => Err(e.into()),
+                },
+            },
         }
     }
 }
@@ -122,6 +128,18 @@ pub enum TextOrUri {
     Text(Text),
     /// URI value.
     Uri(Uri),
+}
+
+/// Either text or a date and or time.
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+pub enum DateTimeOrText {
+    /// Date time value.
+    #[cfg_attr(feature = "zeroize", zeroize(skip))]
+    DateTime(DateAndOrTimeProperty),
+    /// Text value.
+    Text(Text),
 }
 
 /// Enumeration of related types.
@@ -725,7 +743,8 @@ pub struct Vcard {
     pub nickname: Vec<Text>,
     /// Value of the PHOTO property.
     pub photo: Vec<Uri>,
-    //pub bday: Vec<Uri>,
+    /// Value of the BDAY property.
+    pub bday: Option<DateTimeOrText>,
     //pub anniversary: Vec<Uri>,
     /// Value of the GENDER property.
     pub gender: Option<Gender>,
@@ -880,5 +899,4 @@ mod tests {
 
         Ok(())
     }
-
 }
