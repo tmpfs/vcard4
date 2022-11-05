@@ -1,6 +1,6 @@
 //! Parse vCards based on [RFC6350](https://www.rfc-editor.org/rfc/rfc6350).
 
-use fluent_uri::Uri as URI;
+use fluent_uri::Uri;
 use language_tags::LanguageTag;
 use logos::{Lexer, Logos};
 use mime::Mime;
@@ -8,7 +8,7 @@ use std::{borrow::Cow, ops::Range};
 use time::{format_description::well_known::Iso8601, OffsetDateTime};
 
 use crate::values::*;
-use crate::{property::*, Error, Result, Vcard};
+use crate::{property::*, parameters::*, Error, Result, Vcard};
 
 #[derive(Logos, Debug, PartialEq)]
 enum Token {
@@ -18,7 +18,7 @@ enum Token {
     #[regex("(?i:VERSION:4\\.0)")]
     Version,
 
-    #[regex("(?i:SOURCE|KIND|FN|N|NICKNAME|PHOTO|BDAY|ANNIVERSARY|GENDER|ADR|TEL|EMAIL|IMPP|LANG|TZ|GEO|TITLE|ROLE|LOGO|ORG|MEMBER|RELATED|CATEGORIES|NOTE|PRODID|REV|SOUND|UID|CLIENTPIDMAP|URL|KEY|FBURL|CALADRURI|CALURI|XML)")]
+    #[regex("(?i:SOURCE|KIND|FN|N|NICKNAME|PHOTO|BDAY|ANNIVERSARY|GENDER|ADR|TEL|EMAIL|IMPP|LANG|TZ|GEO|TITLE|ROLE|LOGO|ORG|MEMBER|RELATED|CATEGORIES|NOTE|PRODID|REV|SOUND|UID|CLIENTPIDMAP|URL|KEY|FBURL|CALADRUri|CALUri|XML)")]
     PropertyName,
 
     #[token(";")]
@@ -228,16 +228,16 @@ impl VcardParser {
                                 "GEO",
                             )));
                         }
-                        let geo = URI::parse(&value)?.to_owned();
+                        let geo = Uri::parse(&value)?.to_owned();
                         params.geo = Some(geo);
                     }
                     "TZ" => {
                         if quoted {
-                            let value = URI::parse(&value)?.to_owned();
+                            let value = Uri::parse(&value)?.to_owned();
                             params.timezone =
                                 Some(TimeZoneParameter::Uri(value));
                         } else {
-                            match value.parse::<UtcOffset>() {
+                            match value.parse::<UtcOffsetProperty>() {
                                 Ok(offset) => {
                                     params.timezone =
                                         Some(TimeZoneParameter::UtcOffset(
@@ -322,8 +322,8 @@ impl VcardParser {
             // General properties
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.1
             "SOURCE" => {
-                let value = URI::parse(value.as_ref())?.to_owned();
-                card.source.push(Uri { value, parameters });
+                let value = Uri::parse(value.as_ref())?.to_owned();
+                card.source.push(UriProperty { value, parameters });
             }
             "KIND" => {
                 if card.kind.is_some() {
@@ -364,8 +364,8 @@ impl VcardParser {
                 });
             }
             "PHOTO" => {
-                let value = URI::parse(value.as_ref())?.to_owned();
-                card.photo.push(Uri { value, parameters });
+                let value = Uri::parse(value.as_ref())?.to_owned();
+                card.photo.push(UriProperty { value, parameters });
             }
             "BDAY" => {
                 if card.bday.is_some() {
@@ -414,8 +414,8 @@ impl VcardParser {
                 });
             }
             "IMPP" => {
-                let value = URI::parse(value.as_ref())?.to_owned();
-                card.impp.push(Uri { value, parameters });
+                let value = Uri::parse(value.as_ref())?.to_owned();
+                card.impp.push(UriProperty { value, parameters });
             }
             "LANG" => {
                 let value: LanguageTag = value.as_ref().parse()?;
@@ -434,7 +434,7 @@ impl VcardParser {
                 if let Some(value_type) = value_type {
                     match value_type {
                         ValueType::UtcOffset => {
-                            let mut value: UtcOffset =
+                            let mut value: UtcOffsetProperty =
                                 value.as_ref().parse()?;
                             value.parameters = parameters;
                             card.timezone
@@ -442,8 +442,8 @@ impl VcardParser {
                         }
                         ValueType::Uri => {
                             let value =
-                                URI::parse(value.as_ref())?.to_owned();
-                            card.timezone.push(TimeZoneProperty::Uri(Uri {
+                                Uri::parse(value.as_ref())?.to_owned();
+                            card.timezone.push(TimeZoneProperty::Uri(UriProperty {
                                 value,
                                 parameters,
                             }));
@@ -463,8 +463,8 @@ impl VcardParser {
                 }
             }
             "GEO" => {
-                let value = URI::parse(value.as_ref())?.to_owned();
-                card.geo.push(Uri { value, parameters });
+                let value = Uri::parse(value.as_ref())?.to_owned();
+                card.geo.push(UriProperty { value, parameters });
             }
 
             // Organizational
@@ -483,8 +483,8 @@ impl VcardParser {
             }
 
             "LOGO" => {
-                let value = URI::parse(value.as_ref())?.to_owned();
-                card.logo.push(Uri { value, parameters });
+                let value = Uri::parse(value.as_ref())?.to_owned();
+                card.logo.push(UriProperty { value, parameters });
             }
             "ORG" => {
                 let value = value
@@ -495,8 +495,8 @@ impl VcardParser {
                 card.org.push(TextListProperty { value, parameters });
             }
             "MEMBER" => {
-                let value = URI::parse(value.as_ref())?.to_owned();
-                card.member.push(Uri { value, parameters });
+                let value = Uri::parse(value.as_ref())?.to_owned();
+                card.member.push(UriProperty { value, parameters });
             }
             "RELATED" => {
                 // Validate related type parameter
@@ -546,8 +546,8 @@ impl VcardParser {
                 card.rev = Some(rev);
             }
             "SOUND" => {
-                let value = URI::parse(value.as_ref())?.to_owned();
-                card.sound.push(Uri { value, parameters });
+                let value = Uri::parse(value.as_ref())?.to_owned();
+                card.sound.push(UriProperty { value, parameters });
             }
             "UID" => {
                 if card.uid.is_some() {
@@ -561,8 +561,8 @@ impl VcardParser {
                 todo!()
             }
             "URL" => {
-                let value = URI::parse(value.as_ref())?.to_owned();
-                card.url.push(Uri { value, parameters });
+                let value = Uri::parse(value.as_ref())?.to_owned();
+                card.url.push(UriProperty { value, parameters });
             }
             "VERSION" => unreachable!(),
 
@@ -645,7 +645,7 @@ impl VcardParser {
         }
     }
 
-    /// Parse text or URI from a value.
+    /// Parse text or Uri from a value.
     fn parse_text_or_uri<S: AsRef<str>>(
         &self,
         value: S,
@@ -663,14 +663,14 @@ impl VcardParser {
                     parameters,
                 }))
             } else if let ValueType::Uri = value_type {
-                let value = URI::parse(value.as_ref())?.to_owned();
-                Ok(TextOrUriProperty::Uri(Uri { value, parameters }))
+                let value = Uri::parse(value.as_ref())?.to_owned();
+                Ok(TextOrUriProperty::Uri(UriProperty { value, parameters }))
             } else {
                 Err(Error::UnknownValueType(value_type.to_string()))
             }
         } else {
-            match URI::parse(value.as_ref()) {
-                Ok(value) => Ok(TextOrUriProperty::Uri(Uri {
+            match Uri::parse(value.as_ref()) {
+                Ok(value) => Ok(TextOrUriProperty::Uri(UriProperty {
                     value: value.to_owned(),
                     parameters,
                 })),

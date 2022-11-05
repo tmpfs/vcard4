@@ -22,6 +22,7 @@
 
 mod error;
 mod parser;
+pub mod parameters;
 pub mod property;
 mod values;
 

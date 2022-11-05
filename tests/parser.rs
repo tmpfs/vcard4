@@ -427,7 +427,7 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
 
-    if let TimeZoneProperty::UtcOffset(UtcOffset { value, .. }) =
+    if let TimeZoneProperty::UtcOffset(UtcOffsetProperty { value, .. }) =
         card.timezone.get(0).unwrap()
     {
         assert_eq!((-5, -0, -0), value.as_hms());
@@ -445,7 +445,7 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
 
-    if let TimeZoneProperty::Uri(Uri { value, .. }) =
+    if let TimeZoneProperty::Uri(UriProperty { value, .. }) =
         card.timezone.get(0).unwrap()
     {
         assert_eq!("https://example.com/tz-database/acdt", value.as_str());
@@ -599,7 +599,7 @@ END:VCARD"#;
     );
 
     let card = vcards.remove(0);
-    if let TextOrUriProperty::Uri(Uri { value, .. }) =
+    if let TextOrUriProperty::Uri(UriProperty { value, .. }) =
         card.uid.as_ref().unwrap()
     {
         assert_eq!(
@@ -611,7 +611,7 @@ END:VCARD"#;
     }
 
     let card = vcards.remove(0);
-    if let TextOrUriProperty::Uri(Uri { value, .. }) =
+    if let TextOrUriProperty::Uri(UriProperty { value, .. }) =
         card.uid.as_ref().unwrap()
     {
         assert_eq!(
@@ -654,7 +654,7 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    if let TextOrUriProperty::Uri(Uri { value, parameters }) =
+    if let TextOrUriProperty::Uri(UriProperty { value, parameters }) =
         card.related.get(0).unwrap()
     {
         assert_eq!(
@@ -680,7 +680,7 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    if let TextOrUriProperty::Uri(Uri { value, parameters }) =
+    if let TextOrUriProperty::Uri(UriProperty { value, parameters }) =
         card.related.get(0).unwrap()
     {
         assert_eq!("http://example.com/directory/jdoe.vcf", value.as_str());

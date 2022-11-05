@@ -1,6 +1,6 @@
 //! Types for properties.
 
-use fluent_uri::Uri as URI;
+use fluent_uri::Uri;
 use std::{
     fmt::{self, Debug},
     str::FromStr,
@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "zeroize")]
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-use crate::{DateAndOrTime, Error, Parameters, Result};
+use crate::{DateAndOrTime, Error, parameters::Parameters, Result};
 
 /// Date and or time property.
 #[derive(Debug, PartialEq)]
@@ -25,15 +25,15 @@ pub struct DateAndOrTimeProperty {
     pub parameters: Option<Parameters>,
 }
 
-/// Either text or a URI.
+/// Either text or a Uri.
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub enum TextOrUriProperty {
     /// Text value.
     Text(Text),
-    /// URI value.
-    Uri(Uri),
+    /// Uri value.
+    Uri(UriProperty),
 }
 
 /// Either text or a date and or time.
@@ -52,7 +52,7 @@ pub enum DateTimeOrTextProperty {
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
-pub struct UtcOffset {
+pub struct UtcOffsetProperty {
     /// The value for the UTC offset.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     pub value: UTCOffset,
@@ -60,7 +60,7 @@ pub struct UtcOffset {
     pub parameters: Option<Parameters>,
 }
 
-impl fmt::Display for UtcOffset {
+impl fmt::Display for UtcOffsetProperty {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let (h, m, _) = self.value.as_hms();
         let sign = if h >= 0 { '+' } else { '-' };
@@ -80,7 +80,7 @@ impl fmt::Display for UtcOffset {
     }
 }
 
-impl FromStr for UtcOffset {
+impl FromStr for UtcOffsetProperty {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
@@ -114,10 +114,10 @@ impl FromStr for UtcOffset {
 pub enum TimeZoneProperty {
     /// Text value.
     Text(Text),
-    /// URI value.
-    Uri(Uri),
+    /// Uri value.
+    Uri(UriProperty),
     /// UTC offset value.
-    UtcOffset(UtcOffset),
+    UtcOffset(UtcOffsetProperty),
 }
 
 /// Text property value.
@@ -146,7 +146,7 @@ pub struct TextListProperty {
 
 #[cfg(feature = "serde")]
 mod uri_from_str {
-    use fluent_uri::Uri as URI;
+    use fluent_uri::Uri as Uri;
     use serde::{
         de::{Deserializer, Error, Visitor},
         ser::Serializer,
@@ -154,7 +154,7 @@ mod uri_from_str {
     use std::fmt;
 
     pub fn serialize<S>(
-        source: &URI<String>,
+        source: &Uri<String>,
         serializer: S,
     ) -> Result<S::Ok, S::Error>
     where
@@ -166,7 +166,7 @@ mod uri_from_str {
     struct UriVisitor;
 
     impl<'de> Visitor<'de> for UriVisitor {
-        type Value = URI<String>;
+        type Value = Uri<String>;
 
         fn expecting(&self, _formatter: &mut fmt::Formatter) -> fmt::Result {
             Ok(())
@@ -176,13 +176,13 @@ mod uri_from_str {
         where
             E: Error,
         {
-            Ok(URI::parse(v).map_err(Error::custom)?.to_owned())
+            Ok(Uri::parse(v).map_err(Error::custom)?.to_owned())
         }
     }
 
     pub fn deserialize<'de, D>(
         deserializer: D,
-    ) -> Result<URI<String>, D::Error>
+    ) -> Result<Uri<String>, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -190,23 +190,91 @@ mod uri_from_str {
     }
 }
 
-/// URI property value.
+/// Uri property value.
 #[derive(Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
-pub struct Uri {
+pub struct UriProperty {
     /// Value for this property.
     #[cfg_attr(feature = "serde", serde(with = "uri_from_str"))]
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    pub value: URI<String>,
+    pub value: Uri<String>,
 
     /// Parameters for this property.
     pub parameters: Option<Parameters>,
 }
 
-impl PartialEq for Uri {
+impl PartialEq for UriProperty {
     fn eq(&self, other: &Self) -> bool {
         self.value.as_str() == other.value.as_str()
             && self.parameters == other.parameters
+    }
+}
+
+/// Kind of vCard.
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+pub enum Kind {
+    /// An individual.
+    Individual,
+    /// A group.
+    Group,
+    /// An organization.
+    Org,
+    /// A location.
+    Location,
+    // TODO: x-name
+    // TODO: iana-token
+}
+
+impl fmt::Display for Kind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Individual => "individual",
+                Self::Group => "group",
+                Self::Org => "org",
+                Self::Location => "location",
+            }
+        )
+    }
+}
+
+impl FromStr for Kind {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s {
+            "individual" => Ok(Self::Individual),
+            "group" => Ok(Self::Group),
+            "org" => Ok(Self::Org),
+            "location" => Ok(Self::Location),
+            _ => Err(Error::UnknownKind(s.to_string())),
+        }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use anyhow::Result;
+
+    #[test]
+    fn parse_utc_offset() -> Result<()> {
+        let east = "+1200".parse::<UtcOffsetProperty>()?;
+        let west = "-0500".parse::<UtcOffsetProperty>()?;
+
+        assert_eq!("+1200", east.to_string());
+        assert_eq!("-0500", west.to_string());
+
+        assert!("0500".parse::<UtcOffsetProperty>().is_err());
+        assert!("foo".parse::<UtcOffsetProperty>().is_err());
+        assert!("+4400".parse::<UtcOffsetProperty>().is_err());
+
+        Ok(())
     }
 }
