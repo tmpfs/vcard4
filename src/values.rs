@@ -164,13 +164,17 @@ impl fmt::Display for UtcOffset {
         let sign = if h >= 0 { '+' } else { '-' };
         let h = h.abs();
         let m = m.abs();
-        let h = if h < 10 { format!("0{}", h) } else { h.to_string() };
-        let m = if m < 10 { format!("0{}", m) } else { m.to_string() };
-        write!(
-            f,
-            "{}{}{}",
-            sign, h, m,
-        )
+        let h = if h < 10 {
+            format!("0{}", h)
+        } else {
+            h.to_string()
+        };
+        let m = if m < 10 {
+            format!("0{}", m)
+        } else {
+            m.to_string()
+        };
+        write!(f, "{}{}{}", sign, h, m,)
     }
 }
 
@@ -366,6 +370,15 @@ pub struct Vcard {
     pub member: Vec<Uri>,
     pub related: Vec<TextOrUri>,
 
+    // Communications
+    //pub tel: Vec<Text>,
+    //pub email: Vec<Text>,
+    //pub impp: Vec<Text>,
+    //pub lang: Vec<Text>,
+
+    // Geographic
+    pub timezone: Vec<Timezone>,
+
     // Explanatory
     pub categories: Vec<TextList>,
     pub note: Vec<Text>,
@@ -381,8 +394,8 @@ pub struct Vcard {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
     use super::*;
+    use anyhow::Result;
 
     #[test]
     fn parse_utc_offset() -> Result<()> {

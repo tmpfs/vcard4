@@ -375,7 +375,59 @@ END:VCARD"#;
 
 // Geographic Properties
 
-// TODO: TZ
+#[test]
+fn parse_tz() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+TZ:Raleigh/North America
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    
+    if let Timezone::Text(Text { value, .. }) = card.timezone.get(0).unwrap() {
+        assert_eq!("Raleigh/North America", value);
+    } else {
+        panic!("expecting text value for TZ");
+    }
+
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+TZ;VALUE=utc-offset:-0500
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    
+    if let Timezone::UtcOffset(UtcOffset { value, .. }) = card.timezone.get(0).unwrap() {
+        assert_eq!((-5, -0, -0), value.as_hms());
+    } else {
+        panic!("expecting utc-offset value for TZ");
+    }
+
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+TZ;VALUE=uri:https://example.com/tz-database/acdt
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    
+    if let Timezone::Uri(Uri { value, .. }) = card.timezone.get(0).unwrap() {
+        assert_eq!("https://example.com/tz-database/acdt", value.as_str());
+    } else {
+        panic!("expecting uri value for TZ");
+    }
+
+    Ok(())
+}
+
 // TODO: GEO
 
 // Organizational Properties

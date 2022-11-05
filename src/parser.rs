@@ -314,7 +314,61 @@ impl VcardParser {
 
             // Communications
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.4
-            "TEL" => {}
+            "TEL" => {
+                todo!();
+            }
+            "EMAIL" => {
+                todo!();
+            }
+            "IMPP" => {
+                todo!();
+            }
+            "LANG" => {
+                todo!();
+            }
+
+            // Geographic
+            // https://www.rfc-editor.org/rfc/rfc6350#section-6.5
+            "TZ" => {
+                let value_type = if let Some(parameters) = &parameters {
+                    parameters.value.as_ref()
+                } else {
+                    None
+                };
+
+                if let Some(value_type) = value_type {
+                    match value_type {
+                        ValueType::UtcOffset => {
+                            let mut value: UtcOffset =
+                                value.as_ref().parse()?;
+                            value.parameters = parameters;
+                            card.timezone.push(Timezone::UtcOffset(value));
+                        }
+                        ValueType::Uri => {
+                            let value =
+                                URI::parse(value.as_ref())?.to_owned();
+                            card.timezone.push(Timezone::Uri(Uri {
+                                value,
+                                parameters,
+                            }));
+                        }
+                        _ => {
+                            return Err(Error::UnsupportedValueType(
+                                value_type.to_string(),
+                                String::from("TZ"),
+                            ))
+                        }
+                    }
+                } else {
+                    card.timezone.push(Timezone::Text(Text {
+                        value: value.into_owned(),
+                        parameters,
+                    }));
+                }
+            }
+            "GEO" => {
+                todo!();
+            }
 
             // Organizational
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.6
