@@ -459,7 +459,6 @@ END:VCARD"#;
     Ok(())
 }
 
-
 #[test]
 fn parse_member() -> Result<()> {
     let input = r#"BEGIN:VCARD
@@ -504,7 +503,7 @@ END:VCARD"#;
     );
 
     let card = vcards.remove(0);
-    if let TextOrUri::Uri(Uri {value, ..}) = card.uid.as_ref().unwrap() {
+    if let TextOrUri::Uri(Uri { value, .. }) = card.uid.as_ref().unwrap() {
         assert_eq!(
             "urn:uuid:03a0e51f-d1aa-4385-8a53-e29025acd8af",
             value.as_str()
@@ -514,7 +513,7 @@ END:VCARD"#;
     }
 
     let card = vcards.remove(0);
-    if let TextOrUri::Uri(Uri {value, ..}) = card.uid.as_ref().unwrap() {
+    if let TextOrUri::Uri(Uri { value, .. }) = card.uid.as_ref().unwrap() {
         assert_eq!(
             "urn:uuid:b8767877-b4a1-4c70-9acc-505d3819e519",
             value.as_str()

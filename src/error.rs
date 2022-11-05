@@ -39,9 +39,18 @@ pub enum Error {
     #[error("formatted name (FN) is required")]
     NoFormattedName,
 
+    #[error("value '{0}' for UTC offset is invalid")]
+    InvalidUtcOffset(String),
+
     #[error(transparent)]
     LanguageParse(#[from] language_tags::ParseError),
 
     #[error(transparent)]
     UriParse(#[from] fluent_uri::ParseError),
+
+    #[error(transparent)]
+    ComponentRange(#[from] time::error::ComponentRange),
+
+    #[error(transparent)]
+    ParseInt(#[from] std::num::ParseIntError),
 }

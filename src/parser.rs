@@ -89,9 +89,8 @@ impl VcardParser {
     fn parse_one(
         &self,
         lex: &mut Lexer<'_, Token>,
-        mut first: Option<Token>,
+        first: Option<Token>,
     ) -> Result<Vcard> {
-            
         self.assert_token(first, Token::Begin)?;
         self.assert_token(lex.next(), Token::NewLine)?;
 
@@ -349,6 +348,9 @@ impl VcardParser {
                 card.member.push(Uri { value, parameters });
             }
             "RELATED" => {
+                // TODO: validate related type parameter?
+                // SEE: https://www.rfc-editor.org/rfc/rfc6350#section-6.6.6
+
                 let text_or_uri =
                     self.parse_text_or_uri(value.as_ref(), parameters)?;
                 card.related.push(text_or_uri);

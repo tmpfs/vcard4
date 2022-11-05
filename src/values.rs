@@ -6,18 +6,21 @@ use std::{
     fmt::{self, Debug},
     str::FromStr,
 };
+use time::UtcOffset as UTCOffset;
 
 use crate::{Error, Result};
 
 /// Either text or a URI.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum TextOrUri {
+    /// Text value.
     Text(Text),
+    /// URI value.
     Uri(Uri),
 }
 
 /// Enumeration of the different types of values.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ValueType {
     /// Text value.
     Text,
@@ -146,8 +149,71 @@ impl FromStr for Sex {
     }
 }
 
+/// Value for the `utc-offset` type.
+#[derive(Debug, PartialEq)]
+pub struct UtcOffset {
+    /// The value for the UTC offset.
+    pub value: UTCOffset,
+    /// The parameters for the property.
+    pub parameters: Option<Parameters>,
+}
+
+impl fmt::Display for UtcOffset {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let (h, m, _) = self.value.as_hms();
+        let sign = if h >= 0 { '+' } else { '-' };
+        let h = h.abs();
+        let m = m.abs();
+        let h = if h < 10 { format!("0{}", h) } else { h.to_string() };
+        let m = if m < 10 { format!("0{}", m) } else { m.to_string() };
+        write!(
+            f,
+            "{}{}{}",
+            sign, h, m,
+        )
+    }
+}
+
+impl FromStr for UtcOffset {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        if s.len() == 5 {
+            let sign = &s[0..1];
+            if sign != "+" && sign != "-" {
+                return Err(Error::InvalidUtcOffset(s.to_string()));
+            }
+            let hours = &s[1..3];
+            let minutes = &s[3..5];
+            let mut hours: i8 = hours.parse()?;
+            let mut minutes: i8 = minutes.parse()?;
+            if sign == "-" {
+                hours = -hours;
+                minutes = -minutes;
+            }
+            return Ok(Self {
+                value: UTCOffset::from_hms(hours, minutes, 0)?,
+                parameters: None,
+            });
+        }
+
+        Err(Error::InvalidUtcOffset(s.to_string()))
+    }
+}
+
+/// Value for a timezone (`TZ`).
+#[derive(Debug, PartialEq)]
+pub enum Timezone {
+    /// Text value.
+    Text(Text),
+    /// URI value.
+    Uri(Uri),
+    /// UTC offset value.
+    UtcOffset(UtcOffset),
+}
+
 /// Represents a gender associated with a vCard.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Gender {
     /// The sex for the gender.
     pub sex: Sex,
@@ -236,7 +302,7 @@ impl FromStr for Kind {
 }
 
 /// Parameters for a vCard property.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Parameters {
     /// The language tag.
     pub language: Option<LanguageTag>,
@@ -247,14 +313,14 @@ pub struct Parameters {
 }
 
 /// Text property value.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Text {
     pub value: String,
     pub parameters: Option<Parameters>,
 }
 
 /// Text list property value.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct TextList {
     pub value: Vec<String>,
     pub parameters: Option<Parameters>,
@@ -267,8 +333,15 @@ pub struct Uri {
     pub parameters: Option<Parameters>,
 }
 
+impl PartialEq for Uri {
+    fn eq(&self, other: &Self) -> bool {
+        self.value.as_str() == other.value.as_str()
+            && self.parameters == other.parameters
+    }
+}
+
 /// The vCard type.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Vcard {
     // General
     pub source: Vec<Uri>,
@@ -304,4 +377,25 @@ pub struct Vcard {
 
     // Security
     pub key: Vec<TextOrUri>,
+}
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+    use super::*;
+
+    #[test]
+    fn parse_utc_offset() -> Result<()> {
+        let east = "+1200".parse::<UtcOffset>()?;
+        let west = "-0500".parse::<UtcOffset>()?;
+
+        assert_eq!("+1200", east.to_string());
+        assert_eq!("-0500", west.to_string());
+
+        assert!("0500".parse::<UtcOffset>().is_err());
+        assert!("foo".parse::<UtcOffset>().is_err());
+        assert!("+4400".parse::<UtcOffset>().is_err());
+
+        Ok(())
+    }
 }
