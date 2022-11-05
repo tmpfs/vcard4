@@ -500,7 +500,9 @@ pub struct Parameters {
     /// The MEDIATYPE value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     pub media_type: Option<Mime>,
-    /// The property TYPE.
+    /// The CALSCALE parameter.
+    pub calscale: Option<String>,
+    /// The TYPE parameter.
     pub types: Option<Vec<String>>,
 }
 

@@ -208,6 +208,9 @@ impl VcardParser {
                         let mime: Mime = value.parse()?;
                         params.media_type = Some(mime);
                     }
+                    "CALSCALE" => {
+                        params.calscale = Some(value);
+                    }
                     _ => {
                         return Err(Error::UnknownParameterName(
                             parameter_name.to_string(),
