@@ -613,3 +613,81 @@ END:VCARD"#;
 
     Ok(())
 }
+
+#[test]
+fn parse_related() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+RELATED;TYPE=friend:urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    if let TextOrUri::Uri(Uri { value, parameters }) = card.related.get(0).unwrap() {
+        assert_eq!(
+            "urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6",
+            value.as_str()
+        );
+
+        let params = parameters.as_ref().unwrap();
+        assert_eq!(
+            Some(&String::from("friend")),
+            params.types.as_ref().unwrap().get(0));
+
+    } else {
+        panic!("expecting URI for RELATED prop");
+    }
+
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+RELATED;TYPE=contact:http://example.com/directory/jdoe.vcf
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    if let TextOrUri::Uri(Uri { value, parameters }) = card.related.get(0).unwrap() {
+        assert_eq!(
+            "http://example.com/directory/jdoe.vcf",
+            value.as_str()
+        );
+
+        let params = parameters.as_ref().unwrap();
+        assert_eq!(
+            Some(&String::from("contact")),
+            params.types.as_ref().unwrap().get(0));
+
+    } else {
+        panic!("expecting URI for RELATED prop");
+    }
+
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+RELATED;TYPE=co-worker;VALUE=text:Please contact my assistant Jane 
+ Doe for any inquiries.
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    if let TextOrUri::Text(Text { value, parameters }) = card.related.get(0).unwrap() {
+        assert_eq!(
+            "Please contact my assistant Jane Doe for any inquiries.",
+            value.as_str()
+        );
+
+        let params = parameters.as_ref().unwrap();
+        assert_eq!(
+            Some(&String::from("co-worker")),
+            params.types.as_ref().unwrap().get(0));
+
+    } else {
+        panic!("expecting TEXT for RELATED prop");
+    }
+
+    Ok(())
+}
