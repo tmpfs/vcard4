@@ -678,7 +678,7 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    if let TextOrUriProperty::Uri(UriProperty { value, parameters }) =
+    if let TextOrUriProperty::Uri(UriProperty { value, parameters, .. }) =
         card.related.get(0).unwrap()
     {
         assert_eq!(
@@ -704,7 +704,7 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    if let TextOrUriProperty::Uri(UriProperty { value, parameters }) =
+    if let TextOrUriProperty::Uri(UriProperty { value, parameters, .. }) =
         card.related.get(0).unwrap()
     {
         assert_eq!("http://example.com/directory/jdoe.vcf", value.as_str());
@@ -728,7 +728,7 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-    if let TextOrUriProperty::Text(TextProperty { value, parameters }) =
+    if let TextOrUriProperty::Text(TextProperty { value, parameters, .. }) =
         card.related.get(0).unwrap()
     {
         assert_eq!(

@@ -21,6 +21,8 @@ use crate::{parameters::Parameters, types::DateAndOrTime, Error, Result};
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct LanguageProperty {
+    /// Group for this property. 
+    pub group: Option<String>,
     /// The value for the property.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     pub value: LanguageTag,
@@ -33,6 +35,8 @@ pub struct LanguageProperty {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct DateTimeProperty {
+    /// Group for this property. 
+    pub group: Option<String>,
     /// The value for the property.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     pub value: OffsetDateTime,
@@ -44,6 +48,8 @@ pub struct DateTimeProperty {
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct DateAndOrTimeProperty {
+    /// Group for this property. 
+    pub group: Option<String>,
     /// The value for the property.
     pub value: DateAndOrTime,
     /// The property parameters.
@@ -78,6 +84,8 @@ pub enum DateTimeOrTextProperty {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct UtcOffsetProperty {
+    /// Group for this property. 
+    pub group: Option<String>,
     /// The value for the UTC offset.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     pub value: UTCOffset,
@@ -125,6 +133,7 @@ impl FromStr for UtcOffsetProperty {
             return Ok(Self {
                 value: UTCOffset::from_hms(hours, minutes, 0)?,
                 parameters: None,
+                group: None,
             });
         }
 
@@ -150,9 +159,10 @@ pub enum TimeZoneProperty {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct TextProperty {
+    /// Group for this property. 
+    pub group: Option<String>,
     /// Value for this property.
     pub value: String,
-
     /// Parameters for this property.
     pub parameters: Option<Parameters>,
 }
@@ -162,9 +172,10 @@ pub struct TextProperty {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct TextListProperty {
+    /// Group for this property. 
+    pub group: Option<String>,
     /// Value for this property.
     pub value: Vec<String>,
-
     /// Parameters for this property.
     pub parameters: Option<Parameters>,
 }
@@ -220,11 +231,12 @@ mod uri_from_str {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct UriProperty {
+    /// Group for this property. 
+    pub group: Option<String>,
     /// Value for this property.
     #[cfg_attr(feature = "serde", serde(with = "uri_from_str"))]
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     pub value: Uri<String>,
-
     /// Parameters for this property.
     pub parameters: Option<Parameters>,
 }
@@ -241,6 +253,8 @@ impl PartialEq for UriProperty {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct KindProperty {
+    /// Group for this property. 
+    pub group: Option<String>,
     /// The value for the property.
     pub value: Kind,
     /// The property parameters.
@@ -298,6 +312,8 @@ impl FromStr for Kind {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct GenderProperty {
+    /// Group for this property. 
+    pub group: Option<String>,
     /// The value for the property.
     pub value: Gender,
     /// The property parameters.
