@@ -2,6 +2,7 @@
 
 use fluent_uri::Uri as URI;
 use language_tags::LanguageTag;
+use mime::Mime;
 use std::{
     fmt::{self, Debug},
     str::FromStr,
@@ -496,6 +497,9 @@ pub struct Parameters {
     pub alt_id: Option<String>,
     /// The PID value.
     pub pid: Option<Pid>,
+    /// The MEDIATYPE value.
+    #[cfg_attr(feature = "zeroize", zeroize(skip))]
+    pub media_type: Option<Mime>,
     /// The property TYPE.
     pub types: Option<Vec<String>>,
 }

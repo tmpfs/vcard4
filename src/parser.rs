@@ -3,6 +3,7 @@
 use fluent_uri::Uri as URI;
 use language_tags::LanguageTag;
 use logos::{Lexer, Logos};
+use mime::Mime;
 use std::{borrow::Cow, ops::Range};
 
 use crate::{Error, Result, Vcard};
@@ -202,6 +203,10 @@ impl VcardParser {
                         } else {
                             params.types = Some(type_values);
                         }
+                    }
+                    "MEDIATYPE" => {
+                        let mime: Mime = value.parse()?;
+                        params.media_type = Some(mime);
                     }
                     _ => {
                         return Err(Error::UnknownParameterName(

@@ -87,4 +87,8 @@ pub enum Error {
     /// Error generated parsing a string to an integer.
     #[error(transparent)]
     ParseInt(#[from] std::num::ParseIntError),
+
+    /// Error generated parsing a media type.
+    #[error(transparent)]
+    Mime(#[from] mime::FromStrError),
 }
