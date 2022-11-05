@@ -408,8 +408,14 @@ impl VcardParser {
                 card.member.push(Uri { value, parameters });
             }
             "RELATED" => {
-                // TODO: validate related type parameter?
-                // SEE: https://www.rfc-editor.org/rfc/rfc6350#section-6.6.6
+                // Validate related type parameter
+                if let Some(parameters) = &parameters {
+                    if let Some(types) = &parameters.types {
+                        for related_type in types {
+                            let _: RelatedTypeValue = related_type.parse()?;
+                        }
+                    }
+                }
 
                 let text_or_uri =
                     self.parse_text_or_uri(value.as_ref(), parameters)?;
