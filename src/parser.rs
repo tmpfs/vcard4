@@ -367,7 +367,12 @@ impl VcardParser {
                 }
             }
             "GEO" => {
-                todo!();
+                let value =
+                    URI::parse(value.as_ref())?.to_owned();
+                card.geo.push(Uri {
+                    value,
+                    parameters,
+                });
             }
 
             // Organizational

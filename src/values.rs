@@ -378,6 +378,7 @@ pub struct Vcard {
 
     // Geographic
     pub timezone: Vec<Timezone>,
+    pub geo: Vec<Uri>,
 
     // Explanatory
     pub categories: Vec<TextList>,

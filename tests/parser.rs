@@ -428,7 +428,26 @@ END:VCARD"#;
     Ok(())
 }
 
-// TODO: GEO
+#[test]
+fn parse_geo() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+GEO:geo:37.386013,-122.082932
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    let geo = card.geo.get(0).unwrap();
+
+    assert_eq!(
+        "geo:37.386013,-122.082932",
+        geo.value.as_str()
+    );
+
+    Ok(())
+}
 
 // Organizational Properties
 
