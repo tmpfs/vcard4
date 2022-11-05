@@ -574,6 +574,20 @@ impl VcardParser {
                 card.key.push(text_or_uri);
             }
 
+            // Calendar
+            // https://www.rfc-editor.org/rfc/rfc6350#section-6.9
+            "FBURL" => {
+                let value = Uri::parse(value.as_ref())?.to_owned();
+                card.fburl.push(UriProperty { value, parameters });
+            }
+            "CALADRURI" => {
+                let value = Uri::parse(value.as_ref())?.to_owned();
+                card.cal_adr_uri.push(UriProperty { value, parameters });
+            }
+            "CALURI" => {
+                let value = Uri::parse(value.as_ref())?.to_owned();
+                card.cal_uri.push(UriProperty { value, parameters });
+            }
             _ => return Err(Error::UnknownPropertyName(name.to_string())),
         }
         Ok(())

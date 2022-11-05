@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
-//! Compact, fast and correct vCard parser based
+//! Fast and correct vCard parser based
 //! on [RFC6350](https://www.rfc-editor.org/rfc/rfc6350).
 //!
 //! vCards inherently contain private information so this library
@@ -133,4 +133,12 @@ pub struct Vcard {
     // Security
     /// Value of the KEY property.
     pub key: Vec<TextOrUriProperty>,
+
+    // Calendar
+    /// Value of the FBURL property.
+    pub fburl: Vec<UriProperty>,
+    /// Value of the CALADRURI property.
+    pub cal_adr_uri: Vec<UriProperty>,
+    /// Value of the CALURI property.
+    pub cal_uri: Vec<UriProperty>,
 }
