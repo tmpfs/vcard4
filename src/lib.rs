@@ -22,6 +22,7 @@
 
 mod error;
 mod parser;
+pub mod property;
 mod values;
 
 pub use error::Error;

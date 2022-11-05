@@ -8,7 +8,7 @@ use std::{borrow::Cow, ops::Range};
 use time::{format_description::well_known::Iso8601, OffsetDateTime};
 
 use crate::values::*;
-use crate::{Error, Result, Vcard};
+use crate::{property::*, Error, Result, Vcard};
 
 #[derive(Logos, Debug, PartialEq)]
 enum Token {
@@ -352,7 +352,7 @@ impl VcardParser {
                     .split(";")
                     .map(|s| s.to_string())
                     .collect::<Vec<_>>();
-                card.name = Some(TextList { value, parameters });
+                card.name = Some(TextListProperty { value, parameters });
             }
             "NICKNAME" => {
                 card.nickname.push(Text {
@@ -369,42 +369,21 @@ impl VcardParser {
                     return Err(Error::OnlyOnce(String::from("BDAY")));
                 }
 
-                let value_type = if let Some(parameters) = &parameters {
-                    parameters.value.as_ref()
-                } else {
-                    None
-                };
-
-                if let Some(value_type) = value_type {
-                    match value_type {
-                        ValueType::Text => {
-                            card.bday = Some(DateTimeOrText::Text(Text {
-                                value: value.into_owned(),
-                                parameters,
-                            }));
-                        }
-                        ValueType::DateAndOrTime => {
-                            let value: DateAndOrTime = value.parse()?;
-                            card.bday = Some(DateTimeOrText::DateTime(
-                                DateAndOrTimeProperty { value, parameters },
-                            ));
-                        }
-                        _ => {
-                            return Err(Error::UnsupportedValueType(
-                                value_type.to_string(),
-                                String::from("BDAY"),
-                            ))
-                        }
-                    }
-                } else {
-                    let value: DateAndOrTime = value.parse()?;
-                    card.bday = Some(DateTimeOrText::DateTime(
-                        DateAndOrTimeProperty { value, parameters },
-                    ));
-                }
+                let prop =
+                    parse_date_time_or_text("BDAY", value, parameters)?;
+                card.bday = Some(prop);
             }
             "ANNIVERSARY" => {
-                todo!()
+                if card.anniversary.is_some() {
+                    return Err(Error::OnlyOnce(String::from("ANNIVERSARY")));
+                }
+
+                let prop = parse_date_time_or_text(
+                    "ANNIVERSARY",
+                    value,
+                    parameters,
+                )?;
+                card.anniversary = Some(prop);
             }
             "GENDER" => {
                 if card.gender.is_some() {
@@ -510,7 +489,7 @@ impl VcardParser {
                     .split(";")
                     .map(|s| s.to_string())
                     .collect::<Vec<_>>();
-                card.org.push(TextList { value, parameters });
+                card.org.push(TextListProperty { value, parameters });
             }
             "MEMBER" => {
                 let value = URI::parse(value.as_ref())?.to_owned();
@@ -539,7 +518,7 @@ impl VcardParser {
                     .split(",")
                     .map(|s| s.to_string())
                     .collect::<Vec<_>>();
-                card.categories.push(TextList { value, parameters });
+                card.categories.push(TextListProperty { value, parameters });
             }
             "NOTE" => {
                 card.note.push(Text {
@@ -663,7 +642,7 @@ impl VcardParser {
         &self,
         value: S,
         parameters: Option<Parameters>,
-    ) -> Result<TextOrUri> {
+    ) -> Result<TextOrUriProperty> {
         let value_type = if let Some(parameters) = &parameters {
             parameters.value.as_ref()
         } else {
@@ -671,23 +650,23 @@ impl VcardParser {
         };
         if let Some(value_type) = value_type {
             if let ValueType::Text = value_type {
-                Ok(TextOrUri::Text(Text {
+                Ok(TextOrUriProperty::Text(Text {
                     value: value.as_ref().to_string(),
                     parameters,
                 }))
             } else if let ValueType::Uri = value_type {
                 let value = URI::parse(value.as_ref())?.to_owned();
-                Ok(TextOrUri::Uri(Uri { value, parameters }))
+                Ok(TextOrUriProperty::Uri(Uri { value, parameters }))
             } else {
                 Err(Error::UnknownValueType(value_type.to_string()))
             }
         } else {
             match URI::parse(value.as_ref()) {
-                Ok(value) => Ok(TextOrUri::Uri(Uri {
+                Ok(value) => Ok(TextOrUriProperty::Uri(Uri {
                     value: value.to_owned(),
                     parameters,
                 })),
-                Err(_) => Ok(TextOrUri::Text(Text {
+                Err(_) => Ok(TextOrUriProperty::Text(Text {
                     value: value.as_ref().to_string(),
                     parameters,
                 })),
@@ -710,5 +689,43 @@ impl VcardParser {
         } else {
             Err(Error::TokenExpected)
         }
+    }
+}
+
+fn parse_date_time_or_text<'a>(
+    prop_name: &str,
+    value: Cow<'a, str>,
+    parameters: Option<Parameters>,
+) -> Result<DateTimeOrTextProperty> {
+    let value_type = if let Some(parameters) = &parameters {
+        parameters.value.as_ref()
+    } else {
+        None
+    };
+
+    if let Some(value_type) = value_type {
+        match value_type {
+            ValueType::Text => Ok(DateTimeOrTextProperty::Text(Text {
+                value: value.into_owned(),
+                parameters,
+            })),
+            ValueType::DateAndOrTime => {
+                let value: DateAndOrTime = value.parse()?;
+                Ok(DateTimeOrTextProperty::DateTime(DateAndOrTimeProperty {
+                    value,
+                    parameters,
+                }))
+            }
+            _ => Err(Error::UnsupportedValueType(
+                value_type.to_string(),
+                String::from(prop_name),
+            )),
+        }
+    } else {
+        let value: DateAndOrTime = value.parse()?;
+        Ok(DateTimeOrTextProperty::DateTime(DateAndOrTimeProperty {
+            value,
+            parameters,
+        }))
     }
 }
