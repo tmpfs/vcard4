@@ -1,4 +1,4 @@
-//! The vCard struct and types for vCard properties and values.
+//! Types for property parameters.
 
 use fluent_uri::Uri;
 use language_tags::LanguageTag;

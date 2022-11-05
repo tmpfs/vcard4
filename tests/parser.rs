@@ -194,7 +194,7 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
     let card = vcards.remove(0);
 
-    assert_eq!(Some(Kind::Individual), card.kind);
+    assert_eq!(Kind::Individual, card.kind.as_ref().unwrap().value);
 
     let input = r#"BEGIN:VCARD
 VERSION:4.0
@@ -204,9 +204,9 @@ ORG:ABC\, Inc.;North American Division;Marketing
 END:VCARD"#;
     let mut vcards = parse(input)?;
     assert_eq!(1, vcards.len());
-    let card = vcards.remove(0);
+    let card = vcards.remove(0); 
 
-    assert_eq!(Some(Kind::Org), card.kind);
+    assert_eq!(Kind::Org, card.kind.as_ref().unwrap().value);
 
     Ok(())
 }

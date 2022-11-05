@@ -330,7 +330,7 @@ impl VcardParser {
                     return Err(Error::OnlyOnce(String::from("KIND")));
                 }
                 let value: Kind = value.as_ref().parse()?;
-                card.kind = Some(value);
+                card.kind = Some(KindProperty {value, parameters});
             }
             "XML" => {
                 card.xml.push(Text {

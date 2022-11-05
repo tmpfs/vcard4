@@ -2,7 +2,7 @@
 
 use language_tags::LanguageTag;
 use std::{
-    fmt::{self, Debug},
+    fmt::Debug,
     str::FromStr,
 };
 use time::{
@@ -62,105 +62,6 @@ impl FromStr for DateAndOrTime {
     }
 }
 
-/// Enumeration for sex.
-#[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
-pub enum Sex {
-    /// No sex specified.
-    None,
-    /// Male sex.
-    Male,
-    /// Female sex.
-    Female,
-    /// Other sex.
-    Other,
-    /// Not applicable.
-    NotApplicable,
-    /// Unknown sex.
-    Unknown,
-}
-
-impl fmt::Display for Sex {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::None => "",
-                Self::Male => "M",
-                Self::Female => "F",
-                Self::Other => "O",
-                Self::NotApplicable => "N",
-                Self::Unknown => "U",
-            }
-        )
-    }
-}
-
-impl FromStr for Sex {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        match s {
-            "" => Ok(Self::None),
-            "M" => Ok(Self::Male),
-            "F" => Ok(Self::Female),
-            "O" => Ok(Self::Other),
-            "N" => Ok(Self::NotApplicable),
-            "U" => Ok(Self::Unknown),
-            _ => Err(Error::UnknownSex(s.to_string())),
-        }
-    }
-}
-
-/// Represents a gender associated with a vCard.
-#[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
-pub struct Gender {
-    /// The sex for the gender.
-    pub sex: Sex,
-    /// The identity text.
-    pub identity: Option<String>,
-}
-
-impl fmt::Display for Gender {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(identity) = &self.identity {
-            write!(f, "{};{}", self.sex, identity)
-        } else {
-            write!(f, "{}", self.sex,)
-        }
-    }
-}
-
-impl FromStr for Gender {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        if s.is_empty() {
-            return Ok(Gender {
-                sex: Sex::None,
-                identity: None,
-            });
-        }
-
-        let mut it = s.splitn(2, ";");
-        let sex = it.next().ok_or(Error::NoSex)?;
-        let sex: Sex = sex.parse()?;
-        let mut gender = Gender {
-            sex,
-            identity: None,
-        };
-        if let Some(identity) = it.next() {
-            gender.identity = Some(identity.to_string());
-        }
-
-        Ok(gender)
-    }
-}
-
 /// The vCard type.
 #[derive(Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -170,7 +71,7 @@ pub struct Vcard {
     /// Value of the SOURCE property.
     pub source: Vec<UriProperty>,
     /// Value of the KIND property.
-    pub kind: Option<Kind>,
+    pub kind: Option<KindProperty>,
     /// Value of the XML property.
     pub xml: Vec<Text>,
 
