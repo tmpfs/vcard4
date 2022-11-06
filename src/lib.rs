@@ -48,7 +48,14 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Parse a vCard string into a collection of vCards.
 pub fn parse<S: AsRef<str>>(input: S) -> Result<Vec<Vcard>> {
-    let parser: parser::VcardParser = Default::default();
+    let parser = parser::VcardParser::new(true);
+    parser.parse(input)
+}
+
+/// Parse a vCard string into a collection of vCards ignoring properties
+/// that generate errors.
+pub fn parse_loose<S: AsRef<str>>(input: S) -> Result<Vec<Vcard>> {
+    let parser = parser::VcardParser::new(false);
     parser.parse(input)
 }
 

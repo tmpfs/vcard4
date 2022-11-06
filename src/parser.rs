@@ -37,6 +37,9 @@ enum Token {
     #[token("\\;")]
     EscapedSemiColon,
 
+    #[token("\\\\")]
+    EscapedBackSlash,
+
     #[regex("(?i:\\\\n)")]
     EscapedNewLine,
 
@@ -50,9 +53,17 @@ enum Token {
     Text,
 }
 
-/// Parses vCards from strings.
-#[derive(Default)]
-pub(crate) struct VcardParser {}
+/// Parses vCards from a string.
+pub(crate) struct VcardParser {
+    strict: bool,
+}
+
+impl VcardParser {
+    /// Create a new parser.
+    pub fn new(strict: bool) -> Self {
+        Self { strict }
+    }
+}
 
 impl VcardParser {
     /// Parse a UTF-8 encoded string into a list of vCards.
@@ -116,42 +127,54 @@ impl VcardParser {
             if first == Token::End {
                 break;
             }
-
             self.assert_token(Some(first), Token::PropertyName)?;
-
-            let mut group: Option<String> = None;
-            let mut name = lex.slice();
-
-            let period = name.find(".");
-
-            if let Some(pos) = period {
-                let group_name = &name[0..pos];
-                group = Some(group_name.to_string());
-                name = &name[pos..];
-            }
-
-            let delimiter = lex.next();
-
-            if let Some(delimiter) = delimiter {
-                if delimiter == Token::ParameterDelimiter {
-                    let parameters = self.parse_property_parameters(lex)?;
-                    self.parse_property_by_name(
-                        lex,
-                        card,
-                        name,
-                        Some(parameters),
-                        group,
-                    )?;
-                } else if delimiter == Token::PropertyDelimiter {
-                    self.parse_property_by_name(
-                        lex, card, name, None, group,
-                    )?;
-                } else {
-                    return Err(Error::DelimiterExpected);
+            if let Err(e) = self.parse_property(lex, card) {
+                if self.strict {
+                    return Err(e);
                 }
-            } else {
-                return Err(Error::TokenExpected);
             }
+        }
+        Ok(())
+    }
+
+    /// Parse a single property.
+    fn parse_property(
+        &self,
+        lex: &mut Lexer<'_, Token>,
+        card: &mut Vcard,
+    ) -> Result<()> {
+        let mut group: Option<String> = None;
+        let mut name = lex.slice();
+
+        let period = name.find(".");
+
+        if let Some(pos) = period {
+            let group_name = &name[0..pos];
+            group = Some(group_name.to_string());
+            name = &name[pos..];
+        }
+
+        let delimiter = lex.next();
+
+        if let Some(delimiter) = delimiter {
+            if delimiter == Token::ParameterDelimiter {
+                let parameters = self.parse_property_parameters(lex)?;
+                self.parse_property_by_name(
+                    lex,
+                    card,
+                    name,
+                    Some(parameters),
+                    group,
+                )?;
+            } else if delimiter == Token::PropertyDelimiter {
+                self.parse_property_by_name(
+                    lex, card, name, None, group,
+                )?;
+            } else {
+                return Err(Error::DelimiterExpected);
+            }
+        } else {
+            return Err(Error::TokenExpected);
         }
 
         Ok(())
@@ -797,6 +820,7 @@ impl VcardParser {
                 || token == Token::EscapedSemiColon
                 || token == Token::EscapedComma
                 || token == Token::EscapedNewLine
+                || token == Token::EscapedBackSlash
             {
                 needs_transform = true;
             }
@@ -815,17 +839,17 @@ impl VcardParser {
                 for (token, span) in tokens {
                     if token == Token::FoldedLine {
                         continue;
-                    }
-                    if token == Token::EscapedComma {
+                    } else if token == Token::EscapedComma {
                         value.push(',');
                         continue;
-                    }
-                    if token == Token::EscapedSemiColon {
+                    } else if token == Token::EscapedSemiColon {
                         value.push(';');
                         continue;
-                    }
-                    if token == Token::EscapedNewLine {
+                    } else if token == Token::EscapedNewLine {
                         value.push('\n');
+                        continue;
+                    } else if token == Token::EscapedBackSlash {
+                        value.push('\\');
                         continue;
                     }
 
