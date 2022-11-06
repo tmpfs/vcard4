@@ -2,7 +2,7 @@ use anyhow::Result;
 use fluent_uri::Uri as URI;
 use language_tags::LanguageTag;
 
-use vcard_compact::{property::*, *};
+use vcard_compact::{property::*, parse, Error, parameters::TypeParameter};
 
 #[test]
 fn parse_empty() -> Result<()> {
@@ -133,9 +133,10 @@ END:VCARD"#;
     let tag: LanguageTag = "en".parse()?;
     let parameters = nickname.parameters.as_ref().unwrap();
 
+    let param: TypeParameter = "work".parse()?;
     assert_eq!(Some(tag), parameters.language);
     assert_eq!(
-        &vec![String::from("work")],
+        &vec![param],
         parameters.types.as_ref().unwrap()
     );
     Ok(())
@@ -687,9 +688,10 @@ END:VCARD"#;
             value.as_str()
         );
 
+        let param: TypeParameter = "friend".parse()?;
         let params = parameters.as_ref().unwrap();
         assert_eq!(
-            Some(&String::from("friend")),
+            Some(&param),
             params.types.as_ref().unwrap().get(0)
         );
     } else {
@@ -711,9 +713,10 @@ END:VCARD"#;
     {
         assert_eq!("http://example.com/directory/jdoe.vcf", value.as_str());
 
+        let param: TypeParameter = "contact".parse()?;
         let params = parameters.as_ref().unwrap();
         assert_eq!(
-            Some(&String::from("contact")),
+            Some(&param),
             params.types.as_ref().unwrap().get(0)
         );
     } else {
@@ -739,9 +742,10 @@ END:VCARD"#;
             value.as_str()
         );
 
+        let param: TypeParameter = "co-worker".parse()?;
         let params = parameters.as_ref().unwrap();
         assert_eq!(
-            Some(&String::from("co-worker")),
+            Some(&param),
             params.types.as_ref().unwrap().get(0)
         );
     } else {

@@ -76,6 +76,11 @@ pub enum Error {
     #[error("value '{0}' for UTC offset is invalid")]
     InvalidUtcOffset(String),
 
+    /// Error generated when a TYPE parameter is given for a property 
+    /// that does not support it.
+    #[error("TYPE parameter is not supported for property '{0}'")]
+    TypeParameter(String),
+
     /// Error generated when a PREF is out of bounds.
     #[error("pref '{0}' is out of bounds, must be between 1 and 100")]
     PrefOutOfRange(u8),

@@ -158,7 +158,7 @@ impl VcardParser {
 
         if let Some(delimiter) = delimiter {
             if delimiter == Token::ParameterDelimiter {
-                let parameters = self.parse_property_parameters(lex)?;
+                let parameters = self.parse_property_parameters(lex, name)?;
                 self.parse_property_by_name(
                     lex,
                     card,
@@ -182,7 +182,9 @@ impl VcardParser {
     fn parse_property_parameters(
         &self,
         lex: &mut Lexer<'_, Token>,
+        name: &str,
     ) -> Result<Parameters> {
+        let property_upper_name = name.to_uppercase();
         let mut params: Parameters = Default::default();
 
         let mut next: Option<Token> = lex.next();
@@ -230,15 +232,34 @@ impl VcardParser {
                         params.pid = Some(pids);
                     }
                     "TYPE" => {
-                        let mut type_values = value
-                            .split(",")
-                            .map(|s| s.to_string())
-                            .collect::<Vec<_>>();
+                        // Check this parameter is allowed
+                        if !TYPE_PROPERTIES.contains(
+                            &&property_upper_name[..]) {
+                            return Err(
+                                Error::TypeParameter(property_upper_name))
+                        }
+
+                        let mut type_params: Vec<TypeParameter> = Vec::new();
+
+                        for val in value.split(",") {
+                            let param: TypeParameter = match &property_upper_name[..] {
+                                "TEL" => {
+                                    TypeParameter::Telephone(val.parse()?)
+                                }
+                                "RELATED" => {
+                                    TypeParameter::Related(val.parse()?)
+                                }
+                                _ => {
+                                    val.parse()?
+                                }
+                            };
+                            type_params.push(param);
+                        }
 
                         if let Some(types) = params.types.as_mut() {
-                            types.append(&mut type_values);
+                            types.append(&mut type_params);
                         } else {
-                            params.types = Some(type_values);
+                            params.types = Some(type_params);
                         }
                     }
                     "MEDIATYPE" => {
@@ -472,6 +493,8 @@ impl VcardParser {
             // Communications
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.4
             "TEL" => {
+
+                /*
                 // Validate TEL TYPE parameter
                 if let Some(parameters) = &parameters {
                     if let Some(types) = &parameters.types {
@@ -480,6 +503,7 @@ impl VcardParser {
                         }
                     }
                 }
+                */
 
                 let value = self.parse_text_or_uri(
                     value.as_ref(),
@@ -614,6 +638,8 @@ impl VcardParser {
                 });
             }
             "RELATED" => {
+
+                /*
                 // Validate RELATED TYPE parameter
                 if let Some(parameters) = &parameters {
                     if let Some(types) = &parameters.types {
@@ -622,6 +648,7 @@ impl VcardParser {
                         }
                     }
                 }
+                */
 
                 let text_or_uri = self.parse_text_or_uri(
                     value.as_ref(),

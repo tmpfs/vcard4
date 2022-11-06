@@ -17,6 +17,79 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{Error, Result};
 
+/// Names of properties that are allowed to specify a TYPE parameter.
+pub const TYPE_PROPERTIES: [&'static str; 23] = [
+    "FN",
+    "NICKNAME",
+    "PHOTO",
+    "ADR",
+    "TEL",
+    "EMAIL",
+    "IMPP",
+    "LANG",
+    "TZ",
+    "GEO",
+    "TITLE",
+    "ROLE",
+    "LOGO",
+    "ORG",
+    "RELATED",
+    "CATEGORIES",
+    "NOTE",
+    "SOUND",
+    "URL",
+    "KEY",
+    "FBURL",
+    "CALADRURI",
+    "CALURI",
+];
+
+/// Value for a TYPE parameter.
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+pub enum TypeParameter {
+    /// Related to a home environment.
+    Home,
+    /// Related to a work environment.
+    Work,
+    /// Type for the TEL property.
+    Telephone(TelephoneTypeValue),
+    /// Type for the RELATED property.
+    Related(RelatedTypeValue),
+}
+
+impl fmt::Display for TypeParameter {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Home => write!(f, "home"),
+            Self::Work => write!(f, "work"),
+            Self::Telephone(ref tel) => write!(f, "{}", tel),
+            Self::Related(ref rel) => write!(f, "{}", rel),
+        }
+    }
+}
+
+impl FromStr for TypeParameter {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s {
+            "home" => Ok(Self::Home),
+            "work" => Ok(Self::Work),
+            _ => {
+                match s.parse::<TelephoneTypeValue>() {
+                    Ok(tel) => Ok(Self::Telephone(tel)),
+                    Err(_) => {
+                        let rel: RelatedTypeValue = s.parse()?;
+                        Ok(Self::Related(rel))
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// Values for a PID parameter.
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -31,9 +104,9 @@ pub struct Pid {
 impl fmt::Display for Pid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(minor) = self.minor {
-            write!(f, "{}.{}", self.major, minor,)
+            write!(f, "{}.{}", self.major, minor)
         } else {
-            write!(f, "{}", self.major,)
+            write!(f, "{}", self.major)
         }
     }
 }
@@ -63,6 +136,8 @@ impl FromStr for Pid {
 
 /// Enumeration of related types.
 #[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub enum RelatedTypeValue {
     /// Contact relationship.
     Contact,
@@ -170,6 +245,8 @@ impl FromStr for RelatedTypeValue {
 
 /// Enumeration of telephone types.
 #[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub enum TelephoneTypeValue {
     /// Indicates that the telephone number supports 
     /// text messages (SMS).
@@ -353,7 +430,7 @@ pub struct Parameters {
     /// The PID value.
     pub pid: Option<Vec<Pid>>,
     /// The TYPE parameter.
-    pub types: Option<Vec<String>>,
+    pub types: Option<Vec<TypeParameter>>,
     /// The MEDIATYPE value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     pub media_type: Option<Mime>,
