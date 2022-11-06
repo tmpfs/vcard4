@@ -399,19 +399,6 @@ pub enum TimeZoneParameter {
     UtcOffset(UtcOffset),
 }
 
-/*
-impl PartialEq for TimeZoneParameter {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::Text(a), Self::Text(b)) => a.eq(b),
-            (Self::Uri(a), Self::Uri(b)) => a.as_str().eq(b.as_str()),
-            (Self::UtcOffset(a), Self::UtcOffset(b)) => a.eq(b),
-            _ => false,
-        }
-    }
-}
-*/
-
 /// Parameters for a vCard property.
 #[derive(Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -454,26 +441,3 @@ pub struct Parameters {
     /// This only applies to the ADR property.
     pub label: Option<String>,
 }
-
-/*
-impl PartialEq for Parameters {
-    fn eq(&self, other: &Self) -> bool {
-        let geo = if let (Some(a), Some(b)) = (&self.geo, &other.geo) {
-            a.as_str() == b.as_str()
-        } else {
-            true
-        };
-
-        self.language == other.language
-            && self.value == other.value
-            && self.pref == other.pref
-            && self.alt_id == other.alt_id
-            && self.pid == other.pid
-            && self.media_type == other.media_type
-            && self.calscale == other.calscale
-            && self.sort_as == other.sort_as
-            && self.types == other.types
-            && geo
-    }
-}
-*/
