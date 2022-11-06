@@ -4,7 +4,15 @@ use uriparse::uri::URI as Uri;
 //#[cfg(feature = "language-tags")]
 //use language_tags::LanguageTag;
 
-use vcard_compact::{parameter::TypeParameter, parse, property::*, Error};
+use vcard_compact::{parameter::TypeParameter, parse, Vcard, property::*, Error};
+
+fn assert_round_trip(card: &Vcard) -> Result<()> {
+    let encoded = card.to_string();
+    let mut cards = parse(&encoded)?;
+    let decoded = cards.remove(0);
+    assert_eq!(card, &decoded);
+    Ok(())
+}
 
 #[test]
 fn parse_empty() -> Result<()> {
@@ -57,6 +65,7 @@ END:VCARD"#;
     let card = vcards.remove(0);
     let fname = card.formatted_name.get(0).unwrap();
     assert_eq!("Mr. John Q. Public; Esq.", fname.value);
+    assert_round_trip(&card)?;
     Ok(())
 }
 
@@ -75,6 +84,7 @@ END:VCARD"#;
     let card = vcards.remove(0);
     let fname = card.formatted_name.get(0).unwrap();
     assert_eq!("Mr. John Q. Public, Esq.", fname.value);
+    assert_round_trip(&card)?;
     Ok(())
 }
 
@@ -97,6 +107,7 @@ BabsCo, Inc.
 
     let note = &card.note.get(0).unwrap().value;
     assert_eq!(expected, note);
+    assert_round_trip(&card)?;
     Ok(())
 }
 
@@ -110,6 +121,7 @@ fn parse_folded_tab() -> Result<()> {
     let card = vcards.remove(0);
     let fname = card.formatted_name.get(0).unwrap();
     assert_eq!("Mr. John Q. Public, Esq.", fname.value);
+    assert_round_trip(&card)?;
     Ok(())
 }
 
@@ -138,6 +150,7 @@ END:VCARD"#;
     let param: TypeParameter = "work".parse()?;
     //assert_eq!(Some(tag), parameters.language);
     assert_eq!(&vec![param], parameters.types.as_ref().unwrap());
+    assert_round_trip(&card)?;
     Ok(())
 }
 
@@ -156,7 +169,7 @@ END:VCARD"#;
     let uri = Uri::try_from("https://example.com")?.into_owned();
     let url = card.url.get(0).unwrap();
     assert_eq!(uri, url.value);
-
+    assert_round_trip(&card)?;
     Ok(())
 }
 
@@ -179,7 +192,7 @@ END:VCARD"#;
     .to_owned();
     let url = card.source.get(0).unwrap();
     assert_eq!(uri, url.value);
-
+    assert_round_trip(&card)?;
     Ok(())
 }
 
@@ -197,15 +210,13 @@ END:VCARD"#;
 
     println!("{}", card);
 
-    /*
     let uri = Uri::try_from(
-        "ldap://ldap.example.com/cn=Babs%20Jensen,%20o=Babsco,%20c=US",
+        "http://directory.example.com/addressbooks/jdoe/Jean%20Dupont.vcf",
     )?
     .to_owned();
     let url = card.source.get(0).unwrap();
     assert_eq!(uri, url.value);
-    */
-
+    assert_round_trip(&card)?;
     Ok(())
 }
 
@@ -222,6 +233,7 @@ END:VCARD"#;
     let card = vcards.remove(0);
 
     assert_eq!(Kind::Individual, card.kind.as_ref().unwrap().value);
+    assert_round_trip(&card)?;
 
     let input = r#"BEGIN:VCARD
 VERSION:4.0
@@ -234,6 +246,7 @@ END:VCARD"#;
     let card = vcards.remove(0);
 
     assert_eq!(Kind::Org, card.kind.as_ref().unwrap().value);
+    assert_round_trip(&card)?;
 
     Ok(())
 }
@@ -254,6 +267,7 @@ END:VCARD"#;
     let card = vcards.remove(0);
     let fname = card.formatted_name.get(0).unwrap();
     assert_eq!("Mr. John Q. Public, Esq.", fname.value);
+    assert_round_trip(&card)?;
     Ok(())
 }
 
@@ -270,6 +284,7 @@ END:VCARD"#;
     let card = vcards.remove(0);
     let name = card.name.as_ref().unwrap();
     assert_eq!(vec!["Public", "John", "Quinlan", "Mr.", "Esq."], name.value);
+    assert_round_trip(&card)?;
     Ok(())
 }
 
@@ -286,6 +301,7 @@ END:VCARD"#;
     let card = vcards.remove(0);
     let name = card.name.as_ref().unwrap();
     assert_eq!(vec!["Public", "John", "Quinlan", "Mr.", "Esq."], name.value);
+    assert_round_trip(&card)?;
     Ok(())
 }
 
@@ -319,6 +335,7 @@ END:VCARD"#;
         .starts_with("data:image/jpeg;base64,"));
     assert!(photo2.value.to_string().ends_with("TeXN0"));
 
+    assert_round_trip(&card)?;
     Ok(())
 }
 
@@ -338,6 +355,7 @@ END:VCARD"#;
     let card = vcards.remove(0);
     assert_eq!(Sex::Male, card.gender.as_ref().unwrap().value.sex);
     assert_eq!(None, card.gender.as_ref().unwrap().value.identity);
+    assert_round_trip(&card)?;
 
     let input = r#"BEGIN:VCARD
 VERSION:4.0
@@ -350,6 +368,7 @@ END:VCARD"#;
     let card = vcards.remove(0);
     assert_eq!(Sex::Female, card.gender.as_ref().unwrap().value.sex);
     assert_eq!(None, card.gender.as_ref().unwrap().value.identity);
+    assert_round_trip(&card)?;
 
     let input = r#"BEGIN:VCARD
 VERSION:4.0
@@ -371,6 +390,7 @@ END:VCARD"#;
             .as_ref()
             .unwrap()
     );
+    assert_round_trip(&card)?;
 
     let input = r#"BEGIN:VCARD
 VERSION:4.0
@@ -392,6 +412,7 @@ END:VCARD"#;
             .as_ref()
             .unwrap()
     );
+    assert_round_trip(&card)?;
 
     let input = r#"BEGIN:VCARD
 VERSION:4.0
@@ -413,6 +434,7 @@ END:VCARD"#;
             .as_ref()
             .unwrap()
     );
+    assert_round_trip(&card)?;
 
     let input = r#"BEGIN:VCARD
 VERSION:4.0
@@ -434,6 +456,7 @@ END:VCARD"#;
             .as_ref()
             .unwrap()
     );
+    assert_round_trip(&card)?;
 
     Ok(())
 }
@@ -470,6 +493,7 @@ END:VCARD"#;
     } else {
         panic!("expecting text value for TZ");
     }
+    assert_round_trip(&card)?;
 
     let input = r#"BEGIN:VCARD
 VERSION:4.0
@@ -488,6 +512,7 @@ END:VCARD"#;
     } else {
         panic!("expecting utc-offset value for TZ");
     }
+    assert_round_trip(&card)?;
 
     let input = r#"BEGIN:VCARD
 VERSION:4.0
@@ -496,6 +521,7 @@ TZ;VALUE=uri:https://example.com/tz-database/acdt
 END:VCARD"#;
     let mut vcards = parse(input)?;
     assert_eq!(1, vcards.len());
+    assert_round_trip(&card)?;
 
     let card = vcards.remove(0);
 
@@ -509,6 +535,7 @@ END:VCARD"#;
     } else {
         panic!("expecting uri value for TZ");
     }
+    assert_round_trip(&card)?;
 
     Ok(())
 }
@@ -527,7 +554,7 @@ END:VCARD"#;
     let geo = card.geo.get(0).unwrap();
 
     assert_eq!("geo:37.386013,-122.082932", &geo.value.to_string());
-
+    assert_round_trip(&card)?;
     Ok(())
 }
 
@@ -545,6 +572,7 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
     assert_eq!("Research Scientist", card.title.get(0).unwrap().value);
+    assert_round_trip(&card)?;
     Ok(())
 }
 
@@ -560,6 +588,7 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
     assert_eq!("Project Leader", card.role.get(0).unwrap().value);
+    assert_round_trip(&card)?;
     Ok(())
 }
 
@@ -594,6 +623,7 @@ END:VCARD"#;
         .starts_with("data:image/jpeg;base64,"));
     assert!(logo2.value.to_string().ends_with("TeXN0"));
 
+    assert_round_trip(&card)?;
     Ok(())
 }
 
@@ -612,6 +642,7 @@ END:VCARD"#;
         vec!["ABC, Inc.", "North American Division", "Marketing"],
         card.org.get(0).unwrap().value
     );
+    assert_round_trip(&card)?;
     Ok(())
 }
 
@@ -657,6 +688,7 @@ END:VCARD"#;
         Uri::try_from("urn:uuid:b8767877-b4a1-4c70-9acc-505d3819e519")?,
         card.member.get(1).unwrap().value
     );
+    assert_round_trip(&card)?;
 
     let card = vcards.remove(0);
     if let TextOrUriProperty::Uri(UriProperty { value, .. }) =
@@ -669,6 +701,7 @@ END:VCARD"#;
     } else {
         panic!("expecting Uri for UID value");
     }
+    assert_round_trip(&card)?;
 
     let card = vcards.remove(0);
     if let TextOrUriProperty::Uri(UriProperty { value, .. }) =
@@ -681,6 +714,7 @@ END:VCARD"#;
     } else {
         panic!("expecting Uri for UID value");
     }
+    assert_round_trip(&card)?;
 
     let card = vcards.remove(0);
     assert_eq!(
@@ -699,6 +733,7 @@ END:VCARD"#;
         Uri::try_from("tel:+1-418-555-5555")?,
         card.member.get(3).unwrap().value
     );
+    assert_round_trip(&card)?;
 
     Ok(())
 }
@@ -729,6 +764,7 @@ END:VCARD"#;
     } else {
         panic!("expecting Uri for RELATED prop");
     }
+    assert_round_trip(&card)?;
 
     let input = r#"BEGIN:VCARD
 VERSION:4.0
@@ -754,6 +790,7 @@ END:VCARD"#;
     } else {
         panic!("expecting Uri for RELATED prop");
     }
+    assert_round_trip(&card)?;
 
     let input = r#"BEGIN:VCARD
 VERSION:4.0
@@ -780,6 +817,7 @@ END:VCARD"#;
     } else {
         panic!("expecting TEXT for RELATED prop");
     }
+    assert_round_trip(&card)?;
 
     Ok(())
 }
