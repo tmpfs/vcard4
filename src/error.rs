@@ -44,6 +44,10 @@ pub enum Error {
     #[error("related type value '{0}' is not supported")]
     UnknownRelatedTypeValue(String),
 
+    /// Error generated when a TYPE for a TEL property is not supported.
+    #[error("telephone type value '{0}' is not supported")]
+    UnknownTelephoneTypeValue(String),
+
     /// Error generated when a VALUE for a property is not supported.
     #[error("value '{0}' is not supported in this context '{1}'")]
     UnsupportedValueType(String, String),

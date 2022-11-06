@@ -167,6 +167,63 @@ impl FromStr for RelatedTypeValue {
     }
 }
 
+
+/// Enumeration of telephone types.
+#[derive(Debug, PartialEq)]
+pub enum TelephoneTypeValue {
+    /// Indicates that the telephone number supports 
+    /// text messages (SMS).
+    Text,
+    /// Indicates a voice telephone number.
+    Voice,
+    /// Indicates a facsimile telephone number.
+    Fax,
+    /// Indicates a cellular or mobile telephone number.
+    Cell,
+    /// Indicates a video conferencing telephone number.
+    Video,
+    /// Indicates a paging device telephone number.
+    Pager,
+    /// Indicates a telecommunication device for people with 
+    /// hearing or speech difficulties.  
+    TextPhone,
+}
+
+impl fmt::Display for TelephoneTypeValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Text => "text",
+                Self::Voice => "voice",
+                Self::Fax => "fax",
+                Self::Cell => "cell",
+                Self::Video => "video",
+                Self::Pager => "pager",
+                Self::TextPhone => "textphone",
+            }
+        )
+    }
+}
+
+impl FromStr for TelephoneTypeValue {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s {
+            "text" => Ok(Self::Text),
+            "voice" => Ok(Self::Voice),
+            "fax" => Ok(Self::Fax),
+            "cell" => Ok(Self::Cell),
+            "video" => Ok(Self::Video),
+            "pager" => Ok(Self::Pager),
+            "textphone" => Ok(Self::TextPhone),
+            _ => Err(Error::UnknownTelephoneTypeValue(s.to_string())),
+        }
+    }
+}
+
 /// Enumeration of the different types of values.
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

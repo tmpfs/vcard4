@@ -105,7 +105,8 @@ pub struct Vcard {
     pub related: Vec<TextOrUriProperty>,
 
     // Communications
-    //pub tel: Vec<Text>,
+    /// Value of the TEL property.
+    pub tel: Vec<TextOrUriProperty>,
     /// Value of the EMAIL property.
     pub email: Vec<TextProperty>,
     /// Value of the IMPP property.
