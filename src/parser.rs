@@ -472,7 +472,21 @@ impl VcardParser {
             // Communications
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.4
             "TEL" => {
-                todo!();
+                // Validate TEL TYPE parameter
+                if let Some(parameters) = &parameters {
+                    if let Some(types) = &parameters.types {
+                        for kind in types {
+                            let _: TelephoneTypeValue = kind.parse()?;
+                        }
+                    }
+                }
+
+                let value = self.parse_text_or_uri(
+                    value.as_ref(),
+                    parameters,
+                    group,
+                )?;
+                card.tel.push(value);
             }
             "EMAIL" => {
                 card.email.push(TextProperty {
@@ -600,11 +614,11 @@ impl VcardParser {
                 });
             }
             "RELATED" => {
-                // Validate related type parameter
+                // Validate RELATED TYPE parameter
                 if let Some(parameters) = &parameters {
                     if let Some(types) = &parameters.types {
-                        for related_type in types {
-                            let _: RelatedTypeValue = related_type.parse()?;
+                        for kind in types {
+                            let _: RelatedTypeValue = kind.parse()?;
                         }
                     }
                 }
