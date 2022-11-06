@@ -29,6 +29,10 @@ pub enum Error {
     #[error("property value is invalid")]
     InvalidPropertyValue,
 
+    /// Error generated when a delivery address (`ADR`) is invalid.
+    #[error("delivery address '{0}' is invalid")]
+    InvalidAddress(String),
+
     /// Error generated when a LABEL parameter is specified on a property
     /// other than ADR.
     #[error("parameter LABEL can only be applied to ADR but used on '{0}'")]
@@ -52,11 +56,11 @@ pub enum Error {
 
     /// Error generated when a TYPE for a RELATED property is not supported.
     #[error("related type value '{0}' is not supported")]
-    UnknownRelatedTypeValue(String),
+    UnknownRelatedType(String),
 
     /// Error generated when a TYPE for a TEL property is not supported.
     #[error("telephone type value '{0}' is not supported")]
-    UnknownTelephoneTypeValue(String),
+    UnknownTelephoneType(String),
 
     /// Error generated when a VALUE for a property is not supported.
     #[error("value '{0}' is not supported in this context '{1}'")]

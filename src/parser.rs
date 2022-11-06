@@ -507,7 +507,12 @@ impl VcardParser {
             // Delivery Addressing
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.3
             ADR => {
-                todo!()
+                let value: DeliveryAddress = value.as_ref().parse()?;
+                card.address.push(AddressProperty {
+                    value,
+                    parameters,
+                    group,
+                });
             }
 
             // Communications

@@ -58,9 +58,9 @@ pub enum TypeParameter {
     /// Related to a work environment.
     Work,
     /// Type for the TEL property.
-    Telephone(TelephoneTypeValue),
+    Telephone(TelephoneType),
     /// Type for the RELATED property.
-    Related(RelatedTypeValue),
+    Related(RelatedType),
 }
 
 impl fmt::Display for TypeParameter {
@@ -81,7 +81,7 @@ impl FromStr for TypeParameter {
         match s {
             "home" => Ok(Self::Home),
             "work" => Ok(Self::Work),
-            _ => match s.parse::<TelephoneTypeValue>() {
+            _ => match s.parse::<TelephoneType>() {
                 Ok(tel) => Ok(Self::Telephone(tel)),
                 Err(_) => Ok(Self::Related(s.parse()?)),
             },
@@ -136,7 +136,7 @@ impl FromStr for Pid {
 #[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
-pub enum RelatedTypeValue {
+pub enum RelatedType {
     /// Contact relationship.
     Contact,
     /// Acquaintance relationship.
@@ -179,7 +179,7 @@ pub enum RelatedTypeValue {
     Emergency,
 }
 
-impl fmt::Display for RelatedTypeValue {
+impl fmt::Display for RelatedType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -210,7 +210,7 @@ impl fmt::Display for RelatedTypeValue {
     }
 }
 
-impl FromStr for RelatedTypeValue {
+impl FromStr for RelatedType {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
@@ -235,7 +235,7 @@ impl FromStr for RelatedTypeValue {
             "me" => Ok(Self::Me),
             "agent" => Ok(Self::Agent),
             "emergency" => Ok(Self::Emergency),
-            _ => Err(Error::UnknownRelatedTypeValue(s.to_string())),
+            _ => Err(Error::UnknownRelatedType(s.to_string())),
         }
     }
 }
@@ -244,7 +244,7 @@ impl FromStr for RelatedTypeValue {
 #[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
-pub enum TelephoneTypeValue {
+pub enum TelephoneType {
     /// Indicates that the telephone number supports
     /// text messages (SMS).
     Text,
@@ -263,7 +263,7 @@ pub enum TelephoneTypeValue {
     TextPhone,
 }
 
-impl fmt::Display for TelephoneTypeValue {
+impl fmt::Display for TelephoneType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -281,7 +281,7 @@ impl fmt::Display for TelephoneTypeValue {
     }
 }
 
-impl FromStr for TelephoneTypeValue {
+impl FromStr for TelephoneType {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
@@ -293,7 +293,7 @@ impl FromStr for TelephoneTypeValue {
             "video" => Ok(Self::Video),
             "pager" => Ok(Self::Pager),
             "textphone" => Ok(Self::TextPhone),
-            _ => Err(Error::UnknownTelephoneTypeValue(s.to_string())),
+            _ => Err(Error::UnknownTelephoneType(s.to_string())),
         }
     }
 }

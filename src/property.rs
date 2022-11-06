@@ -80,6 +80,67 @@ impl fmt::Display for DeliveryAddress {
     }
 }
 
+impl FromStr for DeliveryAddress {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let mut it = s.splitn(7, ';');
+        let po_box = it
+            .next()
+            .ok_or_else(|| Error::InvalidAddress(s.to_string()))?;
+        let extended_address = it
+            .next()
+            .ok_or_else(|| Error::InvalidAddress(s.to_string()))?;
+        let street_address = it
+            .next()
+            .ok_or_else(|| Error::InvalidAddress(s.to_string()))?;
+        let locality = it
+            .next()
+            .ok_or_else(|| Error::InvalidAddress(s.to_string()))?;
+        let region = it
+            .next()
+            .ok_or_else(|| Error::InvalidAddress(s.to_string()))?;
+        let postal_code = it
+            .next()
+            .ok_or_else(|| Error::InvalidAddress(s.to_string()))?;
+        let country_name = it
+            .next()
+            .ok_or_else(|| Error::InvalidAddress(s.to_string()))?;
+
+        let po_box = if !po_box.is_empty() {
+            Some(po_box.to_owned())
+        } else { None };
+        let extended_address = if !extended_address.is_empty() {
+            Some(extended_address.to_owned())
+        } else { None };
+        let street_address = if !street_address.is_empty() {
+            Some(street_address.to_owned())
+        } else { None };
+        let locality = if !locality.is_empty() {
+            Some(locality.to_owned())
+        } else { None };
+        let region = if !region.is_empty() {
+            Some(region.to_owned())
+        } else { None };
+        let postal_code = if !postal_code.is_empty() {
+            Some(postal_code.to_owned())
+        } else { None };
+        let country_name = if !country_name.is_empty() {
+            Some(country_name.to_owned())
+        } else { None };
+
+        Ok(Self {
+            po_box,
+            extended_address,
+            street_address,
+            locality,
+            region,
+            postal_code,
+            country_name,
+        })
+    }
+}
+
 /// The ADR property.
 #[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
