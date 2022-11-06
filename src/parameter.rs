@@ -83,10 +83,7 @@ impl FromStr for TypeParameter {
             "work" => Ok(Self::Work),
             _ => match s.parse::<TelephoneTypeValue>() {
                 Ok(tel) => Ok(Self::Telephone(tel)),
-                Err(_) => {
-                    let rel: RelatedTypeValue = s.parse()?;
-                    Ok(Self::Related(rel))
-                }
+                Err(_) => Ok(Self::Related(s.parse()?)),
             },
         }
     }
@@ -118,14 +115,13 @@ impl FromStr for Pid {
 
     fn from_str(s: &str) -> Result<Self> {
         let mut parts = s.splitn(2, '.');
-        let major = parts.next().ok_or_else(|| Error::InvalidPid(s.to_string()))?;
+        let major = parts
+            .next()
+            .ok_or_else(|| Error::InvalidPid(s.to_string()))?;
         let major: u64 = major
             .parse()
             .map_err(|_| Error::InvalidPid(s.to_string()))?;
-        let mut pid = Pid {
-            major,
-            minor: None,
-        };
+        let mut pid = Pid { major, minor: None };
         if let Some(minor) = parts.next() {
             let minor: u64 = minor
                 .parse()

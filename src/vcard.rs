@@ -238,12 +238,17 @@ impl fmt::Display for Vcard {
             write!(f, "{}\r\n", content_line(val, CALURI))?;
         }
 
+        // Private property extensions
+        for val in &self.extensions {
+            write!(f, "{}\r\n", content_line(val, &val.name))?;
+        }
+
         write!(f, "{}\r\n", END)
     }
 }
 
 /// Get a content line.
-fn content_line(prop: &impl Property, prop_name: &'static str) -> String {
+fn content_line(prop: &impl Property, prop_name: &str) -> String {
     let name = qualified_name(prop, prop_name);
 
     let params = if let Some(params) = prop.parameters() {

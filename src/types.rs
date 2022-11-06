@@ -91,6 +91,19 @@ pub enum Integer {
     Many(Vec<i64>),
 }
 
+impl fmt::Display for Integer {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::One(ref val) => write!(f, "{}", val),
+            Self::Many(ref val) => {
+                let values: Vec<String> =
+                    val.iter().map(|v| v.to_string()).collect();
+                write!(f, "{}", values.join(","))
+            }
+        }
+    }
+}
+
 impl FromStr for Integer {
     type Err = Error;
 
@@ -120,6 +133,19 @@ pub enum Float {
 }
 
 impl Eq for Float {}
+
+impl fmt::Display for Float {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::One(ref val) => write!(f, "{}", val),
+            Self::Many(ref val) => {
+                let values: Vec<String> =
+                    val.iter().map(|v| v.to_string()).collect();
+                write!(f, "{}", values.join(","))
+            }
+        }
+    }
+}
 
 impl FromStr for Float {
     type Err = Error;
@@ -161,10 +187,12 @@ impl FromStr for ClientPidMap {
 
     fn from_str(s: &str) -> Result<Self> {
         let mut it = s.splitn(2, ';');
-        let source =
-            it.next().ok_or_else(|| Error::InvalidClientPidMap(s.to_string()))?;
-        let uri =
-            it.next().ok_or_else(|| Error::InvalidClientPidMap(s.to_string()))?;
+        let source = it
+            .next()
+            .ok_or_else(|| Error::InvalidClientPidMap(s.to_string()))?;
+        let uri = it
+            .next()
+            .ok_or_else(|| Error::InvalidClientPidMap(s.to_string()))?;
         let source: u64 = source.parse()?;
 
         // Must be positive according to the RFC

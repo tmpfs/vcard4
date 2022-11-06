@@ -167,6 +167,25 @@ pub enum AnyProperty {
     Language(String),
 }
 
+impl fmt::Display for AnyProperty {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Text(val) => write!(f, "{}", val),
+            Self::Integer(val) => write!(f, "{}", val),
+            Self::Float(val) => write!(f, "{}", val),
+            Self::Boolean(val) => write!(f, "{}", val),
+            Self::Date(val) => write!(f, "{}", val),
+            Self::DateTime(val) => write!(f, "{}", val),
+            Self::Time(val) => write!(f, "{}", val),
+            Self::DateAndOrTime(val) => write!(f, "{}", val),
+            Self::Timestamp(val) => write!(f, "{}", val),
+            Self::Uri(val) => write!(f, "{}", val),
+            Self::UtcOffset(val) => write!(f, "{}", val),
+            Self::Language(val) => write!(f, "{}", val),
+        }
+    }
+}
+
 /// Language property.
 #[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -659,11 +678,12 @@ display_impl!(ClientPidMapProperty);
 property_impl!(GenderProperty);
 display_impl!(GenderProperty);
 
+property_impl!(ExtensionProperty);
+display_impl!(ExtensionProperty);
+
 // Bespoke Display implementations
 property_impl!(TextListProperty);
 property_impl!(UtcOffsetProperty);
-
-//property_impl!(ExtensionProperty);
 
 #[cfg(test)]
 mod tests {
