@@ -1,9 +1,11 @@
 //! Parse vCards based on [RFC6350](https://www.rfc-editor.org/rfc/rfc6350).
 
-use language_tags::LanguageTag;
 use logos::{Lexer, Logos};
 use std::{borrow::Cow, ops::Range};
 use uriparse::uri::URI as Uri;
+
+#[cfg(feature = "language-tags")]
+use language_tags::LanguageTag;
 
 #[cfg(feature = "mime")]
 use mime::Mime;
@@ -208,7 +210,7 @@ impl VcardParser {
 
                 match &upper_name[..] {
                     "LANGUAGE" => {
-                        let tag: LanguageTag = value.parse()?;
+                        let tag = parse_language_tag(Cow::Owned(value))?;
                         params.language = Some(tag);
                     }
                     "VALUE" => {
@@ -538,7 +540,7 @@ impl VcardParser {
                 });
             }
             "LANG" => {
-                let value: LanguageTag = value.as_ref().parse()?;
+                let value = parse_language_tag(value)?;
                 card.lang.push(LanguageProperty {
                     value,
                     parameters,
@@ -830,7 +832,7 @@ impl VcardParser {
                     AnyProperty::Timestamp(parse_date_time(value.as_ref())?)
                 }
                 ValueType::LanguageTag => {
-                    AnyProperty::Language(value.as_ref().parse()?)
+                    AnyProperty::Language(parse_language_tag(value)?)
                 }
                 ValueType::UtcOffset => {
                     let property: UtcOffsetProperty =
@@ -1042,3 +1044,15 @@ fn parse_media_type(value: String, params: &mut Parameters) -> Result<()> {
     params.media_type = Some(value);
     Ok(())
 }
+
+#[cfg(feature = "language-tags")]
+fn parse_language_tag<'a>(value: Cow<'a, str>) -> Result<LanguageTag> {
+    let tag: LanguageTag = value.as_ref().parse()?;
+    Ok(tag)
+}
+
+#[cfg(not(feature = "language-tags"))]
+fn parse_language_tag<'a>(value: Cow<'a, str>) -> Result<String> {
+    Ok(value.into_owned())
+}
+

@@ -9,19 +9,22 @@
 //! securely zero the memory for all the data in a vCard when it is
 //! dropped.
 //!
-//! Certain external types cannot be zeroize'd and are therefore exempt:
+//! Certain external types cannot be zeroize'd due to the restrictions on 
+//! implementing external traits on external types and are therefore exempt:
 //!
-//! * `LanguageTag`
 //! * `Uri`
-//! * `UtcOffset`
-//! * `OffsetDateTime`
-//! * `Time`
-//! * `Mime`
-//!
-//! Serde support can be enabled by using the `serde` feature.
+//! * `Time` / `UtcOffset` / `OffsetDateTime`
+//! * `LanguageTag` (feature: `language-tags`)
+//! * `Mime` (feature: `mime`)
 //!
 //! If the `mime` feature is enabled the MEDIATYPE parameter is parsed 
 //! to a `Mime` struct otherwise it is a `String`.
+//!
+//! If the `language-tags` feature is enabled the LANG property 
+//! and the LANGUAGE parameter are parsed using the 
+//! [language-tags](https://docs.rs/language-tags/latest/language_tags/) crate.
+//!
+//! Serde support can be enabled with the `serde` feature.
 
 mod error;
 pub mod parameters;

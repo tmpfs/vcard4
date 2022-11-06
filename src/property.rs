@@ -1,12 +1,14 @@
 //! Types for properties.
 
-use language_tags::LanguageTag;
 use std::{
     fmt::{self, Debug},
     str::FromStr,
 };
 use time::{Date, OffsetDateTime, Time, UtcOffset};
 use uriparse::uri::URI as Uri;
+
+#[cfg(feature = "language-tags")]
+use language_tags::LanguageTag;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -117,9 +119,14 @@ pub enum AnyProperty {
     /// UTC offset property.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     UtcOffset(UtcOffset),
-    /// Lanugage property.
+    /// Language property.
+    #[cfg(feature = "language-tags")]
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     Language(LanguageTag),
+
+    /// Language property.
+    #[cfg(not(feature = "language-tags"))]
+    Language(String),
 }
 
 /// Language property.
@@ -130,8 +137,14 @@ pub struct LanguageProperty {
     /// Group for this property.
     pub group: Option<String>,
     /// The value for the property.
+    #[cfg(feature = "language-tags")]
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     pub value: LanguageTag,
+
+    /// The value for the property.
+    #[cfg(not(feature = "language-tags"))]
+    pub value: String,
+
     /// The property parameters.
     pub parameters: Option<Parameters>,
 }

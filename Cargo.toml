@@ -14,13 +14,14 @@ time = { version = "0.3", features = ["parsing"] }
 serde = { version = "1", features = ["derive"], optional = true }
 zeroize = { version = "1.5", features = ["derive"], optional = true }
 mime = { version = "0.3", optional = true }
-language-tags = "0.3"
+language-tags = { version = "0.3", optional = true }
 
 [features]
 default = ["zeroize"]
 serde = ["dep:serde", "time/serde", "language-tags/serde", "uriparse/serde"]
 zeroize = ["dep:zeroize"]
 mime = ["dep:mime"]
+language-tags = ["dep:language-tags"]
 
 [dev-dependencies]
 anyhow = "1"

@@ -1,12 +1,14 @@
 //! Types for property parameters.
 
-use language_tags::LanguageTag;
 use std::{
     fmt::{self, Debug},
     str::FromStr,
 };
 use time::UtcOffset;
 use uriparse::uri::URI as Uri;
+
+#[cfg(feature = "language-tags")]
+use language_tags::LanguageTag;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -407,8 +409,14 @@ pub enum TimeZoneParameter {
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct Parameters {
     /// The LANGUAGE tag.
+    #[cfg(feature = "language-tags")]
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     pub language: Option<LanguageTag>,
+
+    /// The LANGUAGE tag.
+    #[cfg(not(feature = "language-tags"))]
+    pub language: Option<String>,
+
     /// The VALUE type hint.
     pub value: Option<ValueType>,
     /// The PREF hint.
