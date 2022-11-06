@@ -1,8 +1,5 @@
 //! Custom data types.
-use std::{
-    fmt::{self, Debug},
-    str::FromStr,
-};
+use std::{fmt, str::FromStr};
 use time::{
     format_description::well_known::Iso8601, Date, OffsetDateTime, Time,
 };
@@ -30,7 +27,6 @@ pub(crate) fn parse_date_time(s: &str) -> Result<OffsetDateTime> {
 
 pub(crate) fn parse_timestamp(s: &str) -> Result<OffsetDateTime> {
     parse_date_time(s)
-    //Ok(OffsetDateTime::parse(s, &Iso8601::DEFAULT)?)
 }
 
 pub(crate) fn parse_boolean(s: &str) -> Result<bool> {
@@ -51,6 +47,16 @@ pub enum DateAndOrTime {
     DateTime(OffsetDateTime),
     /// Time value.
     Time(Time),
+}
+
+impl fmt::Display for DateAndOrTime {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Date(val) => write!(f, "{}", val),
+            Self::DateTime(val) => write!(f, "{}", val),
+            Self::Time(val) => write!(f, "{}", val),
+        }
+    }
 }
 
 impl FromStr for DateAndOrTime {

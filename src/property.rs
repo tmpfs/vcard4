@@ -52,6 +52,34 @@ pub struct DeliveryAddress {
     pub country_name: Option<String>,
 }
 
+impl fmt::Display for DeliveryAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{};{};{};{};{};{};{}",
+            self.po_box.as_ref().map(|s| &s[..]).unwrap_or_else(|| ""),
+            self.extended_address
+                .as_ref()
+                .map(|s| &s[..])
+                .unwrap_or_else(|| ""),
+            self.street_address
+                .as_ref()
+                .map(|s| &s[..])
+                .unwrap_or_else(|| ""),
+            self.locality.as_ref().map(|s| &s[..]).unwrap_or_else(|| ""),
+            self.region.as_ref().map(|s| &s[..]).unwrap_or_else(|| ""),
+            self.postal_code
+                .as_ref()
+                .map(|s| &s[..])
+                .unwrap_or_else(|| ""),
+            self.country_name
+                .as_ref()
+                .map(|s| &s[..])
+                .unwrap_or_else(|| ""),
+        )
+    }
+}
+
 /// The ADR property.
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -195,6 +223,31 @@ pub enum TextOrUriProperty {
     Uri(UriProperty),
 }
 
+impl Property for TextOrUriProperty {
+    fn group(&self) -> Option<&String> {
+        match self {
+            Self::Text(val) => val.group(),
+            Self::Uri(val) => val.group(),
+        }
+    }
+
+    fn parameters(&self) -> Option<&Parameters> {
+        match self {
+            Self::Text(val) => val.parameters(),
+            Self::Uri(val) => val.parameters(),
+        }
+    }
+}
+
+impl fmt::Display for TextOrUriProperty {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Text(val) => write!(f, "{}", val),
+            Self::Uri(val) => write!(f, "{}", val),
+        }
+    }
+}
+
 /// Either text or a date and or time.
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -205,6 +258,31 @@ pub enum DateTimeOrTextProperty {
     DateTime(DateAndOrTimeProperty),
     /// Text value.
     Text(TextProperty),
+}
+
+impl Property for DateTimeOrTextProperty {
+    fn group(&self) -> Option<&String> {
+        match self {
+            Self::Text(val) => val.group(),
+            Self::DateTime(val) => val.group(),
+        }
+    }
+
+    fn parameters(&self) -> Option<&Parameters> {
+        match self {
+            Self::Text(val) => val.parameters(),
+            Self::DateTime(val) => val.parameters(),
+        }
+    }
+}
+
+impl fmt::Display for DateTimeOrTextProperty {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Text(val) => write!(f, "{}", val),
+            Self::DateTime(val) => write!(f, "{}", val),
+        }
+    }
 }
 
 /// Value for a UTC offset property.
@@ -282,6 +360,34 @@ pub enum TimeZoneProperty {
     UtcOffset(UtcOffsetProperty),
 }
 
+impl Property for TimeZoneProperty {
+    fn group(&self) -> Option<&String> {
+        match self {
+            Self::Text(val) => val.group(),
+            Self::Uri(val) => val.group(),
+            Self::UtcOffset(val) => val.group(),
+        }
+    }
+
+    fn parameters(&self) -> Option<&Parameters> {
+        match self {
+            Self::Text(val) => val.parameters(),
+            Self::Uri(val) => val.parameters(),
+            Self::UtcOffset(val) => val.parameters(),
+        }
+    }
+}
+
+impl fmt::Display for TimeZoneProperty {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Text(val) => write!(f, "{}", val),
+            Self::Uri(val) => write!(f, "{}", val),
+            Self::UtcOffset(val) => write!(f, "{}", val),
+        }
+    }
+}
+
 /// Text property value.
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -308,6 +414,12 @@ pub struct TextListProperty {
     pub parameters: Option<Parameters>,
 }
 
+impl fmt::Display for TextListProperty {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.value.join(","))
+    }
+}
+
 /// Uri property value.
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -320,22 +432,6 @@ pub struct UriProperty {
     pub value: Uri<'static>,
     /// Parameters for this property.
     pub parameters: Option<Parameters>,
-}
-
-impl Property for UriProperty {
-    fn group(&self) -> Option<&String> {
-        self.group.as_ref()
-    }
-
-    fn parameters(&self) -> Option<&Parameters> {
-        self.parameters.as_ref()
-    }
-}
-
-impl fmt::Display for UriProperty {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.value)
-    }
 }
 
 /// Property for a vCard kind.
@@ -508,6 +604,63 @@ impl FromStr for Sex {
         }
     }
 }
+
+macro_rules! property_impl {
+    ($prop:ty) => {
+        impl Property for $prop {
+            fn group(&self) -> Option<&String> {
+                self.group.as_ref()
+            }
+
+            fn parameters(&self) -> Option<&Parameters> {
+                self.parameters.as_ref()
+            }
+        }
+    };
+}
+
+macro_rules! display_impl {
+    ($prop:ty) => {
+        impl fmt::Display for $prop {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                write!(f, "{}", self.value)
+            }
+        }
+    };
+}
+
+property_impl!(AddressProperty);
+display_impl!(AddressProperty);
+
+property_impl!(UriProperty);
+display_impl!(UriProperty);
+
+property_impl!(KindProperty);
+display_impl!(KindProperty);
+
+property_impl!(TextProperty);
+display_impl!(TextProperty);
+
+property_impl!(LanguageProperty);
+display_impl!(LanguageProperty);
+
+property_impl!(DateTimeProperty);
+display_impl!(DateTimeProperty);
+
+property_impl!(DateAndOrTimeProperty);
+display_impl!(DateAndOrTimeProperty);
+
+property_impl!(ClientPidMapProperty);
+display_impl!(ClientPidMapProperty);
+
+property_impl!(GenderProperty);
+display_impl!(GenderProperty);
+
+// Bespoke Display implementations
+property_impl!(TextListProperty);
+property_impl!(UtcOffsetProperty);
+
+//property_impl!(ExtensionProperty);
 
 #[cfg(test)]
 mod tests {

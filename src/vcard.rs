@@ -41,6 +41,10 @@ pub struct Vcard {
     /// Value of the URL property.
     pub url: Vec<UriProperty>,
 
+    // Delivery Addressing
+    /// Value of the ADR property.
+    pub address: Vec<AddressProperty>,
+
     // Organizational
     /// Value of the TITLE property.
     pub title: Vec<TextProperty>,
@@ -111,8 +115,127 @@ impl fmt::Display for Vcard {
         use crate::name::*;
         write!(f, "{}\r\n{}\r\n", BEGIN, VERSION_4)?;
 
+        // General
         for val in &self.source {
             write!(f, "{}\r\n", content_line(val, SOURCE))?;
+        }
+        for val in &self.kind {
+            write!(f, "{}\r\n", content_line(val, KIND))?;
+        }
+        for val in &self.xml {
+            write!(f, "{}\r\n", content_line(val, XML))?;
+        }
+
+        // Identification
+        for val in &self.formatted_name {
+            write!(f, "{}\r\n", content_line(val, FN))?;
+        }
+        for val in &self.name {
+            write!(f, "{}\r\n", content_line(val, N))?;
+        }
+        for val in &self.nickname {
+            write!(f, "{}\r\n", content_line(val, NICKNAME))?;
+        }
+        for val in &self.photo {
+            write!(f, "{}\r\n", content_line(val, PHOTO))?;
+        }
+        for val in &self.bday {
+            write!(f, "{}\r\n", content_line(val, BDAY))?;
+        }
+        for val in &self.anniversary {
+            write!(f, "{}\r\n", content_line(val, ANNIVERSARY))?;
+        }
+        for val in &self.gender {
+            write!(f, "{}\r\n", content_line(val, GENDER))?;
+        }
+        for val in &self.url {
+            write!(f, "{}\r\n", content_line(val, URL))?;
+        }
+
+        // Delivery Addressing
+        for val in &self.address {
+            write!(f, "{}\r\n", content_line(val, ADR))?;
+        }
+
+        // Organizational
+        for val in &self.title {
+            write!(f, "{}\r\n", content_line(val, TITLE))?;
+        }
+        for val in &self.role {
+            write!(f, "{}\r\n", content_line(val, ROLE))?;
+        }
+        for val in &self.logo {
+            write!(f, "{}\r\n", content_line(val, LOGO))?;
+        }
+        for val in &self.org {
+            write!(f, "{}\r\n", content_line(val, ORG))?;
+        }
+        for val in &self.member {
+            write!(f, "{}\r\n", content_line(val, MEMBER))?;
+        }
+        for val in &self.related {
+            write!(f, "{}\r\n", content_line(val, RELATED))?;
+        }
+
+        // Communications
+        for val in &self.tel {
+            write!(f, "{}\r\n", content_line(val, TEL))?;
+        }
+        for val in &self.email {
+            write!(f, "{}\r\n", content_line(val, EMAIL))?;
+        }
+        for val in &self.impp {
+            write!(f, "{}\r\n", content_line(val, IMPP))?;
+        }
+        for val in &self.lang {
+            write!(f, "{}\r\n", content_line(val, LANG))?;
+        }
+
+        // Geographic
+        for val in &self.timezone {
+            write!(f, "{}\r\n", content_line(val, TZ))?;
+        }
+        for val in &self.geo {
+            write!(f, "{}\r\n", content_line(val, GEO))?;
+        }
+
+        // Explanatory
+        for val in &self.categories {
+            write!(f, "{}\r\n", content_line(val, CATEGORIES))?;
+        }
+        for val in &self.note {
+            write!(f, "{}\r\n", content_line(val, NOTE))?;
+        }
+        for val in &self.prod_id {
+            write!(f, "{}\r\n", content_line(val, PRODID))?;
+        }
+        for val in &self.rev {
+            write!(f, "{}\r\n", content_line(val, REV))?;
+        }
+        for val in &self.sound {
+            write!(f, "{}\r\n", content_line(val, SOUND))?;
+        }
+        for val in &self.uid {
+            write!(f, "{}\r\n", content_line(val, UID))?;
+        }
+        for val in &self.client_pid_map {
+            write!(f, "{}\r\n", content_line(val, CLIENTPIDMAP))?;
+        }
+
+        // Security
+        for val in &self.key {
+            write!(f, "{}\r\n", content_line(val, KEY))?;
+        }
+
+        // Calendar
+        for val in &self.fburl {
+            write!(f, "{}\r\n", content_line(val, FBURL))?;
+        }
+        for val in &self.cal_adr_uri {
+            write!(f, "{}\r\n", content_line(val, CALADRURI))?;
+        }
+        for val in &self.cal_uri {
+            write!(f, "{}\r\n", content_line(val, CALURI))?;
         }
 
         write!(f, "{}\r\n", END)
