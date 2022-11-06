@@ -73,4 +73,19 @@ END:VCARD"#;
     Ok(())
 }
 
-// TODO: XML
+#[test]
+fn parse_xml() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Jane Doe
+XML:<root></root>
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+    let card = vcards.remove(0);
+
+    let xml = card.xml.get(0).unwrap();
+    assert_eq!("<root></root>", &xml.value);
+    assert_round_trip(&card)?;
+    Ok(())
+}

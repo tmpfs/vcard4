@@ -25,6 +25,12 @@
 //! [language-tags](https://docs.rs/language-tags/latest/language_tags/) crate.
 //!
 //! Serde support can be enabled with the `serde` feature.
+//!
+//! ## Implementation
+//!
+//! * The `XML` property is parsed and propagated but it is not 
+//!   validated per RFC as it is optional.
+//! * IANA Tokens are not implemented.
 
 mod error;
 mod name;
