@@ -323,7 +323,7 @@ impl VcardParser {
                         params.label = Some(value);
                     }
                     _ => {
-                        return Err(Error::UnknownParameterName(
+                        return Err(Error::UnknownParameter(
                             parameter_name.to_string(),
                         ))
                     }
@@ -336,6 +336,8 @@ impl VcardParser {
                 } else {
                     next = lex.next();
                 }
+            } else {
+                return Err(Error::UnknownParameter(lex.slice().to_string()));
             }
         }
         Ok(params)

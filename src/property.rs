@@ -1,7 +1,7 @@
 //! Types for properties.
 
 use std::{
-    fmt::{self, Debug},
+    fmt::{self, Display},
     str::FromStr,
 };
 use time::{Date, OffsetDateTime, Time, UtcOffset};
@@ -21,6 +21,15 @@ use crate::{
     types::{ClientPidMap, DateAndOrTime, Float, Integer},
     Error, Result,
 };
+
+/// Trait for vCard properties.
+pub trait Property: Display {
+    /// Get the property group.
+    fn group(&self) -> Option<&String>;
+
+    /// Get the property parameters.
+    fn parameters(&self) -> Option<&Parameters>;
+}
 
 /// Delivery address for the ADR property.
 #[derive(Debug, PartialEq)]
@@ -311,6 +320,22 @@ pub struct UriProperty {
     pub value: Uri<'static>,
     /// Parameters for this property.
     pub parameters: Option<Parameters>,
+}
+
+impl Property for UriProperty {
+    fn group(&self) -> Option<&String> {
+        self.group.as_ref()
+    }
+
+    fn parameters(&self) -> Option<&Parameters> {
+        self.parameters.as_ref()
+    }
+}
+
+impl fmt::Display for UriProperty {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.value)
+    }
 }
 
 /// Property for a vCard kind.

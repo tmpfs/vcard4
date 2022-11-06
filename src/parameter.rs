@@ -457,3 +457,68 @@ pub struct Parameters {
     /// This only applies to the ADR property.
     pub label: Option<String>,
 }
+
+impl fmt::Display for Parameters {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use crate::name::*;
+        if let Some(language) = &self.language {
+            write!(f, ";{}={}", LANGUAGE, language)?;
+        }
+        if let Some(value) = &self.value {
+            write!(f, ";{}={}", VALUE, value)?;
+        }
+        if let Some(pref) = &self.pref {
+            write!(f, ";{}={}", PREF, pref)?;
+        }
+        if let Some(alt_id) = &self.alt_id {
+            write!(f, ";{}={}", ALTID, alt_id)?;
+        }
+        if let Some(pids) = &self.pid {
+            write!(f, ";{}={}", PID, comma_delimited(pids))?;
+        }
+        if let Some(types) = &self.types {
+            write!(f, ";{}={}", TYPE, comma_delimited(types))?;
+        }
+        if let Some(media_type) = &self.media_type {
+            write!(f, ";{}={}", MEDIATYPE, media_type)?;
+        }
+        if let Some(calscale) = &self.calscale {
+            write!(f, ";{}={}", CALSCALE, calscale)?;
+        }
+        if let Some(sort_as) = &self.sort_as {
+            write!(f, ";{}=\"{}\"", SORT_AS, comma_delimited(sort_as))?;
+        }
+        if let Some(geo) = &self.geo {
+            write!(f, ";{}=\"{}\"", GEO, geo)?;
+        }
+        if let Some(tz) = &self.timezone {
+            match tz {
+                TimeZoneParameter::Text(val) => {
+                    write!(f, ";{}={}", TZ, val)?;
+                }
+                TimeZoneParameter::UtcOffset(val) => {
+                    write!(f, ";{}={}", TZ, val)?;
+                }
+                // URI must be quoted
+                TimeZoneParameter::Uri(val) => {
+                    write!(f, ";{}=\"{}\"", TZ, val)?;
+                }
+            }
+        }
+        if let Some(label) = &self.label {
+            write!(f, ";{}={}", LABEL, label)?;
+        }
+        Ok(())
+    }
+}
+
+fn comma_delimited(items: &Vec<impl std::fmt::Display>) -> String {
+    let mut value = String::new();
+    for (index, item) in items.iter().enumerate() {
+        value.push_str(&item.to_string());
+        if index < items.len() - 1 {
+            value.push(',');
+        }
+    }
+    value
+}

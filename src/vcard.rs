@@ -1,6 +1,9 @@
 //! Type for vCards.
 
-use std::fmt::Debug;
+use std::{
+    fmt,
+    borrow::Cow,
+};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -104,4 +107,59 @@ pub struct Vcard {
     // Extensions
     /// Private property extensions (`X-`).
     pub extensions: Vec<ExtensionProperty>,
+}
+
+impl fmt::Display for Vcard {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use crate::name::*;
+        write!(f, "{}\r\n{}\r\n", BEGIN, VERSION_4)?;
+
+        for val in &self.source {
+            write!(f, "{}\r\n", content_line(val, SOURCE))?;
+        }
+
+        write!(f, "{}\r\n", END)
+    }
+}
+
+/// Get a content line.
+fn content_line(prop: &impl Property, prop_name: &'static str) -> String {
+    let name = qualified_name(prop, prop_name);
+
+    let params = if let Some(params) = prop.parameters() {
+        params.to_string()
+    } else { String::new() };
+
+    // Handle escape sequences
+    let value = prop.to_string();
+    let value = value.replace("\\", "\\\\");
+    let value = value.replace("\n", "\\n");
+    let value = value.replace(",", "\\,");
+    let value = value.replace(";", "\\;");
+
+    let line = format!("{}{}:{}", name, params, value);
+    fold_line(line, 75)
+}
+
+fn fold_line(line: String, wrap_at: usize) -> String {
+    use unicode_segmentation::UnicodeSegmentation;
+    let mut length = 0;
+    let mut folded_line = String::new();
+    for grapheme in UnicodeSegmentation::graphemes(&line[..], true) {
+        length += grapheme.len();
+        if length % wrap_at == 0 {
+            folded_line.push_str("\r\n ");
+        }
+        folded_line.push_str(grapheme);
+    }
+    folded_line
+}
+
+/// Get the fully qualified name including any group.
+fn qualified_name<'a>(prop: &impl Property, prop_name: &'a str) -> Cow<'a, str> {
+    if let Some(group) = prop.group() {
+        Cow::Owned(format!("{}.{}", group, prop_name))
+    } else {
+        Cow::Borrowed(prop_name)
+    }
 }

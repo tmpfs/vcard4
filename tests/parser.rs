@@ -172,12 +172,39 @@ END:VCARD"#;
     let mut vcards = parse(input)?;
     assert_eq!(1, vcards.len());
     let card = vcards.remove(0);
+
     let uri = Uri::try_from(
         "ldap://ldap.example.com/cn=Babs%20Jensen,%20o=Babsco,%20c=US",
     )?
     .to_owned();
     let url = card.source.get(0).unwrap();
     assert_eq!(uri, url.value);
+
+    Ok(())
+}
+
+#[test]
+fn parse_source_folded() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Jane Doe
+SOURCE;LANGUAGE=en:http://directory.example.com/addressbooks/jdoe/
+ Jean%20Dupont.vcf
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+    let card = vcards.remove(0);
+
+    println!("{}", card);
+
+    /*
+    let uri = Uri::try_from(
+        "ldap://ldap.example.com/cn=Babs%20Jensen,%20o=Babsco,%20c=US",
+    )?
+    .to_owned();
+    let url = card.source.get(0).unwrap();
+    assert_eq!(uri, url.value);
+    */
 
     Ok(())
 }

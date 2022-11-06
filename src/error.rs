@@ -17,6 +17,10 @@ pub enum Error {
     #[error("input token was incorrect")]
     IncorrectToken,
 
+    /// Error generated when an unknown parameter is encountered.
+    #[error("unknown parameter '{0}'")]
+    UnknownParameter(String),
+
     /// Error generated when an unknown property name is encountered.
     #[error("property name '{0}' is not supported")]
     UnknownPropertyName(String),
@@ -41,10 +45,6 @@ pub enum Error {
     /// Error generated when a property or parameter delimiter was expected.
     #[error("property or parameter delimiter expected")]
     DelimiterExpected,
-
-    /// Error generated when a property name is not supported.
-    #[error("parameter name '{0}' is not supported")]
-    UnknownParameterName(String),
 
     /// Error generated when a value type is not supported.
     #[error("value type '{0}' is not supported")]
