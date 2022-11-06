@@ -2,9 +2,11 @@
 
 use language_tags::LanguageTag;
 use logos::{Lexer, Logos};
-use mime::Mime;
 use std::{borrow::Cow, ops::Range};
 use uriparse::uri::URI as Uri;
+
+#[cfg(feature = "mime")]
+use mime::Mime;
 
 use crate::{parameters::*, property::*, types::*, Error, Result, Vcard};
 
@@ -264,8 +266,7 @@ impl VcardParser {
                         }
                     }
                     "MEDIATYPE" => {
-                        let mime: Mime = value.parse()?;
-                        params.media_type = Some(mime);
+                        parse_media_type(value, &mut params)?;
                     }
                     "CALSCALE" => {
                         params.calscale = Some(value);
@@ -1027,4 +1028,17 @@ fn parse_date_time_or_text<'a>(
             group,
         }))
     }
+}
+
+#[cfg(feature = "mime")]
+fn parse_media_type(value: String, params: &mut Parameters) -> Result<()> {
+    let mime: Mime = value.parse()?;
+    params.media_type = Some(mime);
+    Ok(())
+}
+
+#[cfg(not(feature = "mime"))]
+fn parse_media_type(value: String, params: &mut Parameters) -> Result<()> {
+    params.media_type = Some(value);
+    Ok(())
 }

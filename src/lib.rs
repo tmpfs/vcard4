@@ -19,6 +19,9 @@
 //! * `Mime`
 //!
 //! Serde support can be enabled by using the `serde` feature.
+//!
+//! If the `mime` feature is enabled the MEDIATYPE parameter is parsed 
+//! to a `Mime` struct otherwise it is a `String`.
 
 mod error;
 pub mod parameters;
@@ -32,8 +35,6 @@ mod vcard;
 pub use error::Error;
 pub use vcard::Vcard;
 
-pub use language_tags;
-pub use mime;
 pub use time;
 pub use uriparse;
 

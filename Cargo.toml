@@ -2,21 +2,25 @@
 name = "vcard-compact"
 version = "0.1.0"
 edition = "2021"
+repository = "https://github.com/tmpfs/vcard-compact"
+keywords = ["vcard", "contact", "parser", "rfc6350"]
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 thiserror = "1"
 logos = "0.12"
-language-tags = "0.3"
 uriparse = "0.6.4"
 time = { version = "0.3", features = ["parsing"] }
-mime = "0.3"
 serde = { version = "1", features = ["derive"], optional = true }
 zeroize = { version = "1.5", features = ["derive"], optional = true }
+mime = { version = "0.3", optional = true }
+language-tags = "0.3"
 
 [features]
 default = ["zeroize"]
 serde = ["dep:serde", "time/serde", "language-tags/serde", "uriparse/serde"]
 zeroize = ["dep:zeroize"]
+mime = ["dep:mime"]
 
 [dev-dependencies]
 anyhow = "1"

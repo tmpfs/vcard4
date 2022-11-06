@@ -124,6 +124,7 @@ pub enum Error {
     ParseFloat(#[from] std::num::ParseFloatError),
 
     /// Error generated parsing a media type.
+    #[cfg(feature = "mime")]
     #[error(transparent)]
     Mime(#[from] mime::FromStrError),
 }

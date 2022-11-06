@@ -1,7 +1,6 @@
 //! Types for property parameters.
 
 use language_tags::LanguageTag;
-use mime::Mime;
 use std::{
     fmt::{self, Debug},
     str::FromStr,
@@ -14,6 +13,9 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "zeroize")]
 use zeroize::{Zeroize, ZeroizeOnDrop};
+
+#[cfg(feature = "mime")]
+use mime::Mime;
 
 use crate::{Error, Result};
 
@@ -418,6 +420,7 @@ pub struct Parameters {
     /// The TYPE parameter.
     pub types: Option<Vec<TypeParameter>>,
     /// The MEDIATYPE value.
+    #[cfg(feature = "mime")]
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     #[cfg_attr(
         feature = "serde",
@@ -427,6 +430,11 @@ pub struct Parameters {
         )
     )]
     pub media_type: Option<Mime>,
+
+    /// The MEDIATYPE value.
+    #[cfg(not(feature = "mime"))]
+    pub media_type: Option<String>,
+
     /// The CALSCALE parameter.
     pub calscale: Option<String>,
     /// The SORT-AS parameter.
