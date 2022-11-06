@@ -10,7 +10,7 @@ use language_tags::LanguageTag;
 #[cfg(feature = "mime")]
 use mime::Mime;
 
-use crate::{parameters::*, property::*, types::*, Error, Result, Vcard};
+use crate::{parameter::*, property::*, types::*, Error, Result, Vcard};
 
 #[derive(Logos, Debug, PartialEq)]
 enum Token {

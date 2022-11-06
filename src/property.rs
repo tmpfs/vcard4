@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{
-    parameters::Parameters,
+    parameter::Parameters,
     types::{ClientPidMap, DateAndOrTime, Float, Integer},
     Error, Result,
 };

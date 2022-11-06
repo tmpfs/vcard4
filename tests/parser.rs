@@ -1,8 +1,10 @@
 use anyhow::Result;
-use language_tags::LanguageTag;
 use uriparse::uri::URI as Uri;
 
-use vcard_compact::{parameters::TypeParameter, parse, property::*, Error};
+#[cfg(feature = "language-tags")]
+use language_tags::LanguageTag;
+
+use vcard_compact::{parameter::TypeParameter, parse, property::*, Error};
 
 #[test]
 fn parse_empty() -> Result<()> {
@@ -130,11 +132,12 @@ END:VCARD"#;
     assert_eq!("Boss", nickname.value);
     assert!(nickname.parameters.is_some());
 
-    let tag: LanguageTag = "en".parse()?;
+
+    //let tag: LanguageTag = "en".parse()?;
     let parameters = nickname.parameters.as_ref().unwrap();
 
     let param: TypeParameter = "work".parse()?;
-    assert_eq!(Some(tag), parameters.language);
+    //assert_eq!(Some(tag), parameters.language);
     assert_eq!(&vec![param], parameters.types.as_ref().unwrap());
     Ok(())
 }

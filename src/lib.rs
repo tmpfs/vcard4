@@ -27,7 +27,7 @@
 //! Serde support can be enabled with the `serde` feature.
 
 mod error;
-pub mod parameters;
+pub mod parameter;
 mod parser;
 pub mod property;
 #[cfg(feature = "serde")]
