@@ -294,7 +294,7 @@ pub struct Parameters {
     /// The ALTID tag.
     pub alt_id: Option<String>,
     /// The PID value.
-    pub pid: Option<Pid>,
+    pub pid: Option<Vec<Pid>>,
     /// The TYPE parameter.
     pub types: Option<Vec<String>>,
     /// The MEDIATYPE value.

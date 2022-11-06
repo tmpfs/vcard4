@@ -224,8 +224,12 @@ impl VcardParser {
                         params.alt_id = Some(value);
                     }
                     "PID" => {
-                        let pid: Pid = value.parse()?;
-                        params.pid = Some(pid);
+                        let mut pids: Vec<Pid> = Vec::new();
+                        let values = value.split(",");
+                        for value in values {
+                            pids.push(value.parse()?); 
+                        }
+                        params.pid = Some(pids);
                     }
                     "TYPE" => {
                         let mut type_values = value
