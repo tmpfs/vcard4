@@ -1,6 +1,6 @@
 use anyhow::Result;
 use language_tags::LanguageTag;
-use uriparse::uri::URI;
+use uriparse::uri::URI as Uri;
 
 use vcard_compact::{parameters::TypeParameter, parse, property::*, Error};
 
@@ -151,7 +151,7 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
 
-    let uri = URI::try_from("https://example.com")?.into_owned();
+    let uri = Uri::try_from("https://example.com")?.into_owned();
     let url = card.url.get(0).unwrap();
     assert_eq!(uri, url.value);
 
@@ -170,7 +170,7 @@ END:VCARD"#;
     let mut vcards = parse(input)?;
     assert_eq!(1, vcards.len());
     let card = vcards.remove(0);
-    let uri = URI::try_from(
+    let uri = Uri::try_from(
         "ldap://ldap.example.com/cn=Babs%20Jensen,%20o=Babsco,%20c=US",
     )?
     .to_owned();
@@ -621,11 +621,11 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
     assert_eq!(
-        URI::try_from("urn:uuid:03a0e51f-d1aa-4385-8a53-e29025acd8af")?,
+        Uri::try_from("urn:uuid:03a0e51f-d1aa-4385-8a53-e29025acd8af")?,
         card.member.get(0).unwrap().value
     );
     assert_eq!(
-        URI::try_from("urn:uuid:b8767877-b4a1-4c70-9acc-505d3819e519")?,
+        Uri::try_from("urn:uuid:b8767877-b4a1-4c70-9acc-505d3819e519")?,
         card.member.get(1).unwrap().value
     );
 
@@ -634,11 +634,11 @@ END:VCARD"#;
         card.uid.as_ref().unwrap()
     {
         assert_eq!(
-            &URI::try_from("urn:uuid:03a0e51f-d1aa-4385-8a53-e29025acd8af")?,
+            &Uri::try_from("urn:uuid:03a0e51f-d1aa-4385-8a53-e29025acd8af")?,
             value
         );
     } else {
-        panic!("expecting URI for UID value");
+        panic!("expecting Uri for UID value");
     }
 
     let card = vcards.remove(0);
@@ -646,28 +646,28 @@ END:VCARD"#;
         card.uid.as_ref().unwrap()
     {
         assert_eq!(
-            &URI::try_from("urn:uuid:b8767877-b4a1-4c70-9acc-505d3819e519")?,
+            &Uri::try_from("urn:uuid:b8767877-b4a1-4c70-9acc-505d3819e519")?,
             value
         );
     } else {
-        panic!("expecting URI for UID value");
+        panic!("expecting Uri for UID value");
     }
 
     let card = vcards.remove(0);
     assert_eq!(
-        URI::try_from("mailto:subscriber1@example.com")?,
+        Uri::try_from("mailto:subscriber1@example.com")?,
         card.member.get(0).unwrap().value
     );
     assert_eq!(
-        URI::try_from("xmpp:subscriber2@example.com")?,
+        Uri::try_from("xmpp:subscriber2@example.com")?,
         card.member.get(1).unwrap().value
     );
     assert_eq!(
-        URI::try_from("sip:subscriber3@example.com")?,
+        Uri::try_from("sip:subscriber3@example.com")?,
         card.member.get(2).unwrap().value
     );
     assert_eq!(
-        URI::try_from("tel:+1-418-555-5555")?,
+        Uri::try_from("tel:+1-418-555-5555")?,
         card.member.get(3).unwrap().value
     );
 
@@ -690,7 +690,7 @@ END:VCARD"#;
     }) = card.related.get(0).unwrap()
     {
         assert_eq!(
-            &URI::try_from("urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6")?,
+            &Uri::try_from("urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6")?,
             value
         );
 
@@ -698,7 +698,7 @@ END:VCARD"#;
         let params = parameters.as_ref().unwrap();
         assert_eq!(Some(&param), params.types.as_ref().unwrap().get(0));
     } else {
-        panic!("expecting URI for RELATED prop");
+        panic!("expecting Uri for RELATED prop");
     }
 
     let input = r#"BEGIN:VCARD
@@ -715,7 +715,7 @@ END:VCARD"#;
     }) = card.related.get(0).unwrap()
     {
         assert_eq!(
-            &URI::try_from("http://example.com/directory/jdoe.vcf")?,
+            &Uri::try_from("http://example.com/directory/jdoe.vcf")?,
             value
         );
 
@@ -723,7 +723,7 @@ END:VCARD"#;
         let params = parameters.as_ref().unwrap();
         assert_eq!(Some(&param), params.types.as_ref().unwrap().get(0));
     } else {
-        panic!("expecting URI for RELATED prop");
+        panic!("expecting Uri for RELATED prop");
     }
 
     let input = r#"BEGIN:VCARD
