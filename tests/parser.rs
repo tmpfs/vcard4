@@ -1,8 +1,8 @@
 use anyhow::Result;
 use uriparse::uri::URI as Uri;
 
-#[cfg(feature = "language-tags")]
-use language_tags::LanguageTag;
+//#[cfg(feature = "language-tags")]
+//use language_tags::LanguageTag;
 
 use vcard_compact::{parameter::TypeParameter, parse, property::*, Error};
 
@@ -131,7 +131,6 @@ END:VCARD"#;
     let nickname = card.nickname.get(0).unwrap();
     assert_eq!("Boss", nickname.value);
     assert!(nickname.parameters.is_some());
-
 
     //let tag: LanguageTag = "en".parse()?;
     let parameters = nickname.parameters.as_ref().unwrap();

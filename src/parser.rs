@@ -10,7 +10,13 @@ use language_tags::LanguageTag;
 #[cfg(feature = "mime")]
 use mime::Mime;
 
-use crate::{parameter::*, property::*, types::*, Error, Result, Vcard};
+use crate::{
+    name::*,
+    parameter::*,
+    property::*,
+    types::*,
+    Error, Result, Vcard,
+};
 
 #[derive(Logos, Debug, PartialEq)]
 enum Token {
@@ -209,25 +215,25 @@ impl VcardParser {
                     self.parse_property_parameters_value(lex)?;
 
                 match &upper_name[..] {
-                    "LANGUAGE" => {
+                    LANGUAGE => {
                         let tag = parse_language_tag(Cow::Owned(value))?;
                         params.language = Some(tag);
                     }
-                    "VALUE" => {
+                    VALUE => {
                         let value: ValueType = value.parse()?;
                         params.value = Some(value);
                     }
-                    "PREF" => {
+                    PREF => {
                         let value: u8 = value.parse()?;
                         if value < 1 || value > 100 {
                             return Err(Error::PrefOutOfRange(value));
                         }
                         params.pref = Some(value);
                     }
-                    "ALTID" => {
+                    ALTID => {
                         params.alt_id = Some(value);
                     }
-                    "PID" => {
+                    PID => {
                         let mut pids: Vec<Pid> = Vec::new();
                         let values = value.split(",");
                         for value in values {
@@ -235,7 +241,7 @@ impl VcardParser {
                         }
                         params.pid = Some(pids);
                     }
-                    "TYPE" => {
+                    TYPE => {
                         // Check this parameter is allowed
                         if !TYPE_PROPERTIES
                             .contains(&&property_upper_name[..])
@@ -250,10 +256,10 @@ impl VcardParser {
                         for val in value.split(",") {
                             let param: TypeParameter =
                                 match &property_upper_name[..] {
-                                    "TEL" => {
+                                    TEL => {
                                         TypeParameter::Telephone(val.parse()?)
                                     }
-                                    "RELATED" => {
+                                    RELATED => {
                                         TypeParameter::Related(val.parse()?)
                                     }
                                     _ => val.parse()?,
@@ -267,29 +273,27 @@ impl VcardParser {
                             params.types = Some(type_params);
                         }
                     }
-                    "MEDIATYPE" => {
+                    MEDIATYPE => {
                         parse_media_type(value, &mut params)?;
                     }
-                    "CALSCALE" => {
+                    CALSCALE => {
                         params.calscale = Some(value);
                     }
-                    "SORT-AS" => {
+                    SORT_AS => {
                         let sort_values = value
                             .split(",")
                             .map(|s| s.to_string())
                             .collect::<Vec<_>>();
                         params.sort_as = Some(sort_values);
                     }
-                    "GEO" => {
+                    GEO => {
                         if !quoted {
-                            return Err(Error::NotQuoted(String::from(
-                                "GEO",
-                            )));
+                            return Err(Error::NotQuoted(property_upper_name));
                         }
                         let geo = Uri::try_from(&value[..])?.into_owned();
                         params.geo = Some(geo);
                     }
-                    "TZ" => {
+                    TZ => {
                         if quoted {
                             let value =
                                 Uri::try_from(&value[..])?.into_owned();
@@ -310,8 +314,8 @@ impl VcardParser {
                             }
                         }
                     }
-                    "LABEL" => {
-                        if &property_upper_name != "ADR" {
+                    LABEL => {
+                        if &property_upper_name != ADR {
                             return Err(Error::InvalidLabel(
                                 property_upper_name,
                             ));
@@ -397,7 +401,7 @@ impl VcardParser {
         match &upper_name[..] {
             // General properties
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.1
-            "SOURCE" => {
+            SOURCE => {
                 let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.source.push(UriProperty {
                     value,
@@ -405,9 +409,9 @@ impl VcardParser {
                     group,
                 });
             }
-            "KIND" => {
+            KIND => {
                 if card.kind.is_some() {
-                    return Err(Error::OnlyOnce(String::from("KIND")));
+                    return Err(Error::OnlyOnce(upper_name));
                 }
                 let value: Kind = value.as_ref().parse()?;
                 card.kind = Some(KindProperty {
@@ -416,7 +420,7 @@ impl VcardParser {
                     group,
                 });
             }
-            "XML" => {
+            XML => {
                 card.xml.push(TextProperty {
                     value: value.into_owned(),
                     parameters,
@@ -425,16 +429,16 @@ impl VcardParser {
             }
             // Identification properties
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.2
-            "FN" => {
+            FN => {
                 card.formatted_name.push(TextProperty {
                     value: value.into_owned(),
                     parameters,
                     group,
                 });
             }
-            "N" => {
+            N => {
                 if card.name.is_some() {
-                    return Err(Error::OnlyOnce(String::from("N")));
+                    return Err(Error::OnlyOnce(upper_name));
                 }
                 let value = value
                     .as_ref()
@@ -447,14 +451,14 @@ impl VcardParser {
                     group,
                 });
             }
-            "NICKNAME" => {
+            NICKNAME => {
                 card.nickname.push(TextProperty {
                     value: value.into_owned(),
                     parameters,
                     group,
                 });
             }
-            "PHOTO" => {
+            PHOTO => {
                 let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.photo.push(UriProperty {
                     value,
@@ -462,32 +466,32 @@ impl VcardParser {
                     group,
                 });
             }
-            "BDAY" => {
+            BDAY => {
                 if card.bday.is_some() {
-                    return Err(Error::OnlyOnce(String::from("BDAY")));
+                    return Err(Error::OnlyOnce(upper_name));
                 }
 
                 let prop = parse_date_time_or_text(
-                    "BDAY", value, parameters, group,
+                    &upper_name, value, parameters, group,
                 )?;
                 card.bday = Some(prop);
             }
-            "ANNIVERSARY" => {
+            ANNIVERSARY => {
                 if card.anniversary.is_some() {
-                    return Err(Error::OnlyOnce(String::from("ANNIVERSARY")));
+                    return Err(Error::OnlyOnce(upper_name));
                 }
 
                 let prop = parse_date_time_or_text(
-                    "ANNIVERSARY",
+                    &upper_name,
                     value,
                     parameters,
                     group,
                 )?;
                 card.anniversary = Some(prop);
             }
-            "GENDER" => {
+            GENDER => {
                 if card.gender.is_some() {
-                    return Err(Error::OnlyOnce(String::from("GENDER")));
+                    return Err(Error::OnlyOnce(upper_name));
                 }
                 let value: Gender = value.as_ref().parse()?;
                 card.gender = Some(GenderProperty {
@@ -499,24 +503,13 @@ impl VcardParser {
 
             // Delivery Addressing
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.3
-            "ADR" => {
+            ADR => {
                 todo!()
             }
 
             // Communications
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.4
-            "TEL" => {
-                /*
-                // Validate TEL TYPE parameter
-                if let Some(parameters) = &parameters {
-                    if let Some(types) = &parameters.types {
-                        for kind in types {
-                            let _: TelephoneTypeValue = kind.parse()?;
-                        }
-                    }
-                }
-                */
-
+            TEL => {
                 let value = self.parse_text_or_uri(
                     value.as_ref(),
                     parameters,
@@ -524,14 +517,14 @@ impl VcardParser {
                 )?;
                 card.tel.push(value);
             }
-            "EMAIL" => {
+            EMAIL => {
                 card.email.push(TextProperty {
                     value: value.into_owned(),
                     parameters,
                     group,
                 });
             }
-            "IMPP" => {
+            IMPP => {
                 let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.impp.push(UriProperty {
                     value,
@@ -539,7 +532,7 @@ impl VcardParser {
                     group,
                 });
             }
-            "LANG" => {
+            LANG => {
                 let value = parse_language_tag(value)?;
                 card.lang.push(LanguageProperty {
                     value,
@@ -550,7 +543,7 @@ impl VcardParser {
 
             // Geographic
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.5
-            "TZ" => {
+            TZ => {
                 let value_type = if let Some(parameters) = &parameters {
                     parameters.value.as_ref()
                 } else {
@@ -595,7 +588,7 @@ impl VcardParser {
                     ));
                 }
             }
-            "GEO" => {
+            GEO => {
                 let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.geo.push(UriProperty {
                     value,
@@ -606,22 +599,21 @@ impl VcardParser {
 
             // Organizational
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.6
-            "TITLE" => {
+            TITLE => {
                 card.title.push(TextProperty {
                     value: value.into_owned(),
                     parameters,
                     group,
                 });
             }
-            "ROLE" => {
+            ROLE => {
                 card.role.push(TextProperty {
                     value: value.into_owned(),
                     parameters,
                     group,
                 });
             }
-
-            "LOGO" => {
+            LOGO => {
                 let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.logo.push(UriProperty {
                     value,
@@ -629,7 +621,7 @@ impl VcardParser {
                     group,
                 });
             }
-            "ORG" => {
+            ORG => {
                 let value = value
                     .as_ref()
                     .split(";")
@@ -641,7 +633,7 @@ impl VcardParser {
                     group,
                 });
             }
-            "MEMBER" => {
+            MEMBER => {
                 let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.member.push(UriProperty {
                     value,
@@ -649,18 +641,7 @@ impl VcardParser {
                     group,
                 });
             }
-            "RELATED" => {
-                /*
-                // Validate RELATED TYPE parameter
-                if let Some(parameters) = &parameters {
-                    if let Some(types) = &parameters.types {
-                        for kind in types {
-                            let _: RelatedTypeValue = kind.parse()?;
-                        }
-                    }
-                }
-                */
-
+            RELATED => {
                 let text_or_uri = self.parse_text_or_uri(
                     value.as_ref(),
                     parameters,
@@ -671,7 +652,7 @@ impl VcardParser {
 
             // Explanatory
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.7
-            "CATEGORIES" => {
+            CATEGORIES => {
                 let value = value
                     .as_ref()
                     .split(",")
@@ -683,16 +664,16 @@ impl VcardParser {
                     group,
                 });
             }
-            "NOTE" => {
+            NOTE => {
                 card.note.push(TextProperty {
                     value: value.into_owned(),
                     parameters,
                     group,
                 });
             }
-            "PRODID" => {
+            PRODID => {
                 if card.prod_id.is_some() {
-                    return Err(Error::OnlyOnce(String::from("PRODID")));
+                    return Err(Error::OnlyOnce(upper_name));
                 }
                 card.prod_id = Some(TextProperty {
                     value: value.into_owned(),
@@ -700,9 +681,9 @@ impl VcardParser {
                     group,
                 });
             }
-            "REV" => {
+            REV => {
                 if card.rev.is_some() {
-                    return Err(Error::OnlyOnce(String::from("REV")));
+                    return Err(Error::OnlyOnce(upper_name));
                 }
                 let value = parse_timestamp(value.as_ref())?;
                 card.rev = Some(DateTimeProperty {
@@ -711,7 +692,7 @@ impl VcardParser {
                     group,
                 });
             }
-            "SOUND" => {
+            SOUND => {
                 let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.sound.push(UriProperty {
                     value,
@@ -719,9 +700,9 @@ impl VcardParser {
                     group,
                 });
             }
-            "UID" => {
+            UID => {
                 if card.uid.is_some() {
-                    return Err(Error::OnlyOnce(String::from("UID")));
+                    return Err(Error::OnlyOnce(upper_name));
                 }
                 let text_or_uri = self.parse_text_or_uri(
                     value.as_ref(),
@@ -730,7 +711,7 @@ impl VcardParser {
                 )?;
                 card.uid = Some(text_or_uri);
             }
-            "CLIENTPIDMAP" => {
+            CLIENTPIDMAP => {
                 let value: ClientPidMap = value.as_ref().parse()?;
                 card.client_pid_map.push(ClientPidMapProperty {
                     value,
@@ -738,7 +719,7 @@ impl VcardParser {
                     group,
                 });
             }
-            "URL" => {
+            URL => {
                 let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.url.push(UriProperty {
                     value,
@@ -746,11 +727,13 @@ impl VcardParser {
                     group,
                 });
             }
-            "VERSION" => unreachable!(),
+            VERSION => {
+                return Err(Error::VersionMisplaced);
+            },
 
             // Security
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.8
-            "KEY" => {
+            KEY => {
                 let text_or_uri = self.parse_text_or_uri(
                     value.as_ref(),
                     parameters,
@@ -761,7 +744,7 @@ impl VcardParser {
 
             // Calendar
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.9
-            "FBURL" => {
+            FBURL => {
                 let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.fburl.push(UriProperty {
                     value,
@@ -769,7 +752,7 @@ impl VcardParser {
                     group,
                 });
             }
-            "CALADRURI" => {
+            CALADRURI => {
                 let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.cal_adr_uri.push(UriProperty {
                     value,
@@ -777,7 +760,7 @@ impl VcardParser {
                     group,
                 });
             }
-            "CALURI" => {
+            CALURI => {
                 let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.cal_uri.push(UriProperty {
                     value,
@@ -1055,4 +1038,3 @@ fn parse_language_tag<'a>(value: Cow<'a, str>) -> Result<LanguageTag> {
 fn parse_language_tag<'a>(value: Cow<'a, str>) -> Result<String> {
     Ok(value.into_owned())
 }
-
