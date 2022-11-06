@@ -7,7 +7,7 @@ edition = "2021"
 thiserror = "1"
 logos = "0.12"
 language-tags = "0.3"
-fluent-uri = "0.1"
+uriparse = "0.6.4"
 time = { version = "0.3", features = ["parsing"] }
 mime = "0.3"
 serde = { version = "1", features = ["derive"], optional = true }
@@ -15,7 +15,7 @@ zeroize = { version = "1.5", features = ["derive"], optional = true }
 
 [features]
 default = ["zeroize"]
-serde = ["dep:serde", "time/serde", "language-tags/serde"]
+serde = ["dep:serde", "time/serde", "language-tags/serde", "uriparse/serde"]
 zeroize = ["dep:zeroize"]
 
 [dev-dependencies]

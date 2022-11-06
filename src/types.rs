@@ -1,5 +1,4 @@
 //! Custom data types.
-use fluent_uri::Uri;
 use std::{
     fmt::{self, Debug},
     str::FromStr,
@@ -7,6 +6,7 @@ use std::{
 use time::{
     format_description::well_known::Iso8601, Date, OffsetDateTime, Time,
 };
+use uriparse::uri::URI as Uri;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -131,7 +131,7 @@ impl FromStr for Float {
 }
 
 /// Value for the CLIENTPIDMAP property.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct ClientPidMap {
@@ -139,12 +139,12 @@ pub struct ClientPidMap {
     pub source: u64,
     /// The URI for the map.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    pub uri: Uri<String>,
+    pub uri: Uri<'static>,
 }
 
 impl fmt::Display for ClientPidMap {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{};{}", self.source, self.uri.as_str())
+        write!(f, "{};{}", self.source, self.uri)
     }
 }
 
@@ -165,14 +165,8 @@ impl FromStr for ClientPidMap {
             return Err(Error::InvalidClientPidMap(s.to_string()));
         }
 
-        let uri = Uri::parse(uri)?.to_owned();
+        let uri = Uri::try_from(uri)?.into_owned();
         Ok(ClientPidMap { source, uri })
-    }
-}
-
-impl PartialEq for ClientPidMap {
-    fn eq(&self, other: &Self) -> bool {
-        self.source == other.source && self.uri.as_str() == other.uri.as_str()
     }
 }
 

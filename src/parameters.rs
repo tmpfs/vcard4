@@ -1,6 +1,5 @@
 //! Types for property parameters.
 
-use fluent_uri::Uri;
 use language_tags::LanguageTag;
 use mime::Mime;
 use std::{
@@ -8,6 +7,7 @@ use std::{
     str::FromStr,
 };
 use time::UtcOffset;
+use uriparse::uri::URI as Uri;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -77,15 +77,13 @@ impl FromStr for TypeParameter {
         match s {
             "home" => Ok(Self::Home),
             "work" => Ok(Self::Work),
-            _ => {
-                match s.parse::<TelephoneTypeValue>() {
-                    Ok(tel) => Ok(Self::Telephone(tel)),
-                    Err(_) => {
-                        let rel: RelatedTypeValue = s.parse()?;
-                        Ok(Self::Related(rel))
-                    }
+            _ => match s.parse::<TelephoneTypeValue>() {
+                Ok(tel) => Ok(Self::Telephone(tel)),
+                Err(_) => {
+                    let rel: RelatedTypeValue = s.parse()?;
+                    Ok(Self::Related(rel))
                 }
-            }
+            },
         }
     }
 }
@@ -242,13 +240,12 @@ impl FromStr for RelatedTypeValue {
     }
 }
 
-
 /// Enumeration of telephone types.
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub enum TelephoneTypeValue {
-    /// Indicates that the telephone number supports 
+    /// Indicates that the telephone number supports
     /// text messages (SMS).
     Text,
     /// Indicates a voice telephone number.
@@ -261,7 +258,7 @@ pub enum TelephoneTypeValue {
     Video,
     /// Indicates a paging device telephone number.
     Pager,
-    /// Indicates a telecommunication device for people with 
+    /// Indicates a telecommunication device for people with
     /// hearing or speech difficulties.  
     TextPhone,
 }
@@ -388,7 +385,7 @@ impl FromStr for ValueType {
 /// This is a different type so that we do not
 /// create infinite type recursion in `Parameters` which would
 /// require us to wrap it in a `Box`.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub enum TimeZoneParameter {
@@ -396,25 +393,14 @@ pub enum TimeZoneParameter {
     Text(String),
     /// Uri value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    Uri(Uri<String>),
+    Uri(Uri<'static>),
     /// UTC offset value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     UtcOffset(UtcOffset),
 }
 
-impl PartialEq for TimeZoneParameter {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::Text(a), Self::Text(b)) => a.eq(b),
-            (Self::Uri(a), Self::Uri(b)) => a.as_str().eq(b.as_str()),
-            (Self::UtcOffset(a), Self::UtcOffset(b)) => a.eq(b),
-            _ => false,
-        }
-    }
-}
-
 /// Parameters for a vCard property.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct Parameters {
@@ -433,6 +419,13 @@ pub struct Parameters {
     pub types: Option<Vec<TypeParameter>>,
     /// The MEDIATYPE value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            with = "crate::serde::mime",
+            skip_serializing_if = "Option::is_none"
+        )
+    )]
     pub media_type: Option<Mime>,
     /// The CALSCALE parameter.
     pub calscale: Option<String>,
@@ -440,28 +433,11 @@ pub struct Parameters {
     pub sort_as: Option<Vec<String>>,
     /// The GEO parameter.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    pub geo: Option<Uri<String>>,
+    pub geo: Option<Uri<'static>>,
     /// The TZ parameter.
     pub timezone: Option<TimeZoneParameter>,
-}
-
-impl PartialEq for Parameters {
-    fn eq(&self, other: &Self) -> bool {
-        let geo = if let (Some(a), Some(b)) = (&self.geo, &other.geo) {
-            a.as_str() == b.as_str()
-        } else {
-            true
-        };
-
-        self.language == other.language
-            && self.value == other.value
-            && self.pref == other.pref
-            && self.alt_id == other.alt_id
-            && self.pid == other.pid
-            && self.media_type == other.media_type
-            && self.calscale == other.calscale
-            && self.sort_as == other.sort_as
-            && self.types == other.types
-            && geo
-    }
+    /// The LABEL parameter.
+    ///
+    /// This only applies to the ADR property.
+    pub label: Option<String>,
 }

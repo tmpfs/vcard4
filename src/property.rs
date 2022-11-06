@@ -1,12 +1,12 @@
 //! Types for properties.
 
-use fluent_uri::Uri;
 use language_tags::LanguageTag;
 use std::{
     fmt::{self, Debug},
     str::FromStr,
 };
 use time::{Date, OffsetDateTime, Time, UtcOffset};
+use uriparse::uri::URI as Uri;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -19,6 +19,40 @@ use crate::{
     types::{ClientPidMap, DateAndOrTime, Float, Integer},
     Error, Result,
 };
+
+/// Delivery address for the ADR property.
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+pub struct DeliveryAddress {
+    /// The post office box.
+    pub po_box: Option<String>,
+    /// The extended address (e.g: apartment or suite number).
+    pub extended_address: Option<String>,
+    /// The street address.
+    pub street_address: Option<String>,
+    /// The locality (e.g: city).
+    pub locality: Option<String>,
+    /// The region (e.g: state or province).
+    pub region: Option<String>,
+    /// The postal code.
+    pub postal_code: Option<String>,
+    /// The country name.
+    pub country_name: Option<String>,
+}
+
+/// The ADR property.
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+pub struct AddressProperty {
+    /// Group for this property.
+    pub group: Option<String>,
+    /// The value for the property.
+    pub value: DeliveryAddress,
+    /// The property parameters.
+    pub parameters: Option<Parameters>,
+}
 
 /// Client PID map property.
 #[derive(Debug, PartialEq)]
@@ -49,7 +83,7 @@ pub struct ExtensionProperty {
 }
 
 /// Value for any property type.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub enum AnyProperty {
@@ -79,33 +113,13 @@ pub enum AnyProperty {
     Timestamp(OffsetDateTime),
     /// URI property.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    Uri(Uri<String>),
+    Uri(Uri<'static>),
     /// UTC offset property.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     UtcOffset(UtcOffset),
     /// Lanugage property.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     Language(LanguageTag),
-}
-
-impl PartialEq for AnyProperty {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::Text(a), Self::Text(b)) => a.eq(b),
-            (Self::Integer(a), Self::Integer(b)) => a.eq(b),
-            (Self::Float(a), Self::Float(b)) => a.eq(b),
-            (Self::Boolean(a), Self::Boolean(b)) => a.eq(b),
-            (Self::Date(a), Self::Date(b)) => a.eq(b),
-            (Self::DateTime(a), Self::DateTime(b)) => a.eq(b),
-            (Self::Time(a), Self::Time(b)) => a.eq(b),
-            (Self::DateAndOrTime(a), Self::DateAndOrTime(b)) => a.eq(b),
-            //(Self::TextList(a), Self::TextList(b)) => a.eq(b),
-            (Self::Uri(a), Self::Uri(b)) => a.as_str().eq(b.as_str()),
-            (Self::UtcOffset(a), Self::UtcOffset(b)) => a.eq(b),
-            (Self::Language(a), Self::Language(b)) => a.eq(b),
-            _ => false,
-        }
-    }
 }
 
 /// Language property.
@@ -272,72 +286,18 @@ pub struct TextListProperty {
     pub parameters: Option<Parameters>,
 }
 
-#[cfg(feature = "serde")]
-mod uri_from_str {
-    use fluent_uri::Uri;
-    use serde::{
-        de::{Deserializer, Error, Visitor},
-        ser::Serializer,
-    };
-    use std::fmt;
-
-    pub fn serialize<S>(
-        source: &Uri<String>,
-        serializer: S,
-    ) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(source.as_str())
-    }
-
-    struct UriVisitor;
-
-    impl<'de> Visitor<'de> for UriVisitor {
-        type Value = Uri<String>;
-
-        fn expecting(&self, _formatter: &mut fmt::Formatter) -> fmt::Result {
-            Ok(())
-        }
-
-        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-        where
-            E: Error,
-        {
-            Ok(Uri::parse(v).map_err(Error::custom)?.to_owned())
-        }
-    }
-
-    pub fn deserialize<'de, D>(
-        deserializer: D,
-    ) -> Result<Uri<String>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_str(UriVisitor)
-    }
-}
-
 /// Uri property value.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct UriProperty {
     /// Group for this property.
     pub group: Option<String>,
     /// Value for this property.
-    #[cfg_attr(feature = "serde", serde(with = "uri_from_str"))]
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    pub value: Uri<String>,
+    pub value: Uri<'static>,
     /// Parameters for this property.
     pub parameters: Option<Parameters>,
-}
-
-impl PartialEq for UriProperty {
-    fn eq(&self, other: &Self) -> bool {
-        self.value.as_str() == other.value.as_str()
-            && self.parameters == other.parameters
-    }
 }
 
 /// Property for a vCard kind.

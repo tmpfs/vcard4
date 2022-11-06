@@ -1,10 +1,10 @@
 //! Parse vCards based on [RFC6350](https://www.rfc-editor.org/rfc/rfc6350).
 
-use fluent_uri::Uri;
 use language_tags::LanguageTag;
 use logos::{Lexer, Logos};
 use mime::Mime;
 use std::{borrow::Cow, ops::Range};
+use uriparse::uri::URI as Uri;
 
 use crate::{parameters::*, property::*, types::*, Error, Result, Vcard};
 
@@ -22,7 +22,7 @@ enum Token {
     #[token(";")]
     ParameterDelimiter,
 
-    #[regex("(?i:(LANGUAGE|VALUE|PREF|ALTID|PID|TYPE|MEDIATYPE|CALSCALE|SORT-AS|GEO|TZ)=)")]
+    #[regex("(?i:(LANGUAGE|VALUE|PREF|ALTID|PID|TYPE|MEDIATYPE|CALSCALE|SORT-AS|GEO|TZ|LABEL)=)")]
     ParameterKey,
 
     #[token(":")]
@@ -233,26 +233,27 @@ impl VcardParser {
                     }
                     "TYPE" => {
                         // Check this parameter is allowed
-                        if !TYPE_PROPERTIES.contains(
-                            &&property_upper_name[..]) {
-                            return Err(
-                                Error::TypeParameter(property_upper_name))
+                        if !TYPE_PROPERTIES
+                            .contains(&&property_upper_name[..])
+                        {
+                            return Err(Error::TypeParameter(
+                                property_upper_name,
+                            ));
                         }
 
                         let mut type_params: Vec<TypeParameter> = Vec::new();
 
                         for val in value.split(",") {
-                            let param: TypeParameter = match &property_upper_name[..] {
-                                "TEL" => {
-                                    TypeParameter::Telephone(val.parse()?)
-                                }
-                                "RELATED" => {
-                                    TypeParameter::Related(val.parse()?)
-                                }
-                                _ => {
-                                    val.parse()?
-                                }
-                            };
+                            let param: TypeParameter =
+                                match &property_upper_name[..] {
+                                    "TEL" => {
+                                        TypeParameter::Telephone(val.parse()?)
+                                    }
+                                    "RELATED" => {
+                                        TypeParameter::Related(val.parse()?)
+                                    }
+                                    _ => val.parse()?,
+                                };
                             type_params.push(param);
                         }
 
@@ -282,12 +283,13 @@ impl VcardParser {
                                 "GEO",
                             )));
                         }
-                        let geo = Uri::parse(&value)?.to_owned();
+                        let geo = Uri::try_from(&value[..])?.into_owned();
                         params.geo = Some(geo);
                     }
                     "TZ" => {
                         if quoted {
-                            let value = Uri::parse(&value)?.to_owned();
+                            let value =
+                                Uri::try_from(&value[..])?.into_owned();
                             params.timezone =
                                 Some(TimeZoneParameter::Uri(value));
                         } else {
@@ -304,6 +306,14 @@ impl VcardParser {
                                 }
                             }
                         }
+                    }
+                    "LABEL" => {
+                        if &property_upper_name != "ADR" {
+                            return Err(Error::InvalidLabel(
+                                property_upper_name,
+                            ));
+                        }
+                        params.label = Some(value);
                     }
                     _ => {
                         return Err(Error::UnknownParameterName(
@@ -385,7 +395,7 @@ impl VcardParser {
             // General properties
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.1
             "SOURCE" => {
-                let value = Uri::parse(value.as_ref())?.to_owned();
+                let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.source.push(UriProperty {
                     value,
                     parameters,
@@ -442,7 +452,7 @@ impl VcardParser {
                 });
             }
             "PHOTO" => {
-                let value = Uri::parse(value.as_ref())?.to_owned();
+                let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.photo.push(UriProperty {
                     value,
                     parameters,
@@ -493,7 +503,6 @@ impl VcardParser {
             // Communications
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.4
             "TEL" => {
-
                 /*
                 // Validate TEL TYPE parameter
                 if let Some(parameters) = &parameters {
@@ -520,7 +529,7 @@ impl VcardParser {
                 });
             }
             "IMPP" => {
-                let value = Uri::parse(value.as_ref())?.to_owned();
+                let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.impp.push(UriProperty {
                     value,
                     parameters,
@@ -557,7 +566,7 @@ impl VcardParser {
                         }
                         ValueType::Uri => {
                             let value =
-                                Uri::parse(value.as_ref())?.to_owned();
+                                Uri::try_from(value.as_ref())?.into_owned();
                             card.timezone.push(TimeZoneProperty::Uri(
                                 UriProperty {
                                     value,
@@ -584,7 +593,7 @@ impl VcardParser {
                 }
             }
             "GEO" => {
-                let value = Uri::parse(value.as_ref())?.to_owned();
+                let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.geo.push(UriProperty {
                     value,
                     parameters,
@@ -610,7 +619,7 @@ impl VcardParser {
             }
 
             "LOGO" => {
-                let value = Uri::parse(value.as_ref())?.to_owned();
+                let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.logo.push(UriProperty {
                     value,
                     parameters,
@@ -630,7 +639,7 @@ impl VcardParser {
                 });
             }
             "MEMBER" => {
-                let value = Uri::parse(value.as_ref())?.to_owned();
+                let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.member.push(UriProperty {
                     value,
                     parameters,
@@ -638,7 +647,6 @@ impl VcardParser {
                 });
             }
             "RELATED" => {
-
                 /*
                 // Validate RELATED TYPE parameter
                 if let Some(parameters) = &parameters {
@@ -701,7 +709,7 @@ impl VcardParser {
                 });
             }
             "SOUND" => {
-                let value = Uri::parse(value.as_ref())?.to_owned();
+                let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.sound.push(UriProperty {
                     value,
                     parameters,
@@ -728,7 +736,7 @@ impl VcardParser {
                 });
             }
             "URL" => {
-                let value = Uri::parse(value.as_ref())?.to_owned();
+                let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.url.push(UriProperty {
                     value,
                     parameters,
@@ -751,7 +759,7 @@ impl VcardParser {
             // Calendar
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.9
             "FBURL" => {
-                let value = Uri::parse(value.as_ref())?.to_owned();
+                let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.fburl.push(UriProperty {
                     value,
                     parameters,
@@ -759,7 +767,7 @@ impl VcardParser {
                 });
             }
             "CALADRURI" => {
-                let value = Uri::parse(value.as_ref())?.to_owned();
+                let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.cal_adr_uri.push(UriProperty {
                     value,
                     parameters,
@@ -767,7 +775,7 @@ impl VcardParser {
                 });
             }
             "CALURI" => {
-                let value = Uri::parse(value.as_ref())?.to_owned();
+                let value = Uri::try_from(value.as_ref())?.into_owned();
                 card.cal_uri.push(UriProperty {
                     value,
                     parameters,
@@ -829,7 +837,7 @@ impl VcardParser {
                     AnyProperty::UtcOffset(property.value)
                 }
                 ValueType::Uri => {
-                    let value = Uri::parse(value.as_ref())?.to_owned();
+                    let value = Uri::try_from(value.as_ref())?.into_owned();
                     AnyProperty::Uri(value)
                 }
             }
@@ -934,7 +942,7 @@ impl VcardParser {
                     group,
                 }))
             } else if let ValueType::Uri = value_type {
-                let value = Uri::parse(value.as_ref())?.to_owned();
+                let value = Uri::try_from(value.as_ref())?.into_owned();
                 Ok(TextOrUriProperty::Uri(UriProperty {
                     value,
                     parameters,
@@ -944,9 +952,9 @@ impl VcardParser {
                 Err(Error::UnknownValueType(value_type.to_string()))
             }
         } else {
-            match Uri::parse(value.as_ref()) {
+            match Uri::try_from(value.as_ref()) {
                 Ok(value) => Ok(TextOrUriProperty::Uri(UriProperty {
-                    value: value.to_owned(),
+                    value: value.into_owned(),
                     parameters,
                     group,
                 })),
