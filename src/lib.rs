@@ -24,16 +24,18 @@ mod error;
 pub mod parameters;
 mod parser;
 pub mod property;
+#[cfg(feature = "serde")]
+mod serde;
 pub mod types;
 mod vcard;
 
 pub use error::Error;
 pub use vcard::Vcard;
 
-pub use fluent_uri;
 pub use language_tags;
 pub use mime;
 pub use time;
+pub use uriparse;
 
 /// Result type for the vCard library.
 pub type Result<T> = std::result::Result<T, Error>;
