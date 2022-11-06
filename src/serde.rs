@@ -15,7 +15,7 @@ pub(crate) mod mime {
         S: Serializer,
     {
         if let Some(mime) = source {
-            serializer.serialize_str(&mime.to_string())
+            serializer.serialize_str(mime.as_ref())
         } else {
             serializer.serialize_none()
         }

@@ -22,7 +22,7 @@ use mime::Mime;
 use crate::{Error, Result};
 
 /// Names of properties that are allowed to specify a TYPE parameter.
-pub const TYPE_PROPERTIES: [&'static str; 23] = [
+pub const TYPE_PROPERTIES: [&str; 23] = [
     "FN",
     "NICKNAME",
     "PHOTO",
@@ -49,7 +49,7 @@ pub const TYPE_PROPERTIES: [&'static str; 23] = [
 ];
 
 /// Value for a TYPE parameter.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub enum TypeParameter {
@@ -93,7 +93,7 @@ impl FromStr for TypeParameter {
 }
 
 /// Values for a PID parameter.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct Pid {
@@ -117,13 +117,13 @@ impl FromStr for Pid {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        let mut parts = s.splitn(2, ".");
-        let major = parts.next().ok_or(Error::InvalidPid(s.to_string()))?;
+        let mut parts = s.splitn(2, '.');
+        let major = parts.next().ok_or_else(|| Error::InvalidPid(s.to_string()))?;
         let major: u64 = major
             .parse()
             .map_err(|_| Error::InvalidPid(s.to_string()))?;
         let mut pid = Pid {
-            major: major,
+            major,
             minor: None,
         };
         if let Some(minor) = parts.next() {
@@ -137,7 +137,7 @@ impl FromStr for Pid {
 }
 
 /// Enumeration of related types.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub enum RelatedTypeValue {
@@ -245,7 +245,7 @@ impl FromStr for RelatedTypeValue {
 }
 
 /// Enumeration of telephone types.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub enum TelephoneTypeValue {
@@ -303,7 +303,7 @@ impl FromStr for TelephoneTypeValue {
 }
 
 /// Enumeration of the different types of values.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub enum ValueType {
@@ -389,9 +389,10 @@ impl FromStr for ValueType {
 /// This is a different type so that we do not
 /// create infinite type recursion in `Parameters` which would
 /// require us to wrap it in a `Box`.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+#[allow(clippy::large_enum_variant)]
 pub enum TimeZoneParameter {
     /// Text value.
     Text(String),
@@ -404,7 +405,7 @@ pub enum TimeZoneParameter {
 }
 
 /// Parameters for a vCard property.
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct Parameters {

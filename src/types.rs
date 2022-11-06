@@ -38,7 +38,7 @@ pub(crate) fn parse_boolean(s: &str) -> Result<bool> {
 }
 
 /// Date and or time.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum DateAndOrTime {
     /// Date value.
@@ -73,7 +73,7 @@ impl FromStr for DateAndOrTime {
                 Ok(value) => Ok(Self::Date(value)),
                 Err(_) => match parse_time(s) {
                     Ok(value) => Ok(Self::Time(value)),
-                    Err(e) => Err(e.into()),
+                    Err(e) => Err(e),
                 },
             },
         }
@@ -81,7 +81,7 @@ impl FromStr for DateAndOrTime {
 }
 
 /// Integer type; may be a comma separated list.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub enum Integer {
@@ -95,9 +95,9 @@ impl FromStr for Integer {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        if s.contains(",") {
+        if s.contains(',') {
             let mut value = Vec::new();
-            for val in s.split(",") {
+            for val in s.split(',') {
                 let val: i64 = val.parse()?;
                 value.push(val);
             }
@@ -119,13 +119,15 @@ pub enum Float {
     Many(Vec<f64>),
 }
 
+impl Eq for Float {}
+
 impl FromStr for Float {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        if s.contains(",") {
+        if s.contains(',') {
             let mut value = Vec::new();
-            for val in s.split(",") {
+            for val in s.split(',') {
                 let val: f64 = val.parse()?;
                 value.push(val);
             }
@@ -137,7 +139,7 @@ impl FromStr for Float {
 }
 
 /// Value for the CLIENTPIDMAP property.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct ClientPidMap {
@@ -158,11 +160,11 @@ impl FromStr for ClientPidMap {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        let mut it = s.splitn(2, ";");
+        let mut it = s.splitn(2, ';');
         let source =
-            it.next().ok_or(Error::InvalidClientPidMap(s.to_string()))?;
+            it.next().ok_or_else(|| Error::InvalidClientPidMap(s.to_string()))?;
         let uri =
-            it.next().ok_or(Error::InvalidClientPidMap(s.to_string()))?;
+            it.next().ok_or_else(|| Error::InvalidClientPidMap(s.to_string()))?;
         let source: u64 = source.parse()?;
 
         // Must be positive according to the RFC

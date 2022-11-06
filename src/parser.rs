@@ -152,7 +152,7 @@ impl VcardParser {
         let mut group: Option<String> = None;
         let mut name = lex.slice();
 
-        let period = name.find(".");
+        let period = name.find('.');
 
         if let Some(pos) = period {
             let group_name = &name[0..pos];
@@ -221,7 +221,7 @@ impl VcardParser {
                     }
                     PREF => {
                         let value: u8 = value.parse()?;
-                        if value < 1 || value > 100 {
+                        if !(1..=100).contains(&value) {
                             return Err(Error::PrefOutOfRange(value));
                         }
                         params.pref = Some(value);
@@ -231,7 +231,7 @@ impl VcardParser {
                     }
                     PID => {
                         let mut pids: Vec<Pid> = Vec::new();
-                        let values = value.split(",");
+                        let values = value.split(',');
                         for value in values {
                             pids.push(value.parse()?);
                         }
@@ -249,7 +249,7 @@ impl VcardParser {
 
                         let mut type_params: Vec<TypeParameter> = Vec::new();
 
-                        for val in value.split(",") {
+                        for val in value.split(',') {
                             let param: TypeParameter =
                                 match &property_upper_name[..] {
                                     TEL => {
@@ -277,7 +277,7 @@ impl VcardParser {
                     }
                     SORT_AS => {
                         let sort_values = value
-                            .split(",")
+                            .split(',')
                             .map(|s| s.to_string())
                             .collect::<Vec<_>>();
                         params.sort_as = Some(sort_values);
@@ -313,7 +313,7 @@ impl VcardParser {
                         }
                     }
                     LABEL => {
-                        if &property_upper_name != ADR {
+                        if property_upper_name != ADR {
                             return Err(Error::InvalidLabel(
                                 property_upper_name,
                             ));
@@ -442,7 +442,7 @@ impl VcardParser {
                 }
                 let value = value
                     .as_ref()
-                    .split(";")
+                    .split(';')
                     .map(|s| s.to_string())
                     .collect::<Vec<_>>();
                 card.name = Some(TextListProperty {
@@ -577,7 +577,7 @@ impl VcardParser {
                         _ => {
                             return Err(Error::UnsupportedValueType(
                                 value_type.to_string(),
-                                String::from(upper_name),
+                                upper_name,
                             ))
                         }
                     }
@@ -627,7 +627,7 @@ impl VcardParser {
             ORG => {
                 let value = value
                     .as_ref()
-                    .split(";")
+                    .split(';')
                     .map(|s| s.to_string())
                     .collect::<Vec<_>>();
                 card.org.push(TextListProperty {
@@ -658,7 +658,7 @@ impl VcardParser {
             CATEGORIES => {
                 let value = value
                     .as_ref()
-                    .split(",")
+                    .split(',')
                     .map(|s| s.to_string())
                     .collect::<Vec<_>>();
                 card.categories.push(TextListProperty {
@@ -871,7 +871,7 @@ impl VcardParser {
             }
 
             if token == Token::NewLine {
-                last_range = Some(span.clone());
+                last_range = Some(span);
                 break;
             }
 
@@ -974,9 +974,9 @@ impl VcardParser {
     }
 }
 
-fn parse_date_time_or_text<'a>(
+fn parse_date_time_or_text(
     prop_name: &str,
-    value: Cow<'a, str>,
+    value: Cow<'_, str>,
     parameters: Option<Parameters>,
     group: Option<String>,
 ) -> Result<DateTimeOrTextProperty> {
@@ -1032,12 +1032,12 @@ fn parse_media_type(value: String, params: &mut Parameters) -> Result<()> {
 }
 
 #[cfg(feature = "language-tags")]
-fn parse_language_tag<'a>(value: Cow<'a, str>) -> Result<LanguageTag> {
+fn parse_language_tag(value: Cow<'_, str>) -> Result<LanguageTag> {
     let tag: LanguageTag = value.as_ref().parse()?;
     Ok(tag)
 }
 
 #[cfg(not(feature = "language-tags"))]
-fn parse_language_tag<'a>(value: Cow<'a, str>) -> Result<String> {
+fn parse_language_tag(value: Cow<'_, str>) -> Result<String> {
     Ok(value.into_owned())
 }
