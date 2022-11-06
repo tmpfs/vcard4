@@ -90,8 +90,45 @@ END:VCARD"#;
     Ok(())
 }
 
-// TODO: BDAY
-// TODO: ANNIVERSARY
+#[test]
+fn parse_bday() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+BDAY:19531015
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    let bday = card.bday.as_ref().unwrap();
+    assert_eq!(
+        "1953-10-15",
+        &bday.to_string(),
+    );
+    assert_round_trip(&card)?;
+    Ok(())
+}
+
+#[test]
+fn parse_anniversary() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+ANNIVERSARY:19960415
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    let anniversary = card.anniversary.as_ref().unwrap();
+    assert_eq!(
+        "1996-04-15",
+        &anniversary.to_string(),
+    );
+    assert_round_trip(&card)?;
+    Ok(())
+}
 
 #[test]
 fn parse_gender() -> Result<()> {

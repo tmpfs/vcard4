@@ -242,6 +242,8 @@ mod tests {
         }
         */
 
+        // 19531015T231000Z
+
         let value: DateAndOrTime = "102200Z".parse()?;
         if !matches!(value, DateAndOrTime::Time(_)) {
             panic!("expecting Time variant");
