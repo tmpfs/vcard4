@@ -11,11 +11,7 @@ use language_tags::LanguageTag;
 use mime::Mime;
 
 use crate::{
-    name::*,
-    parameter::*,
-    property::*,
-    types::*,
-    Error, Result, Vcard,
+    name::*, parameter::*, property::*, types::*, Error, Result, Vcard,
 };
 
 #[derive(Logos, Debug, PartialEq)]
@@ -288,7 +284,9 @@ impl VcardParser {
                     }
                     GEO => {
                         if !quoted {
-                            return Err(Error::NotQuoted(property_upper_name));
+                            return Err(Error::NotQuoted(
+                                property_upper_name,
+                            ));
                         }
                         let geo = Uri::try_from(&value[..])?.into_owned();
                         params.geo = Some(geo);
@@ -474,7 +472,10 @@ impl VcardParser {
                 }
 
                 let prop = parse_date_time_or_text(
-                    &upper_name, value, parameters, group,
+                    &upper_name,
+                    value,
+                    parameters,
+                    group,
                 )?;
                 card.bday = Some(prop);
             }
@@ -731,7 +732,7 @@ impl VcardParser {
             }
             VERSION => {
                 return Err(Error::VersionMisplaced);
-            },
+            }
 
             // Security
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.8

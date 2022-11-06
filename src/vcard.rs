@@ -1,9 +1,6 @@
 //! Type for vCards.
 
-use std::{
-    fmt,
-    borrow::Cow,
-};
+use std::{borrow::Cow, fmt};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -128,7 +125,9 @@ fn content_line(prop: &impl Property, prop_name: &'static str) -> String {
 
     let params = if let Some(params) = prop.parameters() {
         params.to_string()
-    } else { String::new() };
+    } else {
+        String::new()
+    };
 
     // Handle escape sequences
     let value = prop.to_string();
@@ -156,7 +155,10 @@ fn fold_line(line: String, wrap_at: usize) -> String {
 }
 
 /// Get the fully qualified name including any group.
-fn qualified_name<'a>(prop: &impl Property, prop_name: &'a str) -> Cow<'a, str> {
+fn qualified_name<'a>(
+    prop: &impl Property,
+    prop_name: &'a str,
+) -> Cow<'a, str> {
     if let Some(group) = prop.group() {
         Cow::Owned(format!("{}.{}", group, prop_name))
     } else {

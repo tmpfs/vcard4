@@ -8,7 +8,7 @@ pub enum Error {
     #[error("input token was expected but reached EOF")]
     TokenExpected,
 
-    /// Error generated when a version is encountered that is not 
+    /// Error generated when a version is encountered that is not
     /// the first property.
     #[error("version must be the first property")]
     VersionMisplaced,
