@@ -167,9 +167,7 @@ impl VcardParser {
                     group,
                 )?;
             } else if delimiter == Token::PropertyDelimiter {
-                self.parse_property_by_name(
-                    lex, card, name, None, group,
-                )?;
+                self.parse_property_by_name(lex, card, name, None, group)?;
             } else {
                 return Err(Error::DelimiterExpected);
             }
@@ -227,7 +225,7 @@ impl VcardParser {
                         let mut pids: Vec<Pid> = Vec::new();
                         let values = value.split(",");
                         for value in values {
-                            pids.push(value.parse()?); 
+                            pids.push(value.parse()?);
                         }
                         params.pid = Some(pids);
                     }
@@ -681,7 +679,12 @@ impl VcardParser {
                 card.uid = Some(text_or_uri);
             }
             "CLIENTPIDMAP" => {
-                todo!()
+                let value: ClientPidMap = value.as_ref().parse()?;
+                card.client_pid_map.push(ClientPidMapProperty {
+                    value,
+                    parameters,
+                    group,
+                });
             }
             "URL" => {
                 let value = Uri::parse(value.as_ref())?.to_owned();

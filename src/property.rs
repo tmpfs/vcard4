@@ -16,9 +16,22 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{
     parameters::Parameters,
-    types::{DateAndOrTime, Float, Integer},
+    types::{ClientPidMap, DateAndOrTime, Float, Integer},
     Error, Result,
 };
+
+/// Client PID map property.
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+pub struct ClientPidMapProperty {
+    /// Group for this property.
+    pub group: Option<String>,
+    /// The value for the property.
+    pub value: ClientPidMap,
+    /// The property parameters.
+    pub parameters: Option<Parameters>,
+}
 
 /// Extension property.
 #[derive(Debug, PartialEq)]

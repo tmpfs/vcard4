@@ -24,6 +24,10 @@ pub enum Error {
     #[error("value '{0}' is not a valid boolean")]
     InvalidBoolean(String),
 
+    /// Error generated when a CLIENTPIDMAP value could not be parsed.
+    #[error("client PID map '{0}' is not valid")]
+    InvalidClientPidMap(String),
+
     /// Error generated when a property or parameter delimiter was expected.
     #[error("property or parameter delimiter expected")]
     DelimiterExpected,

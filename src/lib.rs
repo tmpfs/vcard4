@@ -130,12 +130,12 @@ pub struct Vcard {
     /// Value of the REV property.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     pub rev: Option<DateTimeProperty>,
-
-    //pub rev: Option<Timestamp>,
     /// Value of the SOUND property.
     pub sound: Vec<UriProperty>,
     /// Value of the UID property.
     pub uid: Option<TextOrUriProperty>,
+    /// Value of the CLIENTPIDMAP property.
+    pub client_pid_map: Vec<ClientPidMapProperty>,
 
     // Security
     /// Value of the KEY property.

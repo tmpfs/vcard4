@@ -1,5 +1,9 @@
 //! Custom data types.
-use std::{fmt::Debug, str::FromStr};
+use fluent_uri::Uri;
+use std::{
+    fmt::{self, Debug},
+    str::FromStr,
+};
 use time::{
     format_description::well_known::Iso8601, Date, OffsetDateTime, Time,
 };
@@ -123,6 +127,52 @@ impl FromStr for Float {
         } else {
             Ok(Self::One(s.parse()?))
         }
+    }
+}
+
+/// Value for the CLIENTPIDMAP property.
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+pub struct ClientPidMap {
+    /// The source identifier.
+    pub source: u64,
+    /// The URI for the map.
+    #[cfg_attr(feature = "zeroize", zeroize(skip))]
+    pub uri: Uri<String>,
+}
+
+impl fmt::Display for ClientPidMap {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{};{}", self.source, self.uri.as_str())
+    }
+}
+
+impl FromStr for ClientPidMap {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let mut it = s.splitn(2, ";");
+        let source =
+            it.next().ok_or(Error::InvalidClientPidMap(s.to_string()))?;
+        let uri =
+            it.next().ok_or(Error::InvalidClientPidMap(s.to_string()))?;
+        let source: u64 = source.parse()?;
+
+        // Must be positive according to the RFC
+        // https://www.rfc-editor.org/rfc/rfc6350#section-6.7.7
+        if source == 0 {
+            return Err(Error::InvalidClientPidMap(s.to_string()));
+        }
+
+        let uri = Uri::parse(uri)?.to_owned();
+        Ok(ClientPidMap { source, uri })
+    }
+}
+
+impl PartialEq for ClientPidMap {
+    fn eq(&self, other: &Self) -> bool {
+        self.source == other.source && self.uri.as_str() == other.uri.as_str()
     }
 }
 
