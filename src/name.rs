@@ -1,5 +1,8 @@
 /// Constants for property and parameter names.
 
+pub(crate) const HOME: &str = "home";
+pub(crate) const WORK: &str = "work";
+
 pub(crate) const BEGIN: &str = "BEGIN:VCARD";
 pub(crate) const VERSION_4: &str = "VERSION:4.0";
 pub(crate) const END: &str = "END:VCARD";

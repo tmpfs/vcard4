@@ -19,7 +19,10 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 #[cfg(feature = "mime")]
 use mime::Mime;
 
-use crate::{Error, Result};
+use crate::{
+    name::{HOME, WORK},
+    Error, Result,
+};
 
 /// Names of properties that are allowed to specify a TYPE parameter.
 pub const TYPE_PROPERTIES: [&str; 23] = [
@@ -66,8 +69,8 @@ pub enum TypeParameter {
 impl fmt::Display for TypeParameter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Home => write!(f, "home"),
-            Self::Work => write!(f, "work"),
+            Self::Home => write!(f, "{}", HOME),
+            Self::Work => write!(f, "{}", WORK),
             Self::Telephone(ref tel) => write!(f, "{}", tel),
             Self::Related(ref rel) => write!(f, "{}", rel),
         }
@@ -79,8 +82,8 @@ impl FromStr for TypeParameter {
 
     fn from_str(s: &str) -> Result<Self> {
         match s {
-            "home" => Ok(Self::Home),
-            "work" => Ok(Self::Work),
+            HOME => Ok(Self::Home),
+            WORK => Ok(Self::Work),
             _ => match s.parse::<TelephoneType>() {
                 Ok(tel) => Ok(Self::Telephone(tel)),
                 Err(_) => Ok(Self::Related(s.parse()?)),

@@ -28,7 +28,7 @@
 //!
 //! ## Implementation
 //!
-//! * The `XML` property is parsed and propagated but it is not 
+//! * The `XML` property is parsed and propagated but it is not
 //!   validated per RFC as it is optional.
 //! * IANA Tokens are not implemented.
 

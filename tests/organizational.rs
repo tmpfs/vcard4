@@ -1,14 +1,14 @@
 mod test_helpers;
 
 use anyhow::Result;
+use test_helpers::assert_round_trip;
 use uriparse::uri::URI as Uri;
 use vcard_compact::{parameter::TypeParameter, parse, property::*};
-use test_helpers::assert_round_trip;
 
 // Organizational Properties
 
 #[test]
-fn parse_title() -> Result<()> {
+fn organizational_title() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Mr. John Q. Public\, Esq.
@@ -24,7 +24,7 @@ END:VCARD"#;
 }
 
 #[test]
-fn parse_role() -> Result<()> {
+fn organizational_role() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Mr. John Q. Public\, Esq.
@@ -40,7 +40,7 @@ END:VCARD"#;
 }
 
 #[test]
-fn parse_logo() -> Result<()> {
+fn organizational_logo() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Mr. John Q. Public\, Esq.
@@ -75,7 +75,7 @@ END:VCARD"#;
 }
 
 #[test]
-fn parse_org() -> Result<()> {
+fn organizational_org() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Mr. John Q. Public\, Esq.
@@ -94,7 +94,7 @@ END:VCARD"#;
 }
 
 #[test]
-fn parse_member() -> Result<()> {
+fn organizational_member() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 KIND:group
@@ -186,7 +186,7 @@ END:VCARD"#;
 }
 
 #[test]
-fn parse_related() -> Result<()> {
+fn organizational_related() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Mr. John Q. Public\, Esq.

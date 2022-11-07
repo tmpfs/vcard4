@@ -109,25 +109,39 @@ impl FromStr for DeliveryAddress {
 
         let po_box = if !po_box.is_empty() {
             Some(po_box.to_owned())
-        } else { None };
+        } else {
+            None
+        };
         let extended_address = if !extended_address.is_empty() {
             Some(extended_address.to_owned())
-        } else { None };
+        } else {
+            None
+        };
         let street_address = if !street_address.is_empty() {
             Some(street_address.to_owned())
-        } else { None };
+        } else {
+            None
+        };
         let locality = if !locality.is_empty() {
             Some(locality.to_owned())
-        } else { None };
+        } else {
+            None
+        };
         let region = if !region.is_empty() {
             Some(region.to_owned())
-        } else { None };
+        } else {
+            None
+        };
         let postal_code = if !postal_code.is_empty() {
             Some(postal_code.to_owned())
-        } else { None };
+        } else {
+            None
+        };
         let country_name = if !country_name.is_empty() {
             Some(country_name.to_owned())
-        } else { None };
+        } else {
+            None
+        };
 
         Ok(Self {
             po_box,

@@ -1,13 +1,13 @@
 mod test_helpers;
 
 use anyhow::Result;
-use vcard_compact::{parse, property::*};
 use test_helpers::assert_round_trip;
+use vcard_compact::{parse, property::*};
 
 // Geographic Properties
 
 #[test]
-fn parse_tz() -> Result<()> {
+fn geographic_tz() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Mr. John Q. Public\, Esq.
@@ -73,7 +73,7 @@ END:VCARD"#;
 }
 
 #[test]
-fn parse_geo() -> Result<()> {
+fn geographic_geo() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Mr. John Q. Public\, Esq.

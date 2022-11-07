@@ -1,8 +1,8 @@
 mod test_helpers;
 
 use anyhow::Result;
-use vcard_compact::parse;
 use test_helpers::assert_round_trip;
+use vcard_compact::parse;
 
 #[test]
 fn parse_folded_space() -> Result<()> {

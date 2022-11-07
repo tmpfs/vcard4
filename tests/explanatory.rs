@@ -14,7 +14,7 @@ use test_helpers::assert_round_trip;
 // TODO: CLIENTPIDMAP
 
 #[test]
-fn parse_url() -> Result<()> {
+fn explanatory_url() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Mock person

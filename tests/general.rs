@@ -1,13 +1,13 @@
 mod test_helpers;
 
 use anyhow::Result;
-use vcard_compact::{parse, property::*};
 use test_helpers::assert_round_trip;
+use vcard_compact::{parse, property::*};
 
 // General
 
 #[test]
-fn parse_source() -> Result<()> {
+fn general_source() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Jane Doe
@@ -18,13 +18,16 @@ END:VCARD"#;
     let card = vcards.remove(0);
 
     let url = card.source.get(0).unwrap();
-    assert_eq!("ldap://ldap.example.com/cn=Babs%20Jensen,%20o=Babsco,%20c=US", &url.value.to_string());
+    assert_eq!(
+        "ldap://ldap.example.com/cn=Babs%20Jensen,%20o=Babsco,%20c=US",
+        &url.value.to_string()
+    );
     assert_round_trip(&card)?;
     Ok(())
 }
 
 #[test]
-fn parse_source_folded() -> Result<()> {
+fn general_source_folded() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Jane Doe
@@ -38,13 +41,16 @@ END:VCARD"#;
     println!("{}", card);
 
     let url = card.source.get(0).unwrap();
-    assert_eq!("http://directory.example.com/addressbooks/jdoe/Jean%20Dupont.vcf", &url.value.to_string());
+    assert_eq!(
+        "http://directory.example.com/addressbooks/jdoe/Jean%20Dupont.vcf",
+        &url.value.to_string()
+    );
     assert_round_trip(&card)?;
     Ok(())
 }
 
 #[test]
-fn parse_kind() -> Result<()> {
+fn general_kind() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 KIND:individual
@@ -74,7 +80,7 @@ END:VCARD"#;
 }
 
 #[test]
-fn parse_xml() -> Result<()> {
+fn general_xml() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Jane Doe

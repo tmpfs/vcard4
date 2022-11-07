@@ -1,13 +1,13 @@
 mod test_helpers;
 
 use anyhow::Result;
-use vcard_compact::{parse, property::*};
 use test_helpers::assert_round_trip;
+use vcard_compact::{parse, property::*};
 
 // Identification
 
 #[test]
-fn parse_fn() -> Result<()> {
+fn identification_fn() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Mr. John Q. Public\, Esq.
@@ -23,7 +23,7 @@ END:VCARD"#;
 }
 
 #[test]
-fn parse_n() -> Result<()> {
+fn identification_n() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Mr. John Q. Public\, Esq.
@@ -40,7 +40,7 @@ END:VCARD"#;
 }
 
 #[test]
-fn parse_nickname() -> Result<()> {
+fn identification_nickname() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Mr. John Q. Public\, Esq.
@@ -57,7 +57,7 @@ END:VCARD"#;
 }
 
 #[test]
-fn parse_photo() -> Result<()> {
+fn identification_photo() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Mr. John Q. Public\, Esq.
@@ -91,7 +91,7 @@ END:VCARD"#;
 }
 
 #[test]
-fn parse_bday() -> Result<()> {
+fn identification_bday() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Mr. John Q. Public\, Esq.
@@ -102,16 +102,13 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
     let bday = card.bday.as_ref().unwrap();
-    assert_eq!(
-        "1953-10-15",
-        &bday.to_string(),
-    );
+    assert_eq!("1953-10-15", &bday.to_string(),);
     assert_round_trip(&card)?;
     Ok(())
 }
 
 #[test]
-fn parse_anniversary() -> Result<()> {
+fn identification_anniversary() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Mr. John Q. Public\, Esq.
@@ -122,16 +119,13 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
     let anniversary = card.anniversary.as_ref().unwrap();
-    assert_eq!(
-        "1996-04-15",
-        &anniversary.to_string(),
-    );
+    assert_eq!("1996-04-15", &anniversary.to_string(),);
     assert_round_trip(&card)?;
     Ok(())
 }
 
 #[test]
-fn parse_gender() -> Result<()> {
+fn identification_gender() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Mr. John Q. Public\, Esq.

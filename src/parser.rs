@@ -252,9 +252,13 @@ impl VcardParser {
                         for val in value.split(',') {
                             let param: TypeParameter =
                                 match &property_upper_name[..] {
-                                    TEL => {
-                                        TypeParameter::Telephone(val.parse()?)
-                                    }
+                                    TEL => match val {
+                                        HOME => TypeParameter::Home,
+                                        WORK => TypeParameter::Work,
+                                        _ => TypeParameter::Telephone(
+                                            val.parse()?,
+                                        ),
+                                    },
                                     RELATED => {
                                         TypeParameter::Related(val.parse()?)
                                     }

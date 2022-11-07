@@ -1,11 +1,11 @@
 mod test_helpers;
 
 use anyhow::Result;
-use vcard_compact::parse;
 use test_helpers::assert_round_trip;
+use vcard_compact::parse;
 
 #[test]
-fn parse_escaped_semi_colon() -> Result<()> {
+fn escape_semi_colon() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Mr. John Q. Public\; Esq.
@@ -21,10 +21,26 @@ END:VCARD"#;
 }
 
 #[test]
-fn parse_newline() -> Result<()> {
+fn escape_comma() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Mr. John Q. Public\, Esq.
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    let fname = card.formatted_name.get(0).unwrap();
+    assert_eq!("Mr. John Q. Public, Esq.", fname.value);
+    assert_round_trip(&card)?;
+    Ok(())
+}
+
+#[test]
+fn escape_newline() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Jane Doe
 NOTE:Mythical Manager\NHyjinx Software Division\n
  BabsCo\, Inc.\N
 END:VCARD"#;

@@ -1,6 +1,9 @@
 use anyhow::Result;
 
-use vcard_compact::{parse, Vcard};
+use vcard_compact::{parameter::Parameters, parse, Vcard};
+
+#[cfg(feature = "language-tags")]
+use language_tags::LanguageTag;
 
 #[allow(dead_code)]
 pub fn assert_round_trip(card: &Vcard) -> Result<()> {
@@ -8,5 +11,44 @@ pub fn assert_round_trip(card: &Vcard) -> Result<()> {
     let mut cards = parse(&encoded)?;
     let decoded = cards.remove(0);
     assert_eq!(card, &decoded);
+    Ok(())
+}
+
+#[cfg(feature = "mime")]
+#[allow(dead_code)]
+pub fn assert_media_type(
+    parameters: Option<&Parameters>,
+    expected: &str,
+) -> Result<()> {
+    use mime::Mime;
+    let params = parameters.unwrap();
+    let expected: Mime = expected.parse()?;
+    assert_eq!(&expected, params.media_type.as_ref().unwrap());
+    Ok(())
+}
+
+#[cfg(not(feature = "mime"))]
+#[allow(dead_code)]
+pub fn assert_media_type(
+    parameters: Option<&Parameters>,
+    expected: &str,
+) -> Result<()> {
+    let params = parameters.unwrap();
+    assert_eq!(expected, params.media_type.as_ref().unwrap());
+    Ok(())
+}
+
+#[cfg(feature = "language-tags")]
+#[allow(dead_code)]
+pub fn assert_language(value: &LanguageTag, expected: &str) -> Result<()> {
+    let expected: LanguageTag = expected.parse()?;
+    assert_eq!(&expected, value);
+    Ok(())
+}
+
+#[cfg(not(feature = "language-tags"))]
+#[allow(dead_code)]
+pub fn assert_language(value: &str, expected: &str) -> Result<()> {
+    assert_eq!(expected, value);
     Ok(())
 }
