@@ -213,13 +213,13 @@ pub enum AnyProperty {
 
     /// Date value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    Date(Date),
+    Date(Vec<Date>),
     /// Date and time value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    DateTime(OffsetDateTime),
+    DateTime(Vec<OffsetDateTime>),
     /// Time value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    Time(Time),
+    Time(Vec<(Time, UtcOffset)>),
     /// Date and or time value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     DateAndOrTime(DateAndOrTime),
@@ -249,9 +249,30 @@ impl fmt::Display for AnyProperty {
             Self::Integer(val) => write!(f, "{}", val),
             Self::Float(val) => write!(f, "{}", val),
             Self::Boolean(val) => write!(f, "{}", val),
-            Self::Date(val) => write!(f, "{}", val),
-            Self::DateTime(val) => write!(f, "{}", val),
-            Self::Time(val) => write!(f, "{}", val),
+            Self::Date(val) => write!(
+                f,
+                "{}",
+                val.iter()
+                    .map(|v| v.to_string())
+                    .collect::<Vec<_>>()
+                    .join(",")
+            ),
+            Self::DateTime(val) => write!(
+                f,
+                "{}",
+                val.iter()
+                    .map(|v| v.to_string())
+                    .collect::<Vec<_>>()
+                    .join(",")
+            ),
+            Self::Time(val) => write!(
+                f,
+                "{}",
+                val.iter()
+                    .map(|(time, offset)| format!("{}{}", time, offset))
+                    .collect::<Vec<_>>()
+                    .join(",")
+            ),
             Self::DateAndOrTime(val) => write!(f, "{}", val),
             Self::Timestamp(val) => write!(f, "{}", val),
             Self::Uri(val) => write!(f, "{}", val),

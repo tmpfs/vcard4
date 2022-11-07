@@ -65,6 +65,7 @@ END:VCARD"#;
     Ok(())
 }
 
+/*
 #[test]
 fn extension_date() -> Result<()> {
     let input = r#"BEGIN:VCARD
@@ -93,6 +94,7 @@ END:VCARD"#;
     assert_round_trip(&card)?;
     Ok(())
 }
+*/
 
 /*
 #[test]

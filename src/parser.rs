@@ -857,14 +857,13 @@ impl VcardParser {
                     AnyProperty::Boolean(parse_boolean(value.as_ref())?)
                 }
                 ValueType::Date => {
-                    AnyProperty::Date(parse_date(value.as_ref())?)
+                    AnyProperty::Date(parse_date_list(value.as_ref())?)
                 }
-                ValueType::DateTime => {
-                    AnyProperty::DateTime(parse_date_time(value.as_ref())?)
-                }
+                ValueType::DateTime => AnyProperty::DateTime(
+                    parse_date_time_list(value.as_ref())?,
+                ),
                 ValueType::Time => {
-                    let (time, _) = parse_time(value.as_ref())?;
-                    AnyProperty::Time(time)
+                    AnyProperty::Time(parse_time_list(value.as_ref())?)
                 }
                 ValueType::DateAndOrTime => {
                     AnyProperty::DateAndOrTime(value.as_ref().parse()?)

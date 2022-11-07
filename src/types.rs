@@ -14,8 +14,14 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{Error, Result};
 
-//let format = format_description!("[offset_hour]:[offset_minute]");
-//assert_eq!(UtcOffset::parse("-03:42", &format)?, offset!(-3:42));
+/// Parse a list of times separated by a comma.
+pub fn parse_time_list(value: &str) -> Result<Vec<(Time, UtcOffset)>> {
+    let mut values = Vec::new();
+    for value in value.split(',') {
+        values.push(parse_time(value)?);
+    }
+    Ok(values)
+}
 
 /// Parse a time.
 pub fn parse_time(value: &str) -> Result<(Time, UtcOffset)> {
@@ -51,6 +57,15 @@ fn do_parse_time(value: &str) -> Result<(Time, UtcOffset)> {
     }
     let time = Time::parse(value, &Iso8601::DEFAULT)?;
     Ok((time, offset))
+}
+
+/// Parse a list of dates separated by a comma.
+pub fn parse_date_list(value: &str) -> Result<Vec<Date>> {
+    let mut values = Vec::new();
+    for value in value.split(',') {
+        values.push(parse_date(value)?);
+    }
+    Ok(values)
 }
 
 /// Parse a date.
@@ -109,6 +124,15 @@ fn do_parse_date(s: &str) -> Result<Date> {
     }
 }
 
+/// Parse a list of date times separated by a comma.
+pub fn parse_date_time_list(value: &str) -> Result<Vec<OffsetDateTime>> {
+    let mut values = Vec::new();
+    for value in value.split(',') {
+        values.push(parse_date_time(value)?);
+    }
+    Ok(values)
+}
+
 /// Parse a date time.
 pub fn parse_date_time(value: &str) -> Result<OffsetDateTime> {
     let mut it = value.splitn(2, 'T');
@@ -164,19 +188,40 @@ pub(crate) fn format_date_time(d: &OffsetDateTime) -> Result<String> {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum DateAndOrTime {
     /// Date value.
-    Date(Date),
+    Date(Vec<Date>),
     /// Date and time value.
-    DateTime(OffsetDateTime),
+    DateTime(Vec<OffsetDateTime>),
     /// Time value.
-    Time(Time, UtcOffset),
+    Time(Vec<(Time, UtcOffset)>),
 }
 
 impl fmt::Display for DateAndOrTime {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Date(val) => write!(f, "{}", val),
-            Self::DateTime(val) => write!(f, "{}", val),
-            Self::Time(val, offset) => write!(f, "{}{}", val, offset),
+            Self::Date(val) => write!(
+                f,
+                "{}",
+                val.iter()
+                    .map(|v| v.to_string())
+                    .collect::<Vec<_>>()
+                    .join(",")
+            ),
+            Self::DateTime(val) => write!(
+                f,
+                "{}",
+                val.iter()
+                    .map(|v| v.to_string())
+                    .collect::<Vec<_>>()
+                    .join(",")
+            ),
+            Self::Time(val) => write!(
+                f,
+                "{}",
+                val.iter()
+                    .map(|(time, offset)| format!("{}{}", time, offset))
+                    .collect::<Vec<_>>()
+                    .join(",")
+            ),
         }
     }
 }
@@ -186,16 +231,15 @@ impl FromStr for DateAndOrTime {
 
     fn from_str(s: &str) -> Result<Self> {
         if !s.is_empty() && &s[0..1] == "T" {
-            let (time, offset) = parse_time(&s[1..])?;
-            return Ok(Self::Time(time, offset));
+            return Ok(Self::Time(parse_time_list(&s[1..])?));
         }
 
-        match parse_date_time(s) {
+        match parse_date_time_list(s) {
             Ok(value) => Ok(Self::DateTime(value)),
-            Err(_) => match parse_date(s) {
+            Err(_) => match parse_date_list(s) {
                 Ok(value) => Ok(Self::Date(value)),
-                Err(_) => match parse_time(s) {
-                    Ok((value, offset)) => Ok(Self::Time(value, offset)),
+                Err(_) => match parse_time_list(s) {
+                    Ok(value) => Ok(Self::Time(value)),
                     Err(e) => Err(e),
                 },
             },
