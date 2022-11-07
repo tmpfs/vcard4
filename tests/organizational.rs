@@ -5,8 +5,6 @@ use test_helpers::assert_round_trip;
 use uriparse::uri::URI as Uri;
 use vcard_compact::{parameter::TypeParameter, parse, property::*};
 
-// Organizational Properties
-
 #[test]
 fn organizational_title() -> Result<()> {
     let input = r#"BEGIN:VCARD

@@ -4,8 +4,6 @@ use anyhow::Result;
 use test_helpers::assert_round_trip;
 use vcard_compact::{parse, property::*};
 
-// Identification
-
 #[test]
 fn identification_fn() -> Result<()> {
     let input = r#"BEGIN:VCARD

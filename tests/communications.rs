@@ -8,8 +8,6 @@ use vcard_compact::{
     property::TextOrUriProperty,
 };
 
-// Communications Properties
-
 #[test]
 fn communications_tel() -> Result<()> {
     let input = r#"BEGIN:VCARD

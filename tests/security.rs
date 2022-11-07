@@ -4,8 +4,6 @@ use anyhow::Result;
 use test_helpers::{assert_media_type, assert_round_trip};
 use vcard_compact::{parse, property::*};
 
-// Security
-
 #[test]
 fn security_key() -> Result<()> {
     let input = r#"BEGIN:VCARD
