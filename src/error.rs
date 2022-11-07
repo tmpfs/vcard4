@@ -90,6 +90,10 @@ pub enum Error {
     #[error("value '{0}' for UTC offset is invalid")]
     InvalidUtcOffset(String),
 
+    /// Error generated when a date time is not valid.
+    #[error("date time '{0}' is not valid, maybe missing 'T' delimiter")]
+    InvalidDateTime(String),
+
     /// Error generated when a TYPE parameter is given for a property
     /// that does not support it.
     #[error("TYPE parameter is not supported for property '{0}'")]

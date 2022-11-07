@@ -46,7 +46,7 @@ args = ["test"]
 dependencies = ["unit", "integration"]
 
 [tasks.dev]
-dependencies = ["check-wasm", "test", "format"]
+dependencies = ["check-wasm", "test", "format", "clippy"]
 
 [tasks.check-wasm]
 command = "cargo"

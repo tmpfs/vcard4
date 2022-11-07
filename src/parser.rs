@@ -387,8 +387,7 @@ impl VcardParser {
                 let mut value = &source[begin..end];
 
                 // Remove double quotes if necessary
-                if value.len() >= 2 && quoted
-                {
+                if value.len() >= 2 && quoted {
                     value = &source[begin + 1..end];
                 }
 
@@ -396,7 +395,8 @@ impl VcardParser {
                 if quoted {
                     token = if let Some(token) = lex.next() {
                         if token != Token::PropertyDelimiter
-                            && token != Token::ParameterDelimiter {
+                            && token != Token::ParameterDelimiter
+                        {
                             return Err(Error::IncorrectToken);
                         }
                         token
@@ -407,7 +407,7 @@ impl VcardParser {
 
                 let mut value = String::from(value);
                 if is_folded_or_escaped {
-                    value = value.replace("\r", "");
+                    value = value.replace('\r', "");
                     value = value.replace("\n ", "");
                     value = value.replace("\n\t", "");
                     value = value.replace("\\n", "\n");
@@ -863,7 +863,8 @@ impl VcardParser {
                     AnyProperty::DateTime(parse_date_time(value.as_ref())?)
                 }
                 ValueType::Time => {
-                    AnyProperty::Time(parse_time(value.as_ref())?)
+                    let (time, _) = parse_time(value.as_ref())?;
+                    AnyProperty::Time(time)
                 }
                 ValueType::DateAndOrTime => {
                     AnyProperty::DateAndOrTime(value.as_ref().parse()?)

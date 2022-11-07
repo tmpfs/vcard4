@@ -1,8 +1,8 @@
 mod test_helpers;
 
 use anyhow::Result;
-use vcard_compact::parse;
 use test_helpers::assert_round_trip;
+use vcard_compact::parse;
 
 #[test]
 fn delivery_adr() -> Result<()> {
@@ -22,11 +22,14 @@ END:VCARD"#;
     assert_eq!("geo:12.3457,78.910", &geo.to_string());
 
     let label = prop.parameters.as_ref().unwrap().label.as_ref().unwrap();
-    assert_eq!(r#"Mr. John Q. Public, Esq.
+    assert_eq!(
+        r#"Mr. John Q. Public, Esq.
 Mail Drop: TNE QB
 123 Main Street
 Any Town, CA  91921-1234
-U.S.A."#, label);
+U.S.A."#,
+        label
+    );
 
     let address = &prop.value;
     assert!(address.po_box.is_none());
@@ -40,4 +43,3 @@ U.S.A."#, label);
     assert_round_trip(&card)?;
     Ok(())
 }
-

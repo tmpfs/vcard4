@@ -513,7 +513,7 @@ impl fmt::Display for Parameters {
 }
 
 fn escape_parameter(s: &str) -> String {
-    s.replace("\n", "\\n")
+    s.replace('\n', "\\n")
 }
 
 fn comma_delimited(items: &Vec<impl std::fmt::Display>) -> String {

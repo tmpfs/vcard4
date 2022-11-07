@@ -14,23 +14,128 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{Error, Result};
 
-pub(crate) fn parse_time(s: &str) -> Result<Time> {
-    Ok(Time::parse(s, &Iso8601::DEFAULT)?)
+//let format = format_description!("[offset_hour]:[offset_minute]");
+//assert_eq!(UtcOffset::parse("-03:42", &format)?, offset!(-3:42));
+
+/// Parse a time.
+pub fn parse_time(value: &str) -> Result<(Time, UtcOffset)> {
+    if value.starts_with('-') {
+        let mut value = value.split("").collect::<Vec<_>>();
+        if let Some(val) = value.get_mut(1) {
+            if *val == "-" {
+                *val = "00";
+            }
+        }
+        if let Some(val) = value.get_mut(2) {
+            if *val == "-" {
+                *val = "00";
+            }
+        }
+        let value = value.join("");
+        do_parse_time(&value)
+    } else {
+        do_parse_time(value)
+    }
 }
 
-pub(crate) fn parse_date(s: &str) -> Result<Date> {
-    Ok(Date::parse(s, &Iso8601::DEFAULT)?)
+fn do_parse_time(value: &str) -> Result<(Time, UtcOffset)> {
+    let mut offset = UtcOffset::UTC;
+    if value.len() > 6 {
+        let offset_value = &value[6..];
+        let offset_format = format_description::parse(
+            "[offset_hour sign:mandatory][offset_minute]",
+        )?;
+        if offset_value != "Z" {
+            offset = UtcOffset::parse(offset_value, &offset_format)?;
+        }
+    }
+    let time = Time::parse(value, &Iso8601::DEFAULT)?;
+    Ok((time, offset))
 }
 
-pub(crate) fn parse_date_time(s: &str) -> Result<OffsetDateTime> {
-    Ok(OffsetDateTime::parse(s, &Iso8601::DEFAULT)?)
+/// Parse a date.
+pub fn parse_date(value: &str) -> Result<Date> {
+    if value.starts_with('-') {
+        let mut value = value.split("").collect::<Vec<_>>();
+        if let Some(val) = value.get_mut(1) {
+            if *val == "-" {
+                *val = "00";
+            }
+        }
+        if let Some(val) = value.get_mut(2) {
+            if *val == "-" {
+                *val = "00";
+            }
+        }
+        if let Some(val) = value.get_mut(3) {
+            if *val == "-" {
+                *val = "01";
+            }
+        }
+
+        let value = value.join("");
+        do_parse_date(&value)
+    // Got a YYYY-MM format need to use 01 for the day
+    } else if value.len() == 7 {
+        let value = format!("{}-01", value);
+        do_parse_date(&value)
+    // Got a YYYY format need to use 01 for the month and day
+    } else if value.len() == 4 {
+        let value = format!("{}-01-01", value);
+        do_parse_date(&value)
+    } else {
+        do_parse_date(value)
+    }
 }
 
-pub(crate) fn parse_timestamp(s: &str) -> Result<OffsetDateTime> {
-    parse_date_time(s)
+fn do_parse_date(s: &str) -> Result<Date> {
+    let date_separator = format_description::parse("[year]-[month]-[day]")?;
+    let date = format_description::parse("[year][month][day]")?;
+
+    let year_month_separator = format_description::parse("[year]-[month]")?;
+
+    let year_month = format_description::parse("[year][month]")?;
+
+    if let Ok(result) = Date::parse(s, &date_separator) {
+        Ok(result)
+    } else if let Ok(result) = Date::parse(s, &date) {
+        Ok(result)
+    } else if let Ok(result) = Date::parse(s, &year_month_separator) {
+        Ok(result)
+    } else if let Ok(result) = Date::parse(s, &year_month) {
+        Ok(result)
+    } else {
+        Ok(Date::parse(s, &Iso8601::DEFAULT)?)
+    }
 }
 
-pub(crate) fn parse_boolean(s: &str) -> Result<bool> {
+/// Parse a date time.
+pub fn parse_date_time(value: &str) -> Result<OffsetDateTime> {
+    let mut it = value.splitn(2, 'T');
+    let date = it
+        .next()
+        .ok_or_else(|| Error::InvalidDateTime(value.to_owned()))?;
+    let time = it
+        .next()
+        .ok_or_else(|| Error::InvalidDateTime(value.to_owned()))?;
+
+    let date = parse_date(date)?;
+    let (time, offset) = parse_time(time)?;
+
+    let utc = OffsetDateTime::now_utc()
+        .replace_date(date)
+        .replace_time(time)
+        .replace_offset(offset);
+    Ok(utc)
+}
+
+/// Parse a timestamp.
+pub(crate) fn parse_timestamp(value: &str) -> Result<OffsetDateTime> {
+    parse_date_time(value)
+}
+
+/// Parse a boolean.
+pub fn parse_boolean(s: &str) -> Result<bool> {
     match s {
         "true" | "TRUE" => Ok(true),
         "false" | "FALSE" => Ok(false),
@@ -63,7 +168,7 @@ pub enum DateAndOrTime {
     /// Date and time value.
     DateTime(OffsetDateTime),
     /// Time value.
-    Time(Time),
+    Time(Time, UtcOffset),
 }
 
 impl fmt::Display for DateAndOrTime {
@@ -71,7 +176,7 @@ impl fmt::Display for DateAndOrTime {
         match self {
             Self::Date(val) => write!(f, "{}", val),
             Self::DateTime(val) => write!(f, "{}", val),
-            Self::Time(val) => write!(f, "{}", val),
+            Self::Time(val, offset) => write!(f, "{}{}", val, offset),
         }
     }
 }
@@ -81,7 +186,8 @@ impl FromStr for DateAndOrTime {
 
     fn from_str(s: &str) -> Result<Self> {
         if !s.is_empty() && &s[0..1] == "T" {
-            return Ok(Self::Time(parse_time(&s[1..])?));
+            let (time, offset) = parse_time(&s[1..])?;
+            return Ok(Self::Time(time, offset));
         }
 
         match parse_date_time(s) {
@@ -89,7 +195,7 @@ impl FromStr for DateAndOrTime {
             Err(_) => match parse_date(s) {
                 Ok(value) => Ok(Self::Date(value)),
                 Err(_) => match parse_time(s) {
-                    Ok(value) => Ok(Self::Time(value)),
+                    Ok((value, offset)) => Ok(Self::Time(value, offset)),
                     Err(e) => Err(e),
                 },
             },
@@ -220,90 +326,5 @@ impl FromStr for ClientPidMap {
 
         let uri = Uri::try_from(uri)?.into_owned();
         Ok(ClientPidMap { source, uri })
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use anyhow::Result;
-
-    #[test]
-    fn parse_date_and_or_time() -> Result<()> {
-        let value: DateAndOrTime = "T102200".parse()?;
-        if !matches!(value, DateAndOrTime::Time(_)) {
-            panic!("expecting Time variant");
-        }
-
-        let value: DateAndOrTime = "T1022".parse()?;
-        if !matches!(value, DateAndOrTime::Time(_)) {
-            panic!("expecting Time variant");
-        }
-
-        let value: DateAndOrTime = "T10".parse()?;
-        if !matches!(value, DateAndOrTime::Time(_)) {
-            panic!("expecting Time variant");
-        }
-
-        /*
-        let value: DateAndOrTime = "-2200".parse()?;
-        if !matches!(value, DateAndOrTime::Time(_)) {
-            panic!("expecting Time variant");
-        }
-        */
-
-        /*
-        let value: DateAndOrTime = "--00".parse()?;
-        if !matches!(value, DateAndOrTime::Time(_)) {
-            panic!("expecting Time variant");
-        }
-        */
-
-        // 19531015T231000Z
-
-        let value: DateAndOrTime = "102200Z".parse()?;
-        if !matches!(value, DateAndOrTime::Time(_)) {
-            panic!("expecting Time variant");
-        }
-
-        let value: DateAndOrTime = "102200-0800".parse()?;
-        if !matches!(value, DateAndOrTime::Time(_)) {
-            panic!("expecting Time variant");
-        }
-
-        let value: DateAndOrTime = "19850412".parse()?;
-        if !matches!(value, DateAndOrTime::Date(_)) {
-            panic!("expecting Date variant");
-        }
-
-        /*
-        let value: DateAndOrTime = "1985-04".parse()?;
-        if !matches!(value, DateAndOrTime::Date(_)) {
-            panic!("expecting Date variant");
-        }
-        */
-
-        /*
-        let value: DateAndOrTime = "1985".parse()?;
-        if !matches!(value, DateAndOrTime::Date(_)) {
-            panic!("expecting Date variant");
-        }
-        */
-
-        /*
-        let value: DateAndOrTime = "--0412".parse()?;
-        if !matches!(value, DateAndOrTime::Date(_)) {
-            panic!("expecting Date variant");
-        }
-        */
-
-        /*
-        let value: DateAndOrTime = "---12".parse()?;
-        if !matches!(value, DateAndOrTime::Date(_)) {
-            panic!("expecting Date variant");
-        }
-        */
-
-        Ok(())
     }
 }
