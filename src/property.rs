@@ -18,7 +18,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{
     parameter::Parameters,
-    types::{ClientPidMap, DateAndOrTime, Float, Integer},
+    types::{format_date_time, ClientPidMap, DateAndOrTime, Float, Integer},
     Error, Result,
 };
 
@@ -293,6 +293,16 @@ pub struct DateTimeProperty {
     pub value: OffsetDateTime,
     /// The property parameters.
     pub parameters: Option<Parameters>,
+}
+
+impl fmt::Display for DateTimeProperty {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            format_date_time(&self.value).map_err(|_| fmt::Error)?
+        )
+    }
 }
 
 /// Date and or time property.
@@ -764,7 +774,6 @@ property_impl!(LanguageProperty);
 display_impl!(LanguageProperty);
 
 property_impl!(DateTimeProperty);
-display_impl!(DateTimeProperty);
 
 property_impl!(DateAndOrTimeProperty);
 display_impl!(DateAndOrTimeProperty);

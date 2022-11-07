@@ -5,7 +5,6 @@ use vcard_compact::parse;
 
 use test_helpers::assert_round_trip;
 
-// TODO: PRODID
 // TODO: REV
 // TODO: SOUND
 // TODO: UID
@@ -32,6 +31,41 @@ END:VCARD"#;
         &prop.value
     );
 
+    assert_round_trip(&card)?;
+    Ok(())
+}
+
+#[test]
+fn explanatory_prod_id() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Jane Doe
+PRODID:-//ONLINE DIRECTORY//NONSGML Version 1//EN
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    let prop = card.prod_id.as_ref().unwrap();
+    assert_eq!("-//ONLINE DIRECTORY//NONSGML Version 1//EN", &prop.value);
+
+    assert_round_trip(&card)?;
+    Ok(())
+}
+
+#[test]
+fn explanatory_rev() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Jane Doe
+REV:19951031T222710Z
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    let prop = card.rev.as_ref().unwrap();
+    assert_eq!("1995-10-31 22:27:10.0 +00:00:00", &prop.value.to_string());
     assert_round_trip(&card)?;
     Ok(())
 }

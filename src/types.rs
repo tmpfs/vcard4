@@ -1,7 +1,8 @@
 //! Custom data types.
 use std::{fmt, str::FromStr};
 use time::{
-    format_description::well_known::Iso8601, Date, OffsetDateTime, Time,
+    format_description::{self, well_known::Iso8601},
+    Date, OffsetDateTime, Time, UtcOffset,
 };
 use uriparse::uri::URI as Uri;
 
@@ -35,6 +36,22 @@ pub(crate) fn parse_boolean(s: &str) -> Result<bool> {
         "false" | "FALSE" => Ok(false),
         _ => Err(Error::InvalidBoolean(s.to_string())),
     }
+}
+
+pub(crate) fn format_date_time(d: &OffsetDateTime) -> Result<String> {
+    let offset = d.clone().offset();
+
+    let format = if offset == UtcOffset::UTC {
+        format_description::parse(
+            "[year][month][day]T[hour][minute][second]Z",
+        )?
+    } else {
+        format_description::parse(
+            "[year][month][day]T[hour][minute][second][offset_hour sign:mandatory][offset_minute]",
+        )?
+    };
+
+    Ok(d.format(&format)?)
 }
 
 /// Date and or time.
