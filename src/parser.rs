@@ -453,6 +453,7 @@ impl VcardParser {
                     value,
                     parameters,
                     group,
+                    delimiter: TextListDelimiter::SemiColon,
                 });
             }
             NICKNAME => {
@@ -643,6 +644,7 @@ impl VcardParser {
                     value,
                     parameters,
                     group,
+                    delimiter: TextListDelimiter::SemiColon,
                 });
             }
             MEMBER => {
@@ -674,6 +676,7 @@ impl VcardParser {
                     value,
                     parameters,
                     group,
+                    delimiter: TextListDelimiter::Comma,
                 });
             }
             NOTE => {

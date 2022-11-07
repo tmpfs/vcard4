@@ -498,6 +498,17 @@ pub struct TextProperty {
     pub parameters: Option<Parameters>,
 }
 
+/// Delimiter used for a text list.
+#[derive(Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+pub enum TextListDelimiter {
+    /// Text list with a comma delimiter.
+    Comma,
+    /// Text list with a semi-colon delimiter.
+    SemiColon,
+}
+
 /// Text list property value.
 #[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -509,11 +520,22 @@ pub struct TextListProperty {
     pub value: Vec<String>,
     /// Parameters for this property.
     pub parameters: Option<Parameters>,
+    /// Delimiter for the list property.
+    pub delimiter: TextListDelimiter,
 }
 
 impl fmt::Display for TextListProperty {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.value.join(";"))
+        write!(
+            f,
+            "{}",
+            self.value.join({
+                match self.delimiter {
+                    TextListDelimiter::Comma => ",",
+                    TextListDelimiter::SemiColon => ";",
+                }
+            })
+        )
     }
 }
 
