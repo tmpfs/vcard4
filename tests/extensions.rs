@@ -4,7 +4,10 @@ use anyhow::Result;
 use test_helpers::assert_round_trip;
 use uriparse::uri::URI as Uri;
 use vcard_compact::{
-    parameter::ValueType, parse, property::AnyProperty, types::parse_date,
+    parameter::ValueType,
+    parse,
+    property::AnyProperty,
+    types::{parse_date_list, parse_date_time_list, parse_time_list},
 };
 
 #[test]
@@ -65,9 +68,8 @@ END:VCARD"#;
     Ok(())
 }
 
-/*
 #[test]
-fn extension_date() -> Result<()> {
+fn extension_date_only() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Jane Doe
@@ -79,8 +81,6 @@ END:VCARD"#;
 
     let prop = card.extensions.get(0).unwrap();
 
-    println!("{:#?}", prop);
-
     assert!(prop.group.is_none());
     assert_eq!("X-FOO", &prop.name);
     assert_eq!(
@@ -88,21 +88,46 @@ END:VCARD"#;
         prop.parameters.as_ref().unwrap().value.as_ref().unwrap()
     );
 
-    let expected = parse_date("20221107")?;
+    let expected = parse_date_list("20221107")?;
     assert_eq!(&AnyProperty::Date(expected), &prop.value);
 
     assert_round_trip(&card)?;
     Ok(())
 }
-*/
 
-/*
 #[test]
-fn extension_date_time() -> Result<()> {
+fn extension_time_only() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Jane Doe
-X-FOO;VALUE=date:20221107
+X-FOO;VALUE=time:2200
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+    let card = vcards.remove(0);
+
+    let prop = card.extensions.get(0).unwrap();
+
+    assert!(prop.group.is_none());
+    assert_eq!("X-FOO", &prop.name);
+    assert_eq!(
+        &ValueType::Time,
+        prop.parameters.as_ref().unwrap().value.as_ref().unwrap()
+    );
+
+    let expected = parse_time_list("2200")?;
+    assert_eq!(&AnyProperty::Time(expected), &prop.value);
+
+    assert_round_trip(&card)?;
+    Ok(())
+}
+
+#[test]
+fn extension_date_time_only() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Jane Doe
+X-FOO;VALUE=date-time:20221107T2200
 END:VCARD"#;
     let mut vcards = parse(input)?;
     assert_eq!(1, vcards.len());
@@ -115,17 +140,21 @@ END:VCARD"#;
     assert!(prop.group.is_none());
     assert_eq!("X-FOO", &prop.name);
     assert_eq!(
-        &ValueType::Date,
+        &ValueType::DateTime,
         prop.parameters.as_ref().unwrap().value.as_ref().unwrap()
     );
 
-    let expected = parse_date("20221107")?;
-    assert_eq!(
-        &AnyProperty::Date(expected),
-        &prop.value
-    );
+    let expected = parse_date_time_list("20221107T2200")?;
+    assert_eq!(&AnyProperty::DateTime(expected), &prop.value);
 
     assert_round_trip(&card)?;
     Ok(())
 }
-*/
+
+// TODO: date-and-or-time
+// TODO: timestamp
+// TODO: boolean
+// TODO: integer
+// TODO: float
+// TODO: utc-offset
+// TODO: language-tag

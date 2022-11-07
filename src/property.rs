@@ -18,7 +18,10 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{
     parameter::Parameters,
-    types::{format_date_time, ClientPidMap, DateAndOrTime, Float, Integer},
+    types::{
+        /*format_date,*/ format_date_time, format_time, ClientPidMap,
+        DateAndOrTime, Float, Integer,
+    },
     Error, Result,
 };
 
@@ -257,22 +260,30 @@ impl fmt::Display for AnyProperty {
                     .collect::<Vec<_>>()
                     .join(",")
             ),
-            Self::DateTime(val) => write!(
-                f,
-                "{}",
-                val.iter()
-                    .map(|v| v.to_string())
-                    .collect::<Vec<_>>()
-                    .join(",")
-            ),
-            Self::Time(val) => write!(
-                f,
-                "{}",
-                val.iter()
-                    .map(|(time, offset)| format!("{}{}", time, offset))
-                    .collect::<Vec<_>>()
-                    .join(",")
-            ),
+            Self::DateTime(val) => {
+                let mut value = String::new();
+                for (index, item) in val.iter().enumerate() {
+                    value.push_str(
+                        &format_date_time(item).map_err(|_| fmt::Error)?,
+                    );
+                    if index < val.len() - 1 {
+                        value.push(',');
+                    }
+                }
+                write!(f, "{}", value)
+            }
+            Self::Time(val) => {
+                let mut value = String::new();
+                for (index, item) in val.iter().enumerate() {
+                    value.push_str(
+                        &format_time(item).map_err(|_| fmt::Error)?,
+                    );
+                    if index < val.len() - 1 {
+                        value.push(',');
+                    }
+                }
+                write!(f, "{}", value)
+            }
             Self::DateAndOrTime(val) => write!(f, "{}", val),
             Self::Timestamp(val) => write!(f, "{}", val),
             Self::Uri(val) => write!(f, "{}", val),

@@ -183,6 +183,23 @@ pub(crate) fn format_date_time(d: &OffsetDateTime) -> Result<String> {
     Ok(d.format(&format)?)
 }
 
+pub(crate) fn format_time(value: &(Time, UtcOffset)) -> Result<String> {
+    let (time, offset) = value;
+
+    let format = format_description::parse("[hour][minute][second]")?;
+
+    let offset_format = format_description::parse(
+        "[offset_hour sign:mandatory][offset_minute]",
+    )?;
+
+    let result = format!(
+        "{}{}",
+        time.format(&format)?,
+        offset.format(&offset_format)?
+    );
+    Ok(result)
+}
+
 /// Date and or time.
 #[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
