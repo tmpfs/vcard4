@@ -28,6 +28,9 @@ enum Token {
     #[token(";")]
     ParameterDelimiter,
 
+    #[token("\"")]
+    DoubleQuote,
+
     #[regex("(?i:(LANGUAGE|VALUE|PREF|ALTID|PID|TYPE|MEDIATYPE|CALSCALE|SORT-AS|GEO|TZ|LABEL)=)")]
     ParameterKey,
 
@@ -192,7 +195,6 @@ impl VcardParser {
     ) -> Result<Parameters> {
         let property_upper_name = name.to_uppercase();
         let mut params: Parameters = Default::default();
-
         let mut next: Option<Token> = lex.next();
 
         while let Some(token) = next.take() {
@@ -204,7 +206,6 @@ impl VcardParser {
                 let source = lex.source();
                 let span = lex.span();
                 let parameter_name = &source[span.start..(span.end - 1)];
-
                 let upper_name = parameter_name.to_uppercase();
 
                 let (value, next_token, quoted) =
@@ -351,33 +352,68 @@ impl VcardParser {
         lex: &'a mut Lexer<'_, Token>,
     ) -> Result<(String, Token, bool)> {
         let mut first_range: Option<Range<usize>> = None;
+        let mut quoted = false;
+        let mut is_folded_or_escaped = false;
 
-        while let Some(token) = lex.next() {
+        while let Some(mut token) = lex.next() {
             let span = lex.span();
-            if first_range.is_none() {
-                first_range = Some(span.clone());
+
+            if token == Token::FoldedLine
+                || token == Token::EscapedNewLine
+                || token == Token::EscapedBackSlash
+            {
+                is_folded_or_escaped = true;
             }
 
-            if token == Token::PropertyDelimiter
-                || token == Token::ParameterDelimiter
-                || token == Token::ParameterKey
-            {
-                let mut quoted = false;
+            let completed = if first_range.is_some() && quoted {
+                token == Token::DoubleQuote
+            } else {
+                token == Token::PropertyDelimiter
+                    || token == Token::ParameterDelimiter
+                    || token == Token::ParameterKey
+            };
+
+            if first_range.is_none() {
+                first_range = Some(span.clone());
+                if token == Token::DoubleQuote {
+                    quoted = true;
+                }
+            }
+
+            if completed {
                 let source = lex.source();
                 let begin = first_range.unwrap().start;
                 let end = span.start;
                 let mut value = &source[begin..end];
 
                 // Remove double quotes if necessary
-                if value.len() >= 2
-                    && &value[0..1] == "\""
-                    && &value[value.len() - 1..] == "\""
+                if value.len() >= 2 && quoted
                 {
-                    value = &source[begin + 1..end - 1];
-                    quoted = true;
+                    value = &source[begin + 1..end];
                 }
 
-                return Ok((String::from(value), token, quoted));
+                // Must consumer the next token
+                if quoted {
+                    token = if let Some(token) = lex.next() {
+                        if token != Token::PropertyDelimiter
+                            && token != Token::ParameterDelimiter {
+                            return Err(Error::IncorrectToken);
+                        }
+                        token
+                    } else {
+                        return Err(Error::TokenExpected);
+                    };
+                }
+
+                let mut value = String::from(value);
+                if is_folded_or_escaped {
+                    value = value.replace("\r", "");
+                    value = value.replace("\n ", "");
+                    value = value.replace("\n\t", "");
+                    value = value.replace("\\n", "\n");
+                }
+
+                return Ok((value, token, quoted));
             }
         }
         Err(Error::TokenExpected)

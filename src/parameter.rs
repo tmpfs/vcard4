@@ -506,10 +506,14 @@ impl fmt::Display for Parameters {
             }
         }
         if let Some(label) = &self.label {
-            write!(f, ";{}={}", LABEL, label)?;
+            write!(f, ";{}=\"{}\"", LABEL, escape_parameter(label))?;
         }
         Ok(())
     }
+}
+
+fn escape_parameter(s: &str) -> String {
+    s.replace("\n", "\\n")
 }
 
 fn comma_delimited(items: &Vec<impl std::fmt::Display>) -> String {
