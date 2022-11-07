@@ -24,7 +24,7 @@ pub(crate) mod mime {
     struct MimeVisitor;
 
     impl<'de> Visitor<'de> for MimeVisitor {
-        type Value = Mime;
+        type Value = Option<Mime>;
 
         fn expecting(&self, _formatter: &mut fmt::Formatter) -> fmt::Result {
             Ok(())
@@ -35,7 +35,24 @@ pub(crate) mod mime {
             E: Error,
         {
             let mime: Mime = v.parse().map_err(Error::custom)?;
-            Ok(mime)
+            Ok(Some(mime))
+        }
+
+        fn visit_some<D>(
+            self,
+            deserializer: D,
+        ) -> Result<Self::Value, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            deserializer.deserialize_str(self)
+        }
+
+        fn visit_none<E>(self) -> Result<Self::Value, E>
+        where
+            E: Error,
+        {
+            Ok(None)
         }
     }
 
@@ -45,7 +62,6 @@ pub(crate) mod mime {
     where
         D: Deserializer<'de>,
     {
-        let result = deserializer.deserialize_str(MimeVisitor)?;
-        Ok(Some(result))
+        deserializer.deserialize_option(MimeVisitor)
     }
 }

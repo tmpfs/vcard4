@@ -39,7 +39,7 @@ pub(crate) fn parse_boolean(s: &str) -> Result<bool> {
 }
 
 pub(crate) fn format_date_time(d: &OffsetDateTime) -> Result<String> {
-    let offset = d.clone().offset();
+    let offset = (*d).offset();
 
     let format = if offset == UtcOffset::UTC {
         format_description::parse(

@@ -727,6 +727,12 @@ impl VcardParser {
                 card.uid = Some(text_or_uri);
             }
             CLIENTPIDMAP => {
+                if let Some(params) = &parameters {
+                    if params.pid.is_some() {
+                        return Err(Error::ClientPidMapPidNotAllowed);
+                    }
+                }
+
                 let value: ClientPidMap = value.as_ref().parse()?;
                 card.client_pid_map.push(ClientPidMapProperty {
                     value,

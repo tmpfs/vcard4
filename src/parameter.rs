@@ -434,7 +434,7 @@ pub struct Parameters {
         feature = "serde",
         serde(
             with = "crate::serde::mime",
-            skip_serializing_if = "Option::is_none"
+            //skip_serializing_if = "Option::is_none",
         )
     )]
     pub media_type: Option<Mime>,

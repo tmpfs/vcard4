@@ -63,8 +63,8 @@ script = '''
 grcov . -s . --binary-path ./target/debug -t html --branch --ignore-not-existing -o ./target/coverage/ --ignore 'tests/*' --ignore 'target/*'
 '''
 
-[tasks.cover]
+[tasks.coverage]
 alias = "coverage_grcov"
 
-[tasks.coverage]
-dependencies = ["clean-coverage", "cover", "genhtml"]
+[tasks.cover]
+dependencies = ["clean-coverage", "coverage", "genhtml"]

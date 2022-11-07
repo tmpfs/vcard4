@@ -26,3 +26,4 @@ language-tags = ["dep:language-tags"]
 
 [dev-dependencies]
 anyhow = "1"
+serde_json = "1"

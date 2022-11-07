@@ -11,6 +11,23 @@ pub fn assert_round_trip(card: &Vcard) -> Result<()> {
     let mut cards = parse(&encoded)?;
     let decoded = cards.remove(0);
     assert_eq!(card, &decoded);
+    assert_serde_round_trip(card)?;
+    Ok(())
+}
+
+#[cfg(feature = "serde")]
+#[allow(dead_code)]
+pub fn assert_serde_round_trip(card: &Vcard) -> Result<()> {
+    let data = serde_json::to_string_pretty(card)?;
+    //println!("{}", data);
+    let decoded: Vcard = serde_json::from_str(&data)?;
+    assert_eq!(card, &decoded);
+    Ok(())
+}
+
+#[cfg(not(feature = "serde"))]
+#[allow(dead_code)]
+pub fn assert_serde_round_trip(_card: &Vcard) -> Result<()> {
     Ok(())
 }
 
