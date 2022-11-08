@@ -152,11 +152,10 @@ impl VcardParser {
         let mut name = lex.slice();
 
         let period = name.find('.');
-
         if let Some(pos) = period {
             let group_name = &name[0..pos];
             group = Some(group_name.to_string());
-            name = &name[pos..];
+            name = &name[pos + 1..];
         }
 
         let delimiter = lex.next();
@@ -425,6 +424,7 @@ impl VcardParser {
     ) -> Result<()> {
         let value = self.parse_property_value(lex)?;
         let upper_name = name.to_uppercase();
+
 
         if name.len() > 2 && &upper_name[0..2] == "X-" {
             self.parse_extension_property_by_name(
