@@ -91,11 +91,7 @@ impl VcardParser {
             }
 
             let card = self.parse_one(&mut lex, Some(first))?;
-
-            if card.formatted_name.is_empty() {
-                return Err(Error::NoFormattedName);
-            }
-
+            card.validate()?;
             cards.push(card);
         }
 
@@ -847,10 +843,10 @@ impl VcardParser {
             match value_type {
                 ValueType::Text => AnyProperty::Text(value.into_owned()),
                 ValueType::Integer => {
-                    AnyProperty::Integer(value.as_ref().parse()?)
+                    AnyProperty::Integer(parse_integer_list(value.as_ref())?)
                 }
                 ValueType::Float => {
-                    AnyProperty::Float(value.as_ref().parse()?)
+                    AnyProperty::Float(parse_float_list(value.as_ref())?)
                 }
                 ValueType::Boolean => {
                     AnyProperty::Boolean(parse_boolean(value.as_ref())?)

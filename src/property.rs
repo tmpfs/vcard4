@@ -20,9 +20,9 @@ use crate::{
     parameter::Parameters,
     types::{
         format_date_and_or_time_list, format_date_list, format_date_time,
-        format_date_time_list, format_time_list, format_timestamp_list,
-        format_utc_offset, parse_utc_offset, ClientPidMap, DateAndOrTime,
-        Float, Integer,
+        format_date_time_list, format_float_list, format_integer_list,
+        format_time_list, format_timestamp_list, format_utc_offset,
+        parse_utc_offset, ClientPidMap, DateAndOrTime,
     },
     Error, Result,
 };
@@ -226,7 +226,7 @@ pub struct ExtensionProperty {
 }
 
 /// Value for any property type.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 #[allow(clippy::large_enum_variant)]
@@ -234,9 +234,9 @@ pub enum AnyProperty {
     /// Text property.
     Text(String),
     /// Integer property.
-    Integer(Integer),
+    Integer(Vec<i64>),
     /// Float property.
-    Float(Float),
+    Float(Vec<f64>),
     /// Boolean property.
     Boolean(bool),
 
@@ -271,12 +271,14 @@ pub enum AnyProperty {
     Language(String),
 }
 
+impl Eq for AnyProperty {}
+
 impl fmt::Display for AnyProperty {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Text(val) => write!(f, "{}", val),
-            Self::Integer(val) => write!(f, "{}", val),
-            Self::Float(val) => write!(f, "{}", val),
+            Self::Integer(val) => format_integer_list(f, val),
+            Self::Float(val) => format_float_list(f, val),
             Self::Boolean(val) => write!(f, "{}", val),
             Self::Date(val) => format_date_list(f, val),
             Self::DateTime(val) => format_date_time_list(f, val),
@@ -568,6 +570,16 @@ pub struct TextProperty {
     pub parameters: Option<Parameters>,
 }
 
+impl From<String> for TextProperty {
+    fn from(value: String) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+        }
+    }
+}
+
 /// Delimiter used for a text list.
 #[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -665,6 +677,7 @@ pub struct KindProperty {
 #[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+#[cfg_attr(feature = "serde", serde(rename_all = "lowercase"))]
 pub enum Kind {
     /// An individual.
     Individual,

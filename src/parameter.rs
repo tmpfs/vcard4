@@ -25,7 +25,7 @@ use crate::{
 };
 
 /// Names of properties that are allowed to specify a TYPE parameter.
-pub const TYPE_PROPERTIES: [&str; 23] = [
+pub(crate) const TYPE_PROPERTIES: [&str; 23] = [
     "FN",
     "NICKNAME",
     "PHOTO",

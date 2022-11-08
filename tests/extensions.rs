@@ -9,7 +9,7 @@ use vcard_compact::{
     property::AnyProperty,
     types::{
         parse_date_list, parse_date_time_list, parse_time_list,
-        parse_timestamp, parse_utc_offset, DateAndOrTime, Float, Integer,
+        parse_timestamp, parse_utc_offset, DateAndOrTime,
     },
 };
 
@@ -254,7 +254,7 @@ END:VCARD"#;
         prop.parameters.as_ref().unwrap().value.as_ref().unwrap()
     );
 
-    assert_eq!(&AnyProperty::Integer(Integer::One(42)), &prop.value);
+    assert_eq!(&AnyProperty::Integer(vec![42]), &prop.value);
 
     assert_round_trip(&card)?;
     Ok(())
@@ -280,10 +280,7 @@ END:VCARD"#;
         prop.parameters.as_ref().unwrap().value.as_ref().unwrap()
     );
 
-    assert_eq!(
-        &AnyProperty::Float(Float::Many(vec![3.14, 1.67])),
-        &prop.value
-    );
+    assert_eq!(&AnyProperty::Float(vec![3.14, 1.67]), &prop.value);
 
     assert_round_trip(&card)?;
     Ok(())

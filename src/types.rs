@@ -450,86 +450,46 @@ pub fn parse_boolean(value: &str) -> Result<bool> {
     }
 }
 
-/// Integer type; may be a comma separated list.
-#[derive(Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
-pub enum Integer {
-    /// Single integer.
-    One(i64),
-    /// Multiple integers.
-    Many(Vec<i64>),
+/// Parse a list of integers.
+pub fn parse_integer_list(value: &str) -> Result<Vec<i64>> {
+    let mut values = Vec::new();
+    for value in value.split(',') {
+        values.push(value.parse()?);
+    }
+    Ok(values)
 }
 
-impl fmt::Display for Integer {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::One(ref val) => write!(f, "{}", val),
-            Self::Many(ref val) => {
-                let values: Vec<String> =
-                    val.iter().map(|v| v.to_string()).collect();
-                write!(f, "{}", values.join(","))
-            }
+pub(crate) fn format_integer_list(
+    f: &mut fmt::Formatter<'_>,
+    val: &[i64],
+) -> fmt::Result {
+    for (index, item) in val.iter().enumerate() {
+        write!(f, "{}", item)?;
+        if index < val.len() - 1 {
+            write!(f, ",")?;
         }
     }
+    Ok(())
 }
 
-impl FromStr for Integer {
-    type Err = Error;
+/// Parse a list of floats.
+pub fn parse_float_list(value: &str) -> Result<Vec<f64>> {
+    let mut values = Vec::new();
+    for value in value.split(',') {
+        values.push(value.parse()?);
+    }
+    Ok(values)
+}
 
-    fn from_str(s: &str) -> Result<Self> {
-        if s.contains(',') {
-            let mut value = Vec::new();
-            for val in s.split(',') {
-                let val: i64 = val.parse()?;
-                value.push(val);
-            }
-            Ok(Self::Many(value))
-        } else {
-            Ok(Self::One(s.parse()?))
+pub(crate) fn format_float_list(
+    f: &mut fmt::Formatter<'_>,
+    val: &[f64],
+) -> fmt::Result {
+    for (index, item) in val.iter().enumerate() {
+        write!(f, "{}", item)?;
+        if index < val.len() - 1 {
+            write!(f, ",")?;
         }
     }
-}
-
-/// Float type; may be a comma separated list.
-#[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
-pub enum Float {
-    /// Single float.
-    One(f64),
-    /// Multiple floats.
-    Many(Vec<f64>),
-}
-
-impl Eq for Float {}
-
-impl fmt::Display for Float {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::One(ref val) => write!(f, "{}", val),
-            Self::Many(ref val) => {
-                let values: Vec<String> =
-                    val.iter().map(|v| v.to_string()).collect();
-                write!(f, "{}", values.join(","))
-            }
-        }
-    }
-}
-
-impl FromStr for Float {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        if s.contains(',') {
-            let mut value = Vec::new();
-            for val in s.split(',') {
-                let val: f64 = val.parse()?;
-                value.push(val);
-            }
-            Ok(Self::Many(value))
-        } else {
-            Ok(Self::One(s.parse()?))
-        }
-    }
+    Ok(())
 }

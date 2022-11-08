@@ -1,4 +1,4 @@
-//! Type for vCards.
+//! Definition of a single vCard.
 
 use std::{borrow::Cow, fmt};
 
@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "zeroize")]
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-use crate::property::*;
+use crate::{property::*, Error, Result};
 
 /// The vCard type.
 #[derive(Debug, Default, Eq, PartialEq)]
@@ -252,6 +252,23 @@ pub struct Vcard {
         serde(default, skip_serializing_if = "Vec::is_empty")
     )]
     pub extensions: Vec<ExtensionProperty>,
+}
+
+impl Vcard {
+    /// Create a new vCard with the given formatted name.
+    pub fn new(formatted_name: String) -> Self {
+        let mut card: Vcard = Default::default();
+        card.formatted_name.push(formatted_name.into());
+        card
+    }
+
+    /// Validate this vCard.
+    pub fn validate(&self) -> Result<()> {
+        if self.formatted_name.is_empty() {
+            return Err(Error::NoFormattedName);
+        }
+        Ok(())
+    }
 }
 
 impl fmt::Display for Vcard {
