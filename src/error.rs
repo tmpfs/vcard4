@@ -86,10 +86,6 @@ pub enum Error {
     #[error("formatted name (FN) is required")]
     NoFormattedName,
 
-    /// Error generated when a utc-offset data type is invalid.
-    #[error("value '{0}' for UTC offset is invalid")]
-    InvalidUtcOffset(String),
-
     /// Error generated when a date time is not valid.
     #[error("date time '{0}' is not valid, maybe missing 'T' delimiter")]
     InvalidDateTime(String),

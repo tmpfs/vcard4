@@ -20,7 +20,8 @@ use crate::{
     parameter::Parameters,
     types::{
         format_date_and_or_time_list, format_date_list, format_date_time,
-        format_date_time_list, format_time_list, ClientPidMap, DateAndOrTime,
+        format_date_time_list, format_time_list, format_timestamp_list,
+        format_utc_offset, parse_utc_offset, ClientPidMap, DateAndOrTime,
         Float, Integer,
     },
     Error, Result,
@@ -229,7 +230,7 @@ pub enum AnyProperty {
     DateAndOrTime(Vec<DateAndOrTime>),
     /// Timetamp value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    Timestamp(OffsetDateTime),
+    Timestamp(Vec<OffsetDateTime>),
     /// URI property.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     Uri(Uri<'static>),
@@ -257,9 +258,9 @@ impl fmt::Display for AnyProperty {
             Self::DateTime(val) => format_date_time_list(f, val),
             Self::Time(val) => format_time_list(f, val),
             Self::DateAndOrTime(val) => format_date_and_or_time_list(f, val),
-            Self::Timestamp(val) => write!(f, "{}", val),
+            Self::Timestamp(val) => format_timestamp_list(f, val),
+            Self::UtcOffset(val) => format_utc_offset(f, val),
             Self::Uri(val) => write!(f, "{}", val),
-            Self::UtcOffset(val) => write!(f, "{}", val),
             Self::Language(val) => write!(f, "{}", val),
         }
     }
@@ -439,27 +440,12 @@ impl FromStr for UtcOffsetProperty {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        if s.len() == 5 {
-            let sign = &s[0..1];
-            if sign != "+" && sign != "-" {
-                return Err(Error::InvalidUtcOffset(s.to_string()));
-            }
-            let hours = &s[1..3];
-            let minutes = &s[3..5];
-            let mut hours: i8 = hours.parse()?;
-            let mut minutes: i8 = minutes.parse()?;
-            if sign == "-" {
-                hours = -hours;
-                minutes = -minutes;
-            }
-            return Ok(Self {
-                value: UtcOffset::from_hms(hours, minutes, 0)?,
-                parameters: None,
-                group: None,
-            });
-        }
-
-        Err(Error::InvalidUtcOffset(s.to_string()))
+        let value = parse_utc_offset(s)?;
+        Ok(Self {
+            value,
+            parameters: None,
+            group: None,
+        })
     }
 }
 

@@ -23,6 +23,37 @@ pub fn parse_time_list(value: &str) -> Result<Vec<(Time, UtcOffset)>> {
     Ok(values)
 }
 
+/// Parse a UTC offset.
+pub fn parse_utc_offset(value: &str) -> Result<UtcOffset> {
+    if value == "Z" {
+        return Ok(UtcOffset::UTC);
+    }
+
+    let offset_format = format_description::parse(
+        "[offset_hour sign:mandatory][offset_minute]",
+    )?;
+
+    let offset_hours =
+        format_description::parse("[offset_hour sign:mandatory]")?;
+
+    if let Ok(result) = UtcOffset::parse(value, &offset_format) {
+        Ok(result)
+    } else {
+        Ok(UtcOffset::parse(value, &offset_hours)?)
+    }
+}
+
+pub(crate) fn format_utc_offset(
+    f: &mut fmt::Formatter<'_>,
+    val: &UtcOffset,
+) -> fmt::Result {
+    let offset = format_description::parse(
+        "[offset_hour sign:mandatory][offset_minute]",
+    )
+    .map_err(|_| fmt::Error)?;
+    write!(f, "{}", val.format(&offset).map_err(|_| fmt::Error)?)
+}
+
 /// Parse a time.
 pub fn parse_time(value: &str) -> Result<(Time, UtcOffset)> {
     if value.starts_with('-') {
@@ -48,12 +79,7 @@ fn do_parse_time(value: &str) -> Result<(Time, UtcOffset)> {
     let mut offset = UtcOffset::UTC;
     if value.len() > 6 {
         let offset_value = &value[6..];
-        let offset_format = format_description::parse(
-            "[offset_hour sign:mandatory][offset_minute]",
-        )?;
-        if offset_value != "Z" {
-            offset = UtcOffset::parse(offset_value, &offset_format)?;
-        }
+        offset = parse_utc_offset(offset_value)?;
     }
     let time = Time::parse(value, &Iso8601::DEFAULT)?;
     Ok((time, offset))
@@ -182,6 +208,28 @@ pub fn parse_timestamp(value: &str) -> Result<OffsetDateTime> {
         let result = OffsetDateTime::now_utc().replace_date_time(result);
         Ok(result)
     }
+}
+
+pub(crate) fn format_timestamp_list(
+    f: &mut fmt::Formatter<'_>,
+    val: &[OffsetDateTime],
+) -> fmt::Result {
+    for (index, item) in val.iter().enumerate() {
+        write!(f, "{}", &format_date_time(item).map_err(|_| fmt::Error)?)?;
+        if index < val.len() - 1 {
+            write!(f, ",")?;
+        }
+    }
+    Ok(())
+}
+
+/// Parse a list of date and or time types possibly separated by a comma.
+pub fn parse_timestamp_list(value: &str) -> Result<Vec<OffsetDateTime>> {
+    let mut values = Vec::new();
+    for value in value.split(',') {
+        values.push(parse_timestamp(value)?);
+    }
+    Ok(values)
 }
 
 /// Parse a list of date and or time types possibly separated by a comma.

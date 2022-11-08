@@ -303,12 +303,11 @@ impl VcardParser {
                             params.timezone =
                                 Some(TimeZoneParameter::Uri(value));
                         } else {
-                            match value.parse::<UtcOffsetProperty>() {
+                            match parse_utc_offset(&value) {
                                 Ok(offset) => {
-                                    params.timezone =
-                                        Some(TimeZoneParameter::UtcOffset(
-                                            offset.value,
-                                        ));
+                                    params.timezone = Some(
+                                        TimeZoneParameter::UtcOffset(offset),
+                                    );
                                 }
                                 Err(_) => {
                                     params.timezone =
@@ -868,16 +867,15 @@ impl VcardParser {
                 ValueType::DateAndOrTime => AnyProperty::DateAndOrTime(
                     parse_date_and_or_time_list(value.as_ref())?,
                 ),
-                ValueType::Timestamp => {
-                    AnyProperty::Timestamp(parse_date_time(value.as_ref())?)
-                }
+                ValueType::Timestamp => AnyProperty::Timestamp(
+                    parse_timestamp_list(value.as_ref())?,
+                ),
                 ValueType::LanguageTag => {
                     AnyProperty::Language(parse_language_tag(value)?)
                 }
                 ValueType::UtcOffset => {
-                    let property: UtcOffsetProperty =
-                        value.as_ref().parse()?;
-                    AnyProperty::UtcOffset(property.value)
+                    let value = parse_utc_offset(value.as_ref())?;
+                    AnyProperty::UtcOffset(value)
                 }
                 ValueType::Uri => {
                     let value = Uri::try_from(value.as_ref())?.into_owned();
