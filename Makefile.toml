@@ -52,19 +52,13 @@ dependencies = ["check-wasm", "test", "format", "clippy"]
 command = "cargo"
 args = ["check", "--target", "wasm32-unknown-unknown"]
 
-[tasks.clean-coverage]
-script = '''
-rm -rf ./target/coverage
-rm -f ./target/lcov.info
-'''
-
 [tasks.genhtml]
 script = '''
-grcov . -s . --binary-path ./target/debug -t html --branch --ignore-not-existing -o ./target/coverage/ --ignore 'tests/*' --ignore 'target/*'
+grcov . --source-dir src --binary-path ./target/debug -t html --branch --ignore-not-existing -o ./target/coverage/ --ignore 'tests/*' --ignore 'target/*'
 '''
 
 [tasks.coverage]
 alias = "coverage_grcov"
 
 [tasks.cover]
-dependencies = ["clean-coverage", "coverage", "genhtml"]
+dependencies = ["build", "coverage", "genhtml"]

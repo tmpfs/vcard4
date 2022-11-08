@@ -425,7 +425,6 @@ impl VcardParser {
         let value = self.parse_property_value(lex)?;
         let upper_name = name.to_uppercase();
 
-
         if name.len() > 2 && &upper_name[0..2] == "X-" {
             self.parse_extension_property_by_name(
                 card, name, value, parameters, group,
