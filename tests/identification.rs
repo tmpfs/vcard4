@@ -119,6 +119,19 @@ END:VCARD"#;
     let anniversary = card.anniversary.as_ref().unwrap();
     assert_eq!("19960415", &anniversary.to_string(),);
     assert_round_trip(&card)?;
+
+let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+ANNIVERSARY:20090808T1430-0500
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+
+    println!("{}", card.anniversary.as_ref().unwrap());
+
     Ok(())
 }
 

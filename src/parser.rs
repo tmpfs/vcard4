@@ -866,7 +866,7 @@ impl VcardParser {
                     AnyProperty::Time(parse_time_list(value.as_ref())?)
                 }
                 ValueType::DateAndOrTime => {
-                    AnyProperty::DateAndOrTime(value.as_ref().parse()?)
+                    AnyProperty::DateAndOrTime(parse_date_and_or_time_list(value.as_ref())?)
                 }
                 ValueType::Timestamp => {
                     AnyProperty::Timestamp(parse_date_time(value.as_ref())?)
@@ -1050,7 +1050,7 @@ fn parse_date_time_or_text(
                 }))
             }
             ValueType::DateAndOrTime => {
-                let value: DateAndOrTime = value.parse()?;
+                let value = parse_date_and_or_time_list(value.as_ref())?;
                 Ok(DateTimeOrTextProperty::DateTime(DateAndOrTimeProperty {
                     value,
                     parameters,
@@ -1063,7 +1063,7 @@ fn parse_date_time_or_text(
             )),
         }
     } else {
-        let value: DateAndOrTime = value.parse()?;
+        let value = parse_date_and_or_time_list(value.as_ref())?;
         Ok(DateTimeOrTextProperty::DateTime(DateAndOrTimeProperty {
             value,
             parameters,

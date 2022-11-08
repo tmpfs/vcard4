@@ -20,6 +20,7 @@ use crate::{
     parameter::Parameters,
     types::{
         format_date_list, format_date_time, format_date_time_list,
+        format_date_and_or_time_list,
         format_time_list, ClientPidMap, DateAndOrTime, Float, Integer,
     },
     Error, Result,
@@ -225,7 +226,7 @@ pub enum AnyProperty {
     Time(Vec<(Time, UtcOffset)>),
     /// Date and or time value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    DateAndOrTime(DateAndOrTime),
+    DateAndOrTime(Vec<DateAndOrTime>),
     /// Timetamp value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     Timestamp(OffsetDateTime),
@@ -255,7 +256,7 @@ impl fmt::Display for AnyProperty {
             Self::Date(val) => format_date_list(f, val),
             Self::DateTime(val) => format_date_time_list(f, val),
             Self::Time(val) => format_time_list(f, val),
-            Self::DateAndOrTime(val) => write!(f, "{}", val),
+            Self::DateAndOrTime(val) => format_date_and_or_time_list(f, val),
             Self::Timestamp(val) => write!(f, "{}", val),
             Self::Uri(val) => write!(f, "{}", val),
             Self::UtcOffset(val) => write!(f, "{}", val),
@@ -315,9 +316,15 @@ pub struct DateAndOrTimeProperty {
     /// Group for this property.
     pub group: Option<String>,
     /// The value for the property.
-    pub value: DateAndOrTime,
+    pub value: Vec<DateAndOrTime>,
     /// The property parameters.
     pub parameters: Option<Parameters>,
+}
+
+impl fmt::Display for DateAndOrTimeProperty {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        format_date_and_or_time_list(f, &self.value)
+    }
 }
 
 /// Either text or a Uri.
@@ -779,7 +786,6 @@ display_impl!(LanguageProperty);
 property_impl!(DateTimeProperty);
 
 property_impl!(DateAndOrTimeProperty);
-display_impl!(DateAndOrTimeProperty);
 
 property_impl!(ClientPidMapProperty);
 display_impl!(ClientPidMapProperty);

@@ -184,6 +184,15 @@ pub fn parse_timestamp(value: &str) -> Result<OffsetDateTime> {
     }
 }
 
+/// Parse a list of date and or time types possibly separated by a comma.
+pub fn parse_date_and_or_time_list(value: &str) -> Result<Vec<DateAndOrTime>> {
+    let mut values = Vec::new();
+    for value in value.split(',') {
+        values.push(value.parse()?);
+    }
+    Ok(values)
+}
+
 /// Parse a boolean.
 pub fn parse_boolean(value: &str) -> Result<bool> {
     let lower = value.to_lowercase();
@@ -271,24 +280,37 @@ pub(crate) fn format_time_list(
     Ok(())
 }
 
+pub(crate) fn format_date_and_or_time_list(
+    f: &mut fmt::Formatter<'_>,
+    val: &[DateAndOrTime],
+) -> fmt::Result {
+    for (index, item) in val.iter().enumerate() {
+        write!(f, "{}", item.to_string())?;
+        if index < val.len() - 1 {
+            write!(f, ",")?;
+        }
+    }
+    Ok(())
+}
+
 /// Date and or time.
 #[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum DateAndOrTime {
     /// Date value.
-    Date(Vec<Date>),
+    Date(Date),
     /// Date and time value.
-    DateTime(Vec<OffsetDateTime>),
+    DateTime(OffsetDateTime),
     /// Time value.
-    Time(Vec<(Time, UtcOffset)>),
+    Time((Time, UtcOffset)),
 }
 
 impl fmt::Display for DateAndOrTime {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Date(val) => format_date_list(f, val),
-            Self::DateTime(val) => format_date_time_list(f, val),
-            Self::Time(val) => format_time_list(f, val),
+            Self::Date(val) => write!(f, "{}", format_date(val).map_err(|_| fmt::Error)?),
+            Self::DateTime(val) => write!(f, "{}", format_date_time(val).map_err(|_| fmt::Error)?),
+            Self::Time(val) => write!(f, "{}", format_time(val).map_err(|_| fmt::Error)?),
         }
     }
 }
@@ -298,15 +320,15 @@ impl FromStr for DateAndOrTime {
 
     fn from_str(s: &str) -> Result<Self> {
         if !s.is_empty() && &s[0..1] == "T" {
-            return Ok(Self::Time(parse_time_list(&s[1..])?));
+            return Ok(Self::Time(parse_time(&s[1..])?));
         }
 
-        match parse_date_time_list(s) {
+        match parse_date_time(s) {
             Ok(value) => Ok(Self::DateTime(value)),
-            Err(_) => match parse_date_list(s) {
+            Err(_) => match parse_date(s) {
                 Ok(value) => Ok(Self::Date(value)),
-                Err(_) => match parse_time_list(s) {
-                    Ok(value) => Ok(Self::Time(value)),
+                Err(_) => match parse_time(s) {
+                    Ok(val) => Ok(Self::Time(val)),
                     Err(e) => Err(e),
                 },
             },

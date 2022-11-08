@@ -164,8 +164,6 @@ END:VCARD"#;
 
     let prop = card.extensions.get(0).unwrap();
 
-    println!("{:#?}", prop);
-
     assert!(prop.group.is_none());
     assert_eq!("X-FOO", &prop.name);
     assert_eq!(
@@ -175,11 +173,9 @@ END:VCARD"#;
 
     let value = "19961022T140000";
     let expected: DateAndOrTime = value.parse()?;
-    assert_eq!(&AnyProperty::DateAndOrTime(expected), &prop.value);
+    assert_eq!(&AnyProperty::DateAndOrTime(vec![expected]), &prop.value);
 
-    println!("{}", card);
-
-    //assert_round_trip(&card)?;
+    assert_round_trip(&card)?;
     Ok(())
 }
 
