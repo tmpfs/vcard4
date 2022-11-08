@@ -1,5 +1,5 @@
 //! Helpers for adding serde support to external types.
-pub(crate) mod mime {
+pub(crate) mod media_type {
     use mime::Mime;
     use serde::{
         de::{Deserializer, Error, Visitor},
@@ -26,8 +26,8 @@ pub(crate) mod mime {
     impl<'de> Visitor<'de> for MimeVisitor {
         type Value = Option<Mime>;
 
-        fn expecting(&self, _formatter: &mut fmt::Formatter) -> fmt::Result {
-            Ok(())
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            write!(formatter, "a valid media type (eg: text/plain)")
         }
 
         fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
@@ -60,4 +60,21 @@ pub(crate) mod mime {
     {
         deserializer.deserialize_option(MimeVisitor)
     }
+}
+
+#[cfg(all(feature = "serde", feature = "mime"))]
+#[test]
+fn serde_media_type() -> anyhow::Result<()> {
+    use mime::Mime;
+    #[derive(serde::Serialize, serde::Deserialize)]
+    struct Media {
+        #[serde(with = "media_type")]
+        mime: Option<Mime>,
+    }
+
+    let value = Media { mime: None };
+    let encoded = serde_json::to_string_pretty(&value)?;
+    assert!(serde_json::from_str::<Media>(&encoded).is_err());
+
+    Ok(())
 }

@@ -61,18 +61,26 @@ pub fn parse_time_list(value: &str) -> Result<Vec<(Time, UtcOffset)>> {
 /// Parse a time.
 pub fn parse_time(value: &str) -> Result<(Time, UtcOffset)> {
     if value.starts_with('-') {
-        let mut value = value.split("").collect::<Vec<_>>();
-        if let Some(val) = value.get_mut(1) {
-            if *val == "-" {
-                *val = "00";
-            }
+        let mut parts = value.split("").collect::<Vec<_>>();
+        let val = parts
+            .get_mut(1)
+            .ok_or(Error::InvalidTime(value.to_string()))?;
+        if *val == "-" {
+            *val = "00";
         }
-        if let Some(val) = value.get_mut(2) {
-            if *val == "-" {
-                *val = "00";
-            }
+
+        let val = parts
+            .get_mut(2)
+            .ok_or(Error::InvalidTime(value.to_string()))?;
+
+        if *val == "" {
+            return Err(Error::InvalidTime(value.to_string()));
         }
-        let value = value.join("");
+
+        if *val == "-" {
+            *val = "00";
+        }
+        let value = parts.join("");
         do_parse_time(&value)
     } else {
         do_parse_time(value)
@@ -131,24 +139,26 @@ pub fn parse_date_list(value: &str) -> Result<Vec<Date>> {
 /// Parse a date.
 pub fn parse_date(value: &str) -> Result<Date> {
     if value.starts_with('-') {
-        let mut value = value.split("").collect::<Vec<_>>();
-        if let Some(val) = value.get_mut(1) {
-            if *val == "-" {
-                *val = "00";
-            }
+        let mut parts = value.split("").collect::<Vec<_>>();
+        let val = parts
+            .get_mut(1)
+            .ok_or(Error::InvalidDate(value.to_string()))?;
+        if *val == "-" {
+            *val = "00";
         }
-        if let Some(val) = value.get_mut(2) {
-            if *val == "-" {
-                *val = "00";
-            }
+        let val = parts
+            .get_mut(2)
+            .ok_or(Error::InvalidDate(value.to_string()))?;
+        if *val == "-" {
+            *val = "00";
         }
-        if let Some(val) = value.get_mut(3) {
+        if let Some(val) = parts.get_mut(3) {
             if *val == "-" {
                 *val = "01";
             }
         }
 
-        let value = value.join("");
+        let value = parts.join("");
         do_parse_date(&value)
     // Got a YYYY-MM format need to use 01 for the day
     } else if value.len() == 7 {

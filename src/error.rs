@@ -29,6 +29,14 @@ pub enum Error {
     #[error("property value is invalid")]
     InvalidPropertyValue,
 
+    /// Error generated when a time is invalid.
+    #[error("time '{0}' is invalid")]
+    InvalidTime(String),
+
+    /// Error generated when a date is invalid.
+    #[error("date '{0}' is invalid")]
+    InvalidDate(String),
+
     /// Error generated when a delivery address (`ADR`) is invalid.
     #[error("delivery address '{0}' is invalid")]
     InvalidAddress(String),

@@ -1,43 +1,59 @@
 mod test_helpers;
 
 use anyhow::Result;
-use vcard_compact::{parse, Error};
+use vcard_compact::{parameter::*, parse, types::*, Error};
 
 #[test]
-fn parse_empty() -> Result<()> {
+fn error_empty() -> Result<()> {
     let result = parse("");
-    if !matches!(result, Err(Error::TokenExpected)) {
-        panic!("wrong error variant");
-    }
+    assert!(matches!(result, Err(Error::TokenExpected)));
     Ok(())
 }
 
 #[test]
-fn parse_wrong_token() -> Result<()> {
+fn error_wrong_token() -> Result<()> {
     let result = parse("VERSION:4.0");
-    if !matches!(result, Err(Error::IncorrectToken)) {
-        panic!("wrong error variant");
-    }
+    assert!(matches!(result, Err(Error::IncorrectToken)));
     Ok(())
 }
 
 #[test]
-fn parse_no_version() -> Result<()> {
+fn error_no_version() -> Result<()> {
     let input = r#"BEGIN:VCARD"#;
     let result = parse(input);
-    if !matches!(result, Err(Error::TokenExpected)) {
-        panic!("wrong error variant");
-    }
+    assert!(matches!(result, Err(Error::TokenExpected)));
     Ok(())
 }
 
 #[test]
-fn parse_no_end() -> Result<()> {
+fn error_no_end() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0"#;
     let result = parse(input);
-    if !matches!(result, Err(Error::TokenExpected)) {
-        panic!("wrong error variant");
-    }
+    assert!(matches!(result, Err(Error::TokenExpected)));
+    Ok(())
+}
+
+#[test]
+fn error_parse_from_str() -> Result<()> {
+    assert!(parse_boolean("foo").is_err());
+
+    assert!("foo".parse::<TelephoneType>().is_err());
+    assert!("foo".parse::<RelatedType>().is_err());
+    assert!("foo".parse::<ValueType>().is_err());
+
+    assert!("0;urn:uid:".parse::<ClientPidMap>().is_err());
+
+    Ok(())
+}
+
+#[test]
+fn error_type_unknown() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN;TYPE=FOO:Jane Doe
+END:VCARD"#;
+    let result = parse(input);
+    assert!(matches!(result, Err(Error::UnknownRelatedType(_))));
     Ok(())
 }

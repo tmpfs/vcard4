@@ -21,6 +21,7 @@ use mime::Mime;
 
 use crate::{
     name::{HOME, WORK},
+    types::format_utc_offset,
     Error, Result,
 };
 
@@ -98,17 +99,24 @@ impl FromStr for TypeParameter {
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct Pid {
     /// Digits before a period.
-    pub major: u64,
+    pub local: u64,
     /// Digits after a period.
-    pub minor: Option<u64>,
+    pub source: Option<u64>,
+}
+
+impl Pid {
+    /// Create a new property identifier.
+    pub fn new(local: u64, source: Option<u64>) -> Self {
+        Self { local, source }
+    }
 }
 
 impl fmt::Display for Pid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(minor) = self.minor {
-            write!(f, "{}.{}", self.major, minor)
+        if let Some(source) = self.source {
+            write!(f, "{}.{}", self.local, source)
         } else {
-            write!(f, "{}", self.major)
+            write!(f, "{}", self.local)
         }
     }
 }
@@ -118,18 +126,21 @@ impl FromStr for Pid {
 
     fn from_str(s: &str) -> Result<Self> {
         let mut parts = s.splitn(2, '.');
-        let major = parts
+        let local = parts
             .next()
             .ok_or_else(|| Error::InvalidPid(s.to_string()))?;
-        let major: u64 = major
+        let local: u64 = local
             .parse()
             .map_err(|_| Error::InvalidPid(s.to_string()))?;
-        let mut pid = Pid { major, minor: None };
-        if let Some(minor) = parts.next() {
-            let minor: u64 = minor
+        let mut pid = Pid {
+            local,
+            source: None,
+        };
+        if let Some(source) = parts.next() {
+            let source: u64 = source
                 .parse()
                 .map_err(|_| Error::InvalidPid(s.to_string()))?;
-            pid.minor = Some(minor);
+            pid.source = Some(source);
         }
         Ok(pid)
     }
@@ -464,7 +475,7 @@ pub struct Parameters {
         feature = "serde",
         serde(
             default,
-            with = "crate::serde::mime",
+            with = "crate::serde::media_type",
             skip_serializing_if = "Option::is_none",
         )
     )]
@@ -552,7 +563,8 @@ impl fmt::Display for Parameters {
                     write!(f, ";{}={}", TZ, val)?;
                 }
                 TimeZoneParameter::UtcOffset(val) => {
-                    write!(f, ";{}={}", TZ, val)?;
+                    write!(f, ";{}=", TZ)?;
+                    format_utc_offset(f, val)?;
                 }
                 // URI must be quoted
                 TimeZoneParameter::Uri(val) => {

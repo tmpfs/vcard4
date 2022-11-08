@@ -25,6 +25,9 @@ fn types_time_only() -> Result<()> {
     assert_eq!("10:22:00.0", &time.to_string());
     assert_eq!("-08:00:00", &offset.to_string());
 
+    // Trigger some branches
+    assert!(parse_time("-").is_err());
+
     Ok(())
 }
 
@@ -44,6 +47,9 @@ fn types_date_only() -> Result<()> {
 
     let date = parse_date("---12")?;
     assert_eq!("0000-01-12", &date.to_string());
+
+    // Trigger some branches
+    assert!(parse_date("-").is_err());
 
     Ok(())
 }
@@ -209,3 +215,4 @@ fn types_timestamp() -> Result<()> {
     assert_eq!("1996-10-22 14:00:00.0 -05:00:00", &timestamp.to_string());
     Ok(())
 }
+
