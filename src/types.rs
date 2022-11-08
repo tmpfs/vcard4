@@ -2,7 +2,7 @@
 use std::{fmt, str::FromStr};
 use time::{
     format_description::{self, well_known::Iso8601},
-    Date, OffsetDateTime, Time, UtcOffset,
+    Date, PrimitiveDateTime, OffsetDateTime, Time, UtcOffset,
 };
 use uriparse::uri::URI as Uri;
 
@@ -154,16 +154,43 @@ pub fn parse_date_time(value: &str) -> Result<OffsetDateTime> {
 }
 
 /// Parse a timestamp.
-pub(crate) fn parse_timestamp(value: &str) -> Result<OffsetDateTime> {
-    parse_date_time(value)
+pub fn parse_timestamp(value: &str) -> Result<OffsetDateTime> {
+    let offset_format = format_description::parse(
+            "[year][month][day]T[hour][minute][second][offset_hour sign:mandatory][offset_minute]",
+        )?;
+    let offset_format_hours = format_description::parse(
+            "[year][month][day]T[hour][minute][second][offset_hour sign:mandatory]",
+        )?;
+    let utc_format = 
+        format_description::parse(
+            "[year][month][day]T[hour][minute][second]Z",
+        )?;
+    let implicit_utc_format = 
+        format_description::parse(
+            "[year][month][day]T[hour][minute][second]",
+        )?;
+
+    if let Ok(result) = OffsetDateTime::parse(value, &offset_format) {
+        Ok(result)
+    } else if let Ok(result) = OffsetDateTime::parse(value, &offset_format_hours) {
+        Ok(result)
+    } else if let Ok(result) = PrimitiveDateTime::parse(value, &utc_format) {
+        let result = OffsetDateTime::now_utc().replace_date_time(result);
+        Ok(result)
+    } else {
+        let result = PrimitiveDateTime::parse(value, &implicit_utc_format)?;
+        let result = OffsetDateTime::now_utc().replace_date_time(result);
+        Ok(result)
+    }
 }
 
 /// Parse a boolean.
-pub fn parse_boolean(s: &str) -> Result<bool> {
-    match s {
-        "true" | "TRUE" => Ok(true),
-        "false" | "FALSE" => Ok(false),
-        _ => Err(Error::InvalidBoolean(s.to_string())),
+pub fn parse_boolean(value: &str) -> Result<bool> {
+    let lower = value.to_lowercase();
+    match &lower[..] {
+        "true" => Ok(true),
+        "false" => Ok(false),
+        _ => Err(Error::InvalidBoolean(value.to_string())),
     }
 }
 
@@ -183,6 +210,37 @@ pub(crate) fn format_date_time(d: &OffsetDateTime) -> Result<String> {
     Ok(d.format(&format)?)
 }
 
+pub(crate) fn format_date_time_list(
+    f: &mut fmt::Formatter<'_>,
+    val: &[OffsetDateTime],
+) -> fmt::Result {
+    for (index, item) in val.iter().enumerate() {
+        write!(f, "{}", &format_date_time(item).map_err(|_| fmt::Error)?)?;
+        if index < val.len() - 1 {
+            write!(f, ",")?;
+        }
+    }
+    Ok(())
+}
+
+pub(crate) fn format_date(value: &Date) -> Result<String> {
+    let date = format_description::parse("[year][month][day]")?;
+    Ok(value.format(&date)?)
+}
+
+pub(crate) fn format_date_list(
+    f: &mut fmt::Formatter<'_>,
+    val: &[Date],
+) -> fmt::Result {
+    for (index, item) in val.iter().enumerate() {
+        write!(f, "{}", &format_date(item).map_err(|_| fmt::Error)?)?;
+        if index < val.len() - 1 {
+            write!(f, ",")?;
+        }
+    }
+    Ok(())
+}
+
 pub(crate) fn format_time(value: &(Time, UtcOffset)) -> Result<String> {
     let (time, offset) = value;
 
@@ -200,6 +258,19 @@ pub(crate) fn format_time(value: &(Time, UtcOffset)) -> Result<String> {
     Ok(result)
 }
 
+pub(crate) fn format_time_list(
+    f: &mut fmt::Formatter<'_>,
+    val: &[(Time, UtcOffset)],
+) -> fmt::Result {
+    for (index, item) in val.iter().enumerate() {
+        write!(f, "{}", &format_time(item).map_err(|_| fmt::Error)?)?;
+        if index < val.len() - 1 {
+            write!(f, ",")?;
+        }
+    }
+    Ok(())
+}
+
 /// Date and or time.
 #[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -215,30 +286,9 @@ pub enum DateAndOrTime {
 impl fmt::Display for DateAndOrTime {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Date(val) => write!(
-                f,
-                "{}",
-                val.iter()
-                    .map(|v| v.to_string())
-                    .collect::<Vec<_>>()
-                    .join(",")
-            ),
-            Self::DateTime(val) => write!(
-                f,
-                "{}",
-                val.iter()
-                    .map(|v| v.to_string())
-                    .collect::<Vec<_>>()
-                    .join(",")
-            ),
-            Self::Time(val) => write!(
-                f,
-                "{}",
-                val.iter()
-                    .map(|(time, offset)| format!("{}{}", time, offset))
-                    .collect::<Vec<_>>()
-                    .join(",")
-            ),
+            Self::Date(val) => format_date_list(f, val),
+            Self::DateTime(val) => format_date_time_list(f, val),
+            Self::Time(val) => format_time_list(f, val),
         }
     }
 }

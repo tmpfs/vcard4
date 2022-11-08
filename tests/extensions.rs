@@ -7,7 +7,9 @@ use vcard_compact::{
     parameter::ValueType,
     parse,
     property::AnyProperty,
-    types::{parse_date_list, parse_date_time_list, parse_time_list},
+    types::{
+        parse_date_list, parse_date_time_list, parse_time_list, DateAndOrTime,
+    },
 };
 
 #[test]
@@ -100,7 +102,7 @@ fn extension_time_only() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Jane Doe
-X-FOO;VALUE=time:2200
+X-FOO;VALUE=time:2200,1800Z,140000-0800
 END:VCARD"#;
     let mut vcards = parse(input)?;
     assert_eq!(1, vcards.len());
@@ -115,7 +117,7 @@ END:VCARD"#;
         prop.parameters.as_ref().unwrap().value.as_ref().unwrap()
     );
 
-    let expected = parse_time_list("2200")?;
+    let expected = parse_time_list("2200,1800Z,140000-0800")?;
     assert_eq!(&AnyProperty::Time(expected), &prop.value);
 
     assert_round_trip(&card)?;
@@ -135,8 +137,6 @@ END:VCARD"#;
 
     let prop = card.extensions.get(0).unwrap();
 
-    println!("{:#?}", prop);
-
     assert!(prop.group.is_none());
     assert_eq!("X-FOO", &prop.name);
     assert_eq!(
@@ -151,7 +151,38 @@ END:VCARD"#;
     Ok(())
 }
 
-// TODO: date-and-or-time
+#[test]
+fn extension_date_and_or_time() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Jane Doe
+X-FOO;VALUE=date-and-or-time:19961022T140000
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+    let card = vcards.remove(0);
+
+    let prop = card.extensions.get(0).unwrap();
+
+    println!("{:#?}", prop);
+
+    assert!(prop.group.is_none());
+    assert_eq!("X-FOO", &prop.name);
+    assert_eq!(
+        &ValueType::DateAndOrTime,
+        prop.parameters.as_ref().unwrap().value.as_ref().unwrap()
+    );
+
+    let value = "19961022T140000";
+    let expected: DateAndOrTime = value.parse()?;
+    assert_eq!(&AnyProperty::DateAndOrTime(expected), &prop.value);
+
+    println!("{}", card);
+
+    //assert_round_trip(&card)?;
+    Ok(())
+}
+
 // TODO: timestamp
 // TODO: boolean
 // TODO: integer

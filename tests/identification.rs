@@ -100,7 +100,7 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
     let bday = card.bday.as_ref().unwrap();
-    assert_eq!("1953-10-15", &bday.to_string(),);
+    assert_eq!("19531015", &bday.to_string(),);
     assert_round_trip(&card)?;
     Ok(())
 }
@@ -117,7 +117,7 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
     let anniversary = card.anniversary.as_ref().unwrap();
-    assert_eq!("1996-04-15", &anniversary.to_string(),);
+    assert_eq!("19960415", &anniversary.to_string(),);
     assert_round_trip(&card)?;
     Ok(())
 }

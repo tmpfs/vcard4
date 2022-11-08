@@ -19,8 +19,8 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 use crate::{
     parameter::Parameters,
     types::{
-        /*format_date,*/ format_date_time, format_time, ClientPidMap,
-        DateAndOrTime, Float, Integer,
+        format_date_list, format_date_time, format_date_time_list,
+        format_time_list, ClientPidMap, DateAndOrTime, Float, Integer,
     },
     Error, Result,
 };
@@ -252,38 +252,9 @@ impl fmt::Display for AnyProperty {
             Self::Integer(val) => write!(f, "{}", val),
             Self::Float(val) => write!(f, "{}", val),
             Self::Boolean(val) => write!(f, "{}", val),
-            Self::Date(val) => write!(
-                f,
-                "{}",
-                val.iter()
-                    .map(|v| v.to_string())
-                    .collect::<Vec<_>>()
-                    .join(",")
-            ),
-            Self::DateTime(val) => {
-                let mut value = String::new();
-                for (index, item) in val.iter().enumerate() {
-                    value.push_str(
-                        &format_date_time(item).map_err(|_| fmt::Error)?,
-                    );
-                    if index < val.len() - 1 {
-                        value.push(',');
-                    }
-                }
-                write!(f, "{}", value)
-            }
-            Self::Time(val) => {
-                let mut value = String::new();
-                for (index, item) in val.iter().enumerate() {
-                    value.push_str(
-                        &format_time(item).map_err(|_| fmt::Error)?,
-                    );
-                    if index < val.len() - 1 {
-                        value.push(',');
-                    }
-                }
-                write!(f, "{}", value)
-            }
+            Self::Date(val) => format_date_list(f, val),
+            Self::DateTime(val) => format_date_time_list(f, val),
+            Self::Time(val) => format_time_list(f, val),
             Self::DateAndOrTime(val) => write!(f, "{}", val),
             Self::Timestamp(val) => write!(f, "{}", val),
             Self::Uri(val) => write!(f, "{}", val),
