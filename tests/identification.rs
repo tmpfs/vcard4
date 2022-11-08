@@ -120,7 +120,7 @@ END:VCARD"#;
     assert_eq!("19960415", &anniversary.to_string(),);
     assert_round_trip(&card)?;
 
-let input = r#"BEGIN:VCARD
+    let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Mr. John Q. Public\, Esq.
 ANNIVERSARY:20090808T1430-0500

@@ -2,7 +2,7 @@
 use std::{fmt, str::FromStr};
 use time::{
     format_description::{self, well_known::Iso8601},
-    Date, PrimitiveDateTime, OffsetDateTime, Time, UtcOffset,
+    Date, OffsetDateTime, PrimitiveDateTime, Time, UtcOffset,
 };
 use uriparse::uri::URI as Uri;
 
@@ -161,18 +161,18 @@ pub fn parse_timestamp(value: &str) -> Result<OffsetDateTime> {
     let offset_format_hours = format_description::parse(
             "[year][month][day]T[hour][minute][second][offset_hour sign:mandatory]",
         )?;
-    let utc_format = 
-        format_description::parse(
-            "[year][month][day]T[hour][minute][second]Z",
-        )?;
-    let implicit_utc_format = 
-        format_description::parse(
-            "[year][month][day]T[hour][minute][second]",
-        )?;
+    let utc_format = format_description::parse(
+        "[year][month][day]T[hour][minute][second]Z",
+    )?;
+    let implicit_utc_format = format_description::parse(
+        "[year][month][day]T[hour][minute][second]",
+    )?;
 
     if let Ok(result) = OffsetDateTime::parse(value, &offset_format) {
         Ok(result)
-    } else if let Ok(result) = OffsetDateTime::parse(value, &offset_format_hours) {
+    } else if let Ok(result) =
+        OffsetDateTime::parse(value, &offset_format_hours)
+    {
         Ok(result)
     } else if let Ok(result) = PrimitiveDateTime::parse(value, &utc_format) {
         let result = OffsetDateTime::now_utc().replace_date_time(result);
@@ -185,7 +185,9 @@ pub fn parse_timestamp(value: &str) -> Result<OffsetDateTime> {
 }
 
 /// Parse a list of date and or time types possibly separated by a comma.
-pub fn parse_date_and_or_time_list(value: &str) -> Result<Vec<DateAndOrTime>> {
+pub fn parse_date_and_or_time_list(
+    value: &str,
+) -> Result<Vec<DateAndOrTime>> {
     let mut values = Vec::new();
     for value in value.split(',') {
         values.push(value.parse()?);
@@ -285,7 +287,7 @@ pub(crate) fn format_date_and_or_time_list(
     val: &[DateAndOrTime],
 ) -> fmt::Result {
     for (index, item) in val.iter().enumerate() {
-        write!(f, "{}", item.to_string())?;
+        write!(f, "{}", item)?;
         if index < val.len() - 1 {
             write!(f, ",")?;
         }
@@ -308,9 +310,17 @@ pub enum DateAndOrTime {
 impl fmt::Display for DateAndOrTime {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Date(val) => write!(f, "{}", format_date(val).map_err(|_| fmt::Error)?),
-            Self::DateTime(val) => write!(f, "{}", format_date_time(val).map_err(|_| fmt::Error)?),
-            Self::Time(val) => write!(f, "{}", format_time(val).map_err(|_| fmt::Error)?),
+            Self::Date(val) => {
+                write!(f, "{}", format_date(val).map_err(|_| fmt::Error)?)
+            }
+            Self::DateTime(val) => write!(
+                f,
+                "{}",
+                format_date_time(val).map_err(|_| fmt::Error)?
+            ),
+            Self::Time(val) => {
+                write!(f, "{}", format_time(val).map_err(|_| fmt::Error)?)
+            }
         }
     }
 }

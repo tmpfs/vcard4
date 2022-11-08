@@ -865,9 +865,9 @@ impl VcardParser {
                 ValueType::Time => {
                     AnyProperty::Time(parse_time_list(value.as_ref())?)
                 }
-                ValueType::DateAndOrTime => {
-                    AnyProperty::DateAndOrTime(parse_date_and_or_time_list(value.as_ref())?)
-                }
+                ValueType::DateAndOrTime => AnyProperty::DateAndOrTime(
+                    parse_date_and_or_time_list(value.as_ref())?,
+                ),
                 ValueType::Timestamp => {
                     AnyProperty::Timestamp(parse_date_time(value.as_ref())?)
                 }
