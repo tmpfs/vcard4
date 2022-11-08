@@ -14,14 +14,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{Error, Result};
 
-/// Parse a list of times separated by a comma.
-pub fn parse_time_list(value: &str) -> Result<Vec<(Time, UtcOffset)>> {
-    let mut values = Vec::new();
-    for value in value.split(',') {
-        values.push(parse_time(value)?);
-    }
-    Ok(values)
-}
+// UTC OFFSET
 
 /// Parse a UTC offset.
 pub fn parse_utc_offset(value: &str) -> Result<UtcOffset> {
@@ -54,6 +47,17 @@ pub(crate) fn format_utc_offset(
     write!(f, "{}", val.format(&offset).map_err(|_| fmt::Error)?)
 }
 
+// TIME
+
+/// Parse a list of times separated by a comma.
+pub fn parse_time_list(value: &str) -> Result<Vec<(Time, UtcOffset)>> {
+    let mut values = Vec::new();
+    for value in value.split(',') {
+        values.push(parse_time(value)?);
+    }
+    Ok(values)
+}
+
 /// Parse a time.
 pub fn parse_time(value: &str) -> Result<(Time, UtcOffset)> {
     if value.starts_with('-') {
@@ -84,6 +88,36 @@ fn do_parse_time(value: &str) -> Result<(Time, UtcOffset)> {
     let time = Time::parse(value, &Iso8601::DEFAULT)?;
     Ok((time, offset))
 }
+
+pub(crate) fn format_time(value: &(Time, UtcOffset)) -> Result<String> {
+    let (time, offset) = value;
+    let format = format_description::parse("[hour][minute][second]")?;
+    let offset_format = format_description::parse(
+        "[offset_hour sign:mandatory][offset_minute]",
+    )?;
+
+    let result = format!(
+        "{}{}",
+        time.format(&format)?,
+        offset.format(&offset_format)?
+    );
+    Ok(result)
+}
+
+pub(crate) fn format_time_list(
+    f: &mut fmt::Formatter<'_>,
+    val: &[(Time, UtcOffset)],
+) -> fmt::Result {
+    for (index, item) in val.iter().enumerate() {
+        write!(f, "{}", &format_time(item).map_err(|_| fmt::Error)?)?;
+        if index < val.len() - 1 {
+            write!(f, ",")?;
+        }
+    }
+    Ok(())
+}
+
+// DATE
 
 /// Parse a list of dates separated by a comma.
 pub fn parse_date_list(value: &str) -> Result<Vec<Date>> {
@@ -150,6 +184,26 @@ fn do_parse_date(s: &str) -> Result<Date> {
     }
 }
 
+pub(crate) fn format_date(value: &Date) -> Result<String> {
+    let date = format_description::parse("[year][month][day]")?;
+    Ok(value.format(&date)?)
+}
+
+pub(crate) fn format_date_list(
+    f: &mut fmt::Formatter<'_>,
+    val: &[Date],
+) -> fmt::Result {
+    for (index, item) in val.iter().enumerate() {
+        write!(f, "{}", &format_date(item).map_err(|_| fmt::Error)?)?;
+        if index < val.len() - 1 {
+            write!(f, ",")?;
+        }
+    }
+    Ok(())
+}
+
+// DATETIME
+
 /// Parse a list of date times separated by a comma.
 pub fn parse_date_time_list(value: &str) -> Result<Vec<OffsetDateTime>> {
     let mut values = Vec::new();
@@ -178,6 +232,37 @@ pub fn parse_date_time(value: &str) -> Result<OffsetDateTime> {
         .replace_offset(offset);
     Ok(utc)
 }
+
+pub(crate) fn format_date_time(d: &OffsetDateTime) -> Result<String> {
+    let offset = (*d).offset();
+
+    let format = if offset == UtcOffset::UTC {
+        format_description::parse(
+            "[year][month][day]T[hour][minute][second]Z",
+        )?
+    } else {
+        format_description::parse(
+            "[year][month][day]T[hour][minute][second][offset_hour sign:mandatory][offset_minute]",
+        )?
+    };
+
+    Ok(d.format(&format)?)
+}
+
+pub(crate) fn format_date_time_list(
+    f: &mut fmt::Formatter<'_>,
+    val: &[OffsetDateTime],
+) -> fmt::Result {
+    for (index, item) in val.iter().enumerate() {
+        write!(f, "{}", &format_date_time(item).map_err(|_| fmt::Error)?)?;
+        if index < val.len() - 1 {
+            write!(f, ",")?;
+        }
+    }
+    Ok(())
+}
+
+// TIMESTAMP
 
 /// Parse a timestamp.
 pub fn parse_timestamp(value: &str) -> Result<OffsetDateTime> {
@@ -232,6 +317,8 @@ pub fn parse_timestamp_list(value: &str) -> Result<Vec<OffsetDateTime>> {
     Ok(values)
 }
 
+// DATE AND OR TIME
+
 /// Parse a list of date and or time types possibly separated by a comma.
 pub fn parse_date_and_or_time_list(
     value: &str,
@@ -241,106 +328,6 @@ pub fn parse_date_and_or_time_list(
         values.push(value.parse()?);
     }
     Ok(values)
-}
-
-/// Parse a boolean.
-pub fn parse_boolean(value: &str) -> Result<bool> {
-    let lower = value.to_lowercase();
-    match &lower[..] {
-        "true" => Ok(true),
-        "false" => Ok(false),
-        _ => Err(Error::InvalidBoolean(value.to_string())),
-    }
-}
-
-pub(crate) fn format_date_time(d: &OffsetDateTime) -> Result<String> {
-    let offset = (*d).offset();
-
-    let format = if offset == UtcOffset::UTC {
-        format_description::parse(
-            "[year][month][day]T[hour][minute][second]Z",
-        )?
-    } else {
-        format_description::parse(
-            "[year][month][day]T[hour][minute][second][offset_hour sign:mandatory][offset_minute]",
-        )?
-    };
-
-    Ok(d.format(&format)?)
-}
-
-pub(crate) fn format_date_time_list(
-    f: &mut fmt::Formatter<'_>,
-    val: &[OffsetDateTime],
-) -> fmt::Result {
-    for (index, item) in val.iter().enumerate() {
-        write!(f, "{}", &format_date_time(item).map_err(|_| fmt::Error)?)?;
-        if index < val.len() - 1 {
-            write!(f, ",")?;
-        }
-    }
-    Ok(())
-}
-
-pub(crate) fn format_date(value: &Date) -> Result<String> {
-    let date = format_description::parse("[year][month][day]")?;
-    Ok(value.format(&date)?)
-}
-
-pub(crate) fn format_date_list(
-    f: &mut fmt::Formatter<'_>,
-    val: &[Date],
-) -> fmt::Result {
-    for (index, item) in val.iter().enumerate() {
-        write!(f, "{}", &format_date(item).map_err(|_| fmt::Error)?)?;
-        if index < val.len() - 1 {
-            write!(f, ",")?;
-        }
-    }
-    Ok(())
-}
-
-pub(crate) fn format_time(value: &(Time, UtcOffset)) -> Result<String> {
-    let (time, offset) = value;
-
-    let format = format_description::parse("[hour][minute][second]")?;
-
-    let offset_format = format_description::parse(
-        "[offset_hour sign:mandatory][offset_minute]",
-    )?;
-
-    let result = format!(
-        "{}{}",
-        time.format(&format)?,
-        offset.format(&offset_format)?
-    );
-    Ok(result)
-}
-
-pub(crate) fn format_time_list(
-    f: &mut fmt::Formatter<'_>,
-    val: &[(Time, UtcOffset)],
-) -> fmt::Result {
-    for (index, item) in val.iter().enumerate() {
-        write!(f, "{}", &format_time(item).map_err(|_| fmt::Error)?)?;
-        if index < val.len() - 1 {
-            write!(f, ",")?;
-        }
-    }
-    Ok(())
-}
-
-pub(crate) fn format_date_and_or_time_list(
-    f: &mut fmt::Formatter<'_>,
-    val: &[DateAndOrTime],
-) -> fmt::Result {
-    for (index, item) in val.iter().enumerate() {
-        write!(f, "{}", item)?;
-        if index < val.len() - 1 {
-            write!(f, ",")?;
-        }
-    }
-    Ok(())
 }
 
 /// Date and or time.
@@ -391,6 +378,75 @@ impl FromStr for DateAndOrTime {
                 },
             },
         }
+    }
+}
+
+pub(crate) fn format_date_and_or_time_list(
+    f: &mut fmt::Formatter<'_>,
+    val: &[DateAndOrTime],
+) -> fmt::Result {
+    for (index, item) in val.iter().enumerate() {
+        write!(f, "{}", item)?;
+        if index < val.len() - 1 {
+            write!(f, ",")?;
+        }
+    }
+    Ok(())
+}
+
+// Client PID Map
+
+/// Value for the CLIENTPIDMAP property.
+#[derive(Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+pub struct ClientPidMap {
+    /// The source identifier.
+    pub source: u64,
+    /// The URI for the map.
+    #[cfg_attr(feature = "zeroize", zeroize(skip))]
+    pub uri: Uri<'static>,
+}
+
+impl fmt::Display for ClientPidMap {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{};{}", self.source, self.uri)
+    }
+}
+
+impl FromStr for ClientPidMap {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let mut it = s.splitn(2, ';');
+        let source = it
+            .next()
+            .ok_or_else(|| Error::InvalidClientPidMap(s.to_string()))?;
+        let uri = it
+            .next()
+            .ok_or_else(|| Error::InvalidClientPidMap(s.to_string()))?;
+        let source: u64 = source.parse()?;
+
+        // Must be positive according to the RFC
+        // https://www.rfc-editor.org/rfc/rfc6350#section-6.7.7
+        if source == 0 {
+            return Err(Error::InvalidClientPidMap(s.to_string()));
+        }
+
+        let uri = Uri::try_from(uri)?.into_owned();
+        Ok(ClientPidMap { source, uri })
+    }
+}
+
+// Primitives
+
+/// Parse a boolean.
+pub fn parse_boolean(value: &str) -> Result<bool> {
+    let lower = value.to_lowercase();
+    match &lower[..] {
+        "true" => Ok(true),
+        "false" => Ok(false),
+        _ => Err(Error::InvalidBoolean(value.to_string())),
     }
 }
 
@@ -475,47 +531,5 @@ impl FromStr for Float {
         } else {
             Ok(Self::One(s.parse()?))
         }
-    }
-}
-
-/// Value for the CLIENTPIDMAP property.
-#[derive(Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
-pub struct ClientPidMap {
-    /// The source identifier.
-    pub source: u64,
-    /// The URI for the map.
-    #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    pub uri: Uri<'static>,
-}
-
-impl fmt::Display for ClientPidMap {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{};{}", self.source, self.uri)
-    }
-}
-
-impl FromStr for ClientPidMap {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        let mut it = s.splitn(2, ';');
-        let source = it
-            .next()
-            .ok_or_else(|| Error::InvalidClientPidMap(s.to_string()))?;
-        let uri = it
-            .next()
-            .ok_or_else(|| Error::InvalidClientPidMap(s.to_string()))?;
-        let source: u64 = source.parse()?;
-
-        // Must be positive according to the RFC
-        // https://www.rfc-editor.org/rfc/rfc6350#section-6.7.7
-        if source == 0 {
-            return Err(Error::InvalidClientPidMap(s.to_string()));
-        }
-
-        let uri = Uri::try_from(uri)?.into_owned();
-        Ok(ClientPidMap { source, uri })
     }
 }

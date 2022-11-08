@@ -247,6 +247,7 @@ impl FromStr for RelatedType {
 #[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+#[cfg_attr(feature = "serde", serde(rename_all = "lowercase"))]
 pub enum TelephoneType {
     /// Indicates that the telephone number supports
     /// text messages (SMS).
@@ -305,6 +306,7 @@ impl FromStr for TelephoneType {
 #[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 pub enum ValueType {
     /// Text value.
     Text,
@@ -411,21 +413,49 @@ pub struct Parameters {
     /// The LANGUAGE tag.
     #[cfg(feature = "language-tags")]
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub language: Option<LanguageTag>,
 
     /// The LANGUAGE tag.
     #[cfg(not(feature = "language-tags"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub language: Option<String>,
 
     /// The VALUE type hint.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub value: Option<ValueType>,
     /// The PREF hint.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub pref: Option<u8>,
     /// The ALTID tag.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub alt_id: Option<String>,
     /// The PID value.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub pid: Option<Vec<Pid>>,
     /// The TYPE parameter.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub types: Option<Vec<TypeParameter>>,
     /// The MEDIATYPE value.
     #[cfg(feature = "mime")]
@@ -433,28 +463,53 @@ pub struct Parameters {
     #[cfg_attr(
         feature = "serde",
         serde(
+            default,
             with = "crate::serde::mime",
-            //skip_serializing_if = "Option::is_none",
+            skip_serializing_if = "Option::is_none",
         )
     )]
     pub media_type: Option<Mime>,
 
     /// The MEDIATYPE value.
     #[cfg(not(feature = "mime"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub media_type: Option<String>,
 
     /// The CALSCALE parameter.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub calscale: Option<String>,
     /// The SORT-AS parameter.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub sort_as: Option<Vec<String>>,
     /// The GEO parameter.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub geo: Option<Uri<'static>>,
     /// The TZ parameter.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub timezone: Option<TimeZoneParameter>,
     /// The LABEL parameter.
     ///
     /// This only applies to the ADR property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub label: Option<String>,
 }
 
