@@ -48,12 +48,8 @@ pub(crate) mod mime {
             deserializer.deserialize_str(self)
         }
 
-        fn visit_none<E>(self) -> Result<Self::Value, E>
-        where
-            E: Error,
-        {
-            Ok(None)
-        }
+        // NOTE: we don't need to implement visit_none()
+        // NOTE: as we use skip_serializing_if on these properties
     }
 
     pub fn deserialize<'de, D>(

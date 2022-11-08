@@ -54,11 +54,8 @@ args = ["check", "--target", "wasm32-unknown-unknown"]
 
 [tasks.genhtml]
 script = '''
-grcov . --source-dir src --binary-path ./target/debug -t html --branch --ignore-not-existing -o ./target/coverage/ --ignore 'tests/*' --ignore 'target/*'
+grcov . --source-dir src --binary-path ./target/cover/debug -t html --branch --ignore-not-existing -o ./target/coverage/
 '''
 
-[tasks.coverage]
-alias = "coverage_grcov"
-
 [tasks.cover]
-dependencies = ["build", "coverage", "genhtml"]
+dependencies = ["clean", "coverage_grcov", "genhtml"]
