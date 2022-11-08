@@ -64,16 +64,16 @@ pub fn parse_time(value: &str) -> Result<(Time, UtcOffset)> {
         let mut parts = value.split("").collect::<Vec<_>>();
         let val = parts
             .get_mut(1)
-            .ok_or(Error::InvalidTime(value.to_string()))?;
+            .ok_or_else(|| Error::InvalidTime(value.to_string()))?;
         if *val == "-" {
             *val = "00";
         }
 
         let val = parts
             .get_mut(2)
-            .ok_or(Error::InvalidTime(value.to_string()))?;
+            .ok_or_else(|| Error::InvalidTime(value.to_string()))?;
 
-        if *val == "" {
+        if val.is_empty() {
             return Err(Error::InvalidTime(value.to_string()));
         }
 
@@ -142,13 +142,13 @@ pub fn parse_date(value: &str) -> Result<Date> {
         let mut parts = value.split("").collect::<Vec<_>>();
         let val = parts
             .get_mut(1)
-            .ok_or(Error::InvalidDate(value.to_string()))?;
+            .ok_or_else(|| Error::InvalidDate(value.to_string()))?;
         if *val == "-" {
             *val = "00";
         }
         let val = parts
             .get_mut(2)
-            .ok_or(Error::InvalidDate(value.to_string()))?;
+            .ok_or_else(|| Error::InvalidDate(value.to_string()))?;
         if *val == "-" {
             *val = "00";
         }

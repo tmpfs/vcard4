@@ -215,4 +215,3 @@ fn types_timestamp() -> Result<()> {
     assert_eq!("1996-10-22 14:00:00.0 -05:00:00", &timestamp.to_string());
     Ok(())
 }
-
