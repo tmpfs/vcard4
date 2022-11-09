@@ -15,7 +15,7 @@ use crate::{
 };
 
 #[derive(Logos, Debug, PartialEq)]
-enum Token {
+pub(crate) enum Token {
     #[regex("(?i:BEGIN:VCARD)")]
     Begin,
 
@@ -63,25 +63,21 @@ enum Token {
 }
 
 /// Parses vCards from a string.
-pub(crate) struct VcardParser {
+pub(crate) struct VcardParser<'s> {
     strict: bool,
+    pub(crate) source: &'s str,
 }
 
-impl VcardParser {
+impl<'s> VcardParser<'s> {
     /// Create a new parser.
-    pub fn new(strict: bool) -> Self {
-        Self { strict }
+    pub fn new(source: &'s str, strict: bool) -> Self {
+        Self { source, strict }
     }
-}
 
-impl VcardParser {
     /// Parse a UTF-8 encoded string into a list of vCards.
-    pub(crate) fn parse<S: AsRef<str>>(
-        &self,
-        value: S,
-    ) -> Result<Vec<Vcard>> {
+    pub(crate) fn parse(&self) -> Result<Vec<Vcard>> {
         let mut cards = Vec::new();
-        let mut lex = Token::lexer(value.as_ref());
+        let mut lex = self.lexer();
 
         while let Some(first) = lex.next() {
             // Allow leading newlines and newlines between
@@ -90,7 +86,7 @@ impl VcardParser {
                 continue;
             }
 
-            let card = self.parse_one(&mut lex, Some(first))?;
+            let (card, _) = self.parse_one(&mut lex, Some(first))?;
             card.validate()?;
             cards.push(card);
         }
@@ -102,12 +98,17 @@ impl VcardParser {
         Ok(cards)
     }
 
+    /// Get a lexer for the current source.
+    pub(crate) fn lexer(&self) -> Lexer<'s, Token> {
+        Token::lexer(self.source)
+    }
+
     /// Parse a single vCard.
-    fn parse_one(
+    pub(crate) fn parse_one(
         &self,
         lex: &mut Lexer<'_, Token>,
         first: Option<Token>,
-    ) -> Result<Vcard> {
+    ) -> Result<(Vcard, Range<usize>)> {
         self.assert_token(first, Token::Begin)?;
         self.assert_token(lex.next(), Token::NewLine)?;
 
@@ -119,7 +120,7 @@ impl VcardParser {
 
         self.parse_properties(lex, &mut card)?;
 
-        Ok(card)
+        Ok((card, lex.span()))
     }
 
     /// Parse the properties of a vCard.
@@ -241,8 +242,6 @@ impl VcardParser {
                                 property_upper_name,
                             ));
                         }
-
-                        println!("Parsing type {}", value);
 
                         let mut type_params: Vec<TypeParameter> = Vec::new();
 

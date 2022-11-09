@@ -62,8 +62,35 @@
 //!     Ok(())
 //! }
 //! ```
+//!
+//! Iterative parsing is useful if you only need the first vCard or
+//! wish to ignore vCards that have errors (possibly during an
+//! import operation):
+//!
+//! ```
+//! use anyhow::Result;
+//! use vcard4::iter;
+//!
+//! pub fn main() -> Result<()> {
+//!     let input = r#"BEGIN:VCARD
+//! VERSION:4.0
+//! FN:John Doe
+//! END:VCARD
+//!
+//! BEGIN:VCARD
+//! VERSION:4.0
+//! FN:Jane Doe
+//! END:VCARD"#;
+//!     let mut it = iter(input, true);
+//!     print!("{}", it.next().unwrap()?);
+//!     print!("{}", it.next().unwrap()?);
+//!     assert!(matches!(it.next(), None));
+//!     Ok(())
+//! }
+//! ```
 
 mod error;
+mod iter;
 mod name;
 pub mod parameter;
 mod parser;
@@ -74,6 +101,7 @@ pub mod types;
 mod vcard;
 
 pub use error::Error;
+pub use iter::VcardIterator;
 pub use vcard::Vcard;
 
 pub use time;
@@ -84,13 +112,18 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Parse a vCard string into a collection of vCards.
 pub fn parse<S: AsRef<str>>(input: S) -> Result<Vec<Vcard>> {
-    let parser = parser::VcardParser::new(true);
-    parser.parse(input)
+    let parser = parser::VcardParser::new(input.as_ref(), true);
+    parser.parse()
 }
 
 /// Parse a vCard string into a collection of vCards ignoring properties
 /// that generate errors.
 pub fn parse_loose<S: AsRef<str>>(input: S) -> Result<Vec<Vcard>> {
-    let parser = parser::VcardParser::new(false);
-    parser.parse(input)
+    let parser = parser::VcardParser::new(input.as_ref(), false);
+    parser.parse()
+}
+
+/// Create a parser iterator.
+pub fn iter<'a>(source: &'a str, strict: bool) -> VcardIterator<'a> {
+    VcardIterator::new(source.as_ref(), strict)
 }
