@@ -22,7 +22,7 @@ enum Token {
     #[regex("(?i:VERSION:4\\.0)")]
     Version,
 
-    #[regex("(?i:([a-z0-9-]+\\.)?(SOURCE|KIND|FN|N|NICKNAME|PHOTO|BDAY|ANNIVERSARY|GENDER|ADR|TEL|EMAIL|IMPP|LANG|TZ|GEO|TITLE|ROLE|LOGO|ORG|MEMBER|RELATED|CATEGORIES|NOTE|PRODID|REV|SOUND|UID|CLIENTPIDMAP|URL|KEY|FBURL|CALADRURI|CALURI|XML|x-[a-z0-9]+))")]
+    #[regex("(?i:([a-z0-9-]+\\.)?(SOURCE|KIND|FN|N|NICKNAME|PHOTO|BDAY|ANNIVERSARY|GENDER|ADR|TEL|EMAIL|IMPP|LANG|TZ|GEO|TITLE|ROLE|LOGO|ORG|MEMBER|RELATED|CATEGORIES|NOTE|PRODID|REV|SOUND|UID|CLIENTPIDMAP|URL|KEY|FBURL|CALADRURI|CALURI|XML|VERSION|x-[a-z0-9]+))")]
     PropertyName,
 
     #[token(";")]
@@ -132,6 +132,9 @@ impl VcardParser {
             if first == Token::End {
                 break;
             }
+            if let Token::Version = first {
+                return Err(Error::VersionMisplaced);
+            }
             self.assert_token(Some(first), Token::PropertyName)?;
             if let Err(e) = self.parse_property(lex, card) {
                 if self.strict {
@@ -193,10 +196,6 @@ impl VcardParser {
         let mut next: Option<Token> = lex.next();
 
         while let Some(token) = next.take() {
-            if token == Token::PropertyDelimiter {
-                break;
-            }
-
             if token == Token::ParameterKey {
                 let source = lex.source();
                 let span = lex.span();
@@ -242,6 +241,8 @@ impl VcardParser {
                                 property_upper_name,
                             ));
                         }
+
+                        println!("Parsing type {}", value);
 
                         let mut type_params: Vec<TypeParameter> = Vec::new();
 
@@ -391,7 +392,7 @@ impl VcardParser {
                         if token != Token::PropertyDelimiter
                             && token != Token::ParameterDelimiter
                         {
-                            return Err(Error::IncorrectToken);
+                            return Err(Error::DelimiterExpected);
                         }
                         token
                     } else {

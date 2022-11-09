@@ -38,6 +38,26 @@ END:VCARD"#;
     );
 
     assert_round_trip(&card)?;
+
+    // No VALUE parameter uses text by default
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Jane Doe
+X-FOO:This is some text.
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+    let card = vcards.remove(0);
+
+    let prop = card.extensions.get(0).unwrap();
+    assert!(prop.group.is_none());
+    assert_eq!("X-FOO", &prop.name);
+    assert_eq!(
+        &AnyProperty::Text("This is some text.".to_string()),
+        &prop.value
+    );
+    assert_round_trip(&card)?;
+
     Ok(())
 }
 

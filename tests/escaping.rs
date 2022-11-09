@@ -37,6 +37,22 @@ END:VCARD"#;
 }
 
 #[test]
+fn escape_backslash() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\ Esq.
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    let fname = card.formatted_name.get(0).unwrap();
+    assert_eq!("Mr. John Q. Public\\ Esq.", fname.value);
+    assert_round_trip(&card)?;
+    Ok(())
+}
+
+#[test]
 fn escape_newline() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0

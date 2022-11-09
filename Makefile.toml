@@ -57,5 +57,9 @@ script = '''
 grcov . --source-dir src --binary-path ./target/cover/debug -t html --branch --ignore-not-existing -o ./target/coverage/
 '''
 
+[tasks.clean-cover]
+command = "cargo"
+args = ["clean", "--target-dir", "target/cover"]
+
 [tasks.cover]
-dependencies = ["clean", "coverage_grcov", "genhtml"]
+dependencies = ["clean-cover", "coverage_grcov", "genhtml"]

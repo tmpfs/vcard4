@@ -97,11 +97,36 @@ BDAY:19531015
 END:VCARD"#;
     let mut vcards = parse(input)?;
     assert_eq!(1, vcards.len());
-
     let card = vcards.remove(0);
     let bday = card.bday.as_ref().unwrap();
-    assert_eq!("19531015", &bday.to_string(),);
+    assert_eq!("19531015", &bday.to_string());
     assert_round_trip(&card)?;
+
+    // Trigger some branches for using explicit VALUE parameter
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+BDAY;VALUE=date-and-or-time:19531015
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+    let card = vcards.remove(0);
+    let bday = card.bday.as_ref().unwrap();
+    assert_eq!("19531015", &bday.to_string());
+    assert_round_trip(&card)?;
+
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+BDAY;VALUE=text:Circa 1800
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+    let card = vcards.remove(0);
+    let bday = card.bday.as_ref().unwrap();
+    assert_eq!("Circa 1800", &bday.to_string());
+    assert_round_trip(&card)?;
+
     Ok(())
 }
 
