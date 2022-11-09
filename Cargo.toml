@@ -1,8 +1,8 @@
 [package]
-name = "vcard-compact"
+name = "vcard4"
 version = "0.1.0"
 edition = "2021"
-repository = "https://github.com/tmpfs/vcard-compact"
+repository = "https://github.com/tmpfs/vcard4"
 keywords = ["vcard", "contact", "parser", "rfc6350"]
 license = "MIT OR Apache-2.0"
 

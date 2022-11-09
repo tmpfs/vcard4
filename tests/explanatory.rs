@@ -1,7 +1,7 @@
 mod test_helpers;
 
 use anyhow::Result;
-use vcard_compact::{parse, property::TextOrUriProperty};
+use vcard4::{parse, property::TextOrUriProperty};
 
 use test_helpers::assert_round_trip;
 

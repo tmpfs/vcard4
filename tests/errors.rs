@@ -1,7 +1,7 @@
 mod test_helpers;
 
 use anyhow::Result;
-use vcard_compact::{parameter::*, parse, types::*, Error};
+use vcard4::{parameter::*, parse, types::*, Error};
 
 #[test]
 fn error_empty() -> Result<()> {

@@ -3,7 +3,7 @@ mod test_helpers;
 use anyhow::Result;
 use test_helpers::assert_round_trip;
 use uriparse::uri::URI as Uri;
-use vcard_compact::{parameter::TypeParameter, parse, property::*};
+use vcard4::{parameter::TypeParameter, parse, property::*};
 
 #[test]
 fn organizational_title() -> Result<()> {

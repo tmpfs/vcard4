@@ -1,4 +1,4 @@
-use vcard_compact::Vcard;
+use vcard4::Vcard;
 
 pub fn main() {
     let mut card = Vcard::new(String::from("John Doe"));

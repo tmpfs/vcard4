@@ -3,7 +3,7 @@ mod test_helpers;
 use anyhow::Result;
 use uriparse::uri::URI as Uri;
 
-use vcard_compact::{
+use vcard4::{
     parameter::{
         Pid, RelatedType, TelephoneType, TimeZoneParameter, TypeParameter,
         ValueType,

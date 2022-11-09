@@ -3,7 +3,7 @@ mod test_helpers;
 use anyhow::Result;
 use test_helpers::{assert_language, assert_round_trip};
 use uriparse::uri::URI as Uri;
-use vcard_compact::{
+use vcard4::{
     parameter::ValueType,
     parse,
     property::AnyProperty,

@@ -2,7 +2,7 @@ mod test_helpers;
 
 use anyhow::Result;
 use test_helpers::assert_round_trip;
-use vcard_compact::{parse_loose, property::Kind};
+use vcard4::{parse_loose, property::Kind};
 
 #[test]
 fn loose() -> Result<()> {

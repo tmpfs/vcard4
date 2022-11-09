@@ -1,5 +1,5 @@
 use anyhow::Result;
-use vcard_compact::parse;
+use vcard4::parse;
 
 const VCF: &str = include_str!("simon-perrault.vcf");
 

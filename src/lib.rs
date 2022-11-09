@@ -37,7 +37,7 @@
 //! Create a new vCard:
 //!
 //! ```
-//! use vcard_compact::Vcard;
+//! use vcard4::Vcard;
 //! let mut card = Vcard::new(String::from("John Doe"));
 //! card.nickname.push(String::from("Johnny").into());
 //! print!("{}", card);
@@ -47,7 +47,7 @@
 //!
 //! ```
 //! use anyhow::Result;
-//! use vcard_compact::parse;
+//! use vcard4::parse;
 //! pub fn main() -> Result<()> {
 //!     let input = r#"BEGIN:VCARD
 //! VERSION:4.0

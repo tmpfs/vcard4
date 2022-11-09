@@ -2,7 +2,7 @@ mod test_helpers;
 
 use anyhow::Result;
 use test_helpers::{assert_language, assert_round_trip};
-use vcard_compact::{
+use vcard4::{
     parameter::{TelephoneType, TypeParameter},
     parse,
     property::TextOrUriProperty,

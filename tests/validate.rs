@@ -1,5 +1,5 @@
 use anyhow::Result;
-use vcard_compact::Vcard;
+use vcard4::Vcard;
 
 #[test]
 fn validate() -> Result<()> {

@@ -1,5 +1,5 @@
 use anyhow::Result;
-use vcard_compact::parse;
+use vcard4::parse;
 
 pub fn main() -> Result<()> {
     let input = r#"BEGIN:VCARD

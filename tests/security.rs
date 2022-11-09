@@ -2,7 +2,7 @@ mod test_helpers;
 
 use anyhow::Result;
 use test_helpers::{assert_media_type, assert_round_trip};
-use vcard_compact::{parse, property::*};
+use vcard4::{parse, property::*};
 
 #[test]
 fn security_key() -> Result<()> {

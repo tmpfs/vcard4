@@ -1,5 +1,5 @@
 use anyhow::Result;
-use vcard_compact::types::*;
+use vcard4::types::*;
 
 #[test]
 fn types_time_only() -> Result<()> {

@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use vcard_compact::{parameter::Parameters, parse, Vcard};
+use vcard4::{parameter::Parameters, parse, Vcard};
 
 #[cfg(feature = "language-tags")]
 use language_tags::LanguageTag;
