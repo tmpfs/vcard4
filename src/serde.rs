@@ -1,4 +1,5 @@
 //! Helpers for adding serde support to external types.
+#[cfg(feature = "mime")]
 pub(crate) mod media_type {
     use mime::Mime;
     use serde::{
