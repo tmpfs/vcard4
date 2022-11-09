@@ -1,8 +1,8 @@
 [package]
-name = "vcard-compact"
+name = "vcard4"
 version = "0.1.0"
 edition = "2021"
-repository = "https://github.com/tmpfs/vcard-compact"
+repository = "https://github.com/tmpfs/vcard4"
 keywords = ["vcard", "contact", "parser", "rfc6350"]
 license = "MIT OR Apache-2.0"
 
@@ -10,7 +10,7 @@ license = "MIT OR Apache-2.0"
 thiserror = "1"
 logos = "0.12"
 uriparse = "0.6.4"
-time = { version = "0.3", features = ["parsing"] }
+time = { version = "0.3", features = ["parsing", "formatting"] }
 unicode-segmentation="1"
 serde = { version = "1", features = ["derive"], optional = true }
 zeroize = { version = "1.5", features = ["derive"], optional = true }
@@ -26,3 +26,4 @@ language-tags = ["dep:language-tags"]
 
 [dev-dependencies]
 anyhow = "1"
+serde_json = "1"

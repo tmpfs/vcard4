@@ -2,13 +2,11 @@ mod test_helpers;
 
 use anyhow::Result;
 use test_helpers::{assert_language, assert_round_trip};
-use vcard_compact::{
+use vcard4::{
     parameter::{TelephoneType, TypeParameter},
     parse,
     property::TextOrUriProperty,
 };
-
-// Communications Properties
 
 #[test]
 fn communications_tel() -> Result<()> {
@@ -47,6 +45,34 @@ END:VCARD"#;
         assert_eq!(&TypeParameter::Home, types.get(0).unwrap());
 
         assert_eq!("tel:+33-01-23-45-67", &prop.value.to_string());
+        assert_round_trip(&card)?;
+    } else {
+        panic!("expecting URI for TEL property");
+    }
+
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Jane Doe
+TEL;VALUE=uri;TYPE=home;TYPE="voice,cell":tel:+1-555-555-5555;ext=5555
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+    let card = vcards.remove(0);
+
+    let prop = card.tel.get(0).unwrap();
+    if let TextOrUriProperty::Uri(prop) = prop {
+        let types = prop.parameters.as_ref().unwrap().types.as_ref().unwrap();
+        assert_eq!(&TypeParameter::Home, types.get(0).unwrap());
+        assert_eq!(
+            &TypeParameter::Telephone(TelephoneType::Voice),
+            types.get(1).unwrap()
+        );
+        assert_eq!(
+            &TypeParameter::Telephone(TelephoneType::Cell),
+            types.get(2).unwrap()
+        );
+
+        assert_eq!("tel:+1-555-555-5555;ext=5555", &prop.value.to_string());
         assert_round_trip(&card)?;
     } else {
         panic!("expecting URI for TEL property");

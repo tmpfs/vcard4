@@ -21,11 +21,12 @@ use mime::Mime;
 
 use crate::{
     name::{HOME, WORK},
+    types::format_utc_offset,
     Error, Result,
 };
 
 /// Names of properties that are allowed to specify a TYPE parameter.
-pub const TYPE_PROPERTIES: [&str; 23] = [
+pub(crate) const TYPE_PROPERTIES: [&str; 23] = [
     "FN",
     "NICKNAME",
     "PHOTO",
@@ -98,17 +99,24 @@ impl FromStr for TypeParameter {
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct Pid {
     /// Digits before a period.
-    pub major: u64,
+    pub local: u64,
     /// Digits after a period.
-    pub minor: Option<u64>,
+    pub source: Option<u64>,
+}
+
+impl Pid {
+    /// Create a new property identifier.
+    pub fn new(local: u64, source: Option<u64>) -> Self {
+        Self { local, source }
+    }
 }
 
 impl fmt::Display for Pid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(minor) = self.minor {
-            write!(f, "{}.{}", self.major, minor)
+        if let Some(source) = self.source {
+            write!(f, "{}.{}", self.local, source)
         } else {
-            write!(f, "{}", self.major)
+            write!(f, "{}", self.local)
         }
     }
 }
@@ -118,18 +126,21 @@ impl FromStr for Pid {
 
     fn from_str(s: &str) -> Result<Self> {
         let mut parts = s.splitn(2, '.');
-        let major = parts
+        let local = parts
             .next()
             .ok_or_else(|| Error::InvalidPid(s.to_string()))?;
-        let major: u64 = major
+        let local: u64 = local
             .parse()
             .map_err(|_| Error::InvalidPid(s.to_string()))?;
-        let mut pid = Pid { major, minor: None };
-        if let Some(minor) = parts.next() {
-            let minor: u64 = minor
+        let mut pid = Pid {
+            local,
+            source: None,
+        };
+        if let Some(source) = parts.next() {
+            let source: u64 = source
                 .parse()
                 .map_err(|_| Error::InvalidPid(s.to_string()))?;
-            pid.minor = Some(minor);
+            pid.source = Some(source);
         }
         Ok(pid)
     }
@@ -247,6 +258,7 @@ impl FromStr for RelatedType {
 #[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+#[cfg_attr(feature = "serde", serde(rename_all = "lowercase"))]
 pub enum TelephoneType {
     /// Indicates that the telephone number supports
     /// text messages (SMS).
@@ -305,6 +317,7 @@ impl FromStr for TelephoneType {
 #[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 pub enum ValueType {
     /// Text value.
     Text,
@@ -411,21 +424,49 @@ pub struct Parameters {
     /// The LANGUAGE tag.
     #[cfg(feature = "language-tags")]
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub language: Option<LanguageTag>,
 
     /// The LANGUAGE tag.
     #[cfg(not(feature = "language-tags"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub language: Option<String>,
 
     /// The VALUE type hint.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub value: Option<ValueType>,
     /// The PREF hint.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub pref: Option<u8>,
     /// The ALTID tag.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub alt_id: Option<String>,
     /// The PID value.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub pid: Option<Vec<Pid>>,
     /// The TYPE parameter.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub types: Option<Vec<TypeParameter>>,
     /// The MEDIATYPE value.
     #[cfg(feature = "mime")]
@@ -433,28 +474,53 @@ pub struct Parameters {
     #[cfg_attr(
         feature = "serde",
         serde(
-            with = "crate::serde::mime",
-            skip_serializing_if = "Option::is_none"
+            default,
+            with = "crate::serde::media_type",
+            skip_serializing_if = "Option::is_none",
         )
     )]
     pub media_type: Option<Mime>,
 
     /// The MEDIATYPE value.
     #[cfg(not(feature = "mime"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub media_type: Option<String>,
 
     /// The CALSCALE parameter.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub calscale: Option<String>,
     /// The SORT-AS parameter.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub sort_as: Option<Vec<String>>,
     /// The GEO parameter.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub geo: Option<Uri<'static>>,
     /// The TZ parameter.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub timezone: Option<TimeZoneParameter>,
     /// The LABEL parameter.
     ///
     /// This only applies to the ADR property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub label: Option<String>,
 }
 
@@ -497,7 +563,8 @@ impl fmt::Display for Parameters {
                     write!(f, ";{}={}", TZ, val)?;
                 }
                 TimeZoneParameter::UtcOffset(val) => {
-                    write!(f, ";{}={}", TZ, val)?;
+                    write!(f, ";{}=", TZ)?;
+                    format_utc_offset(f, val)?;
                 }
                 // URI must be quoted
                 TimeZoneParameter::Uri(val) => {
@@ -506,10 +573,14 @@ impl fmt::Display for Parameters {
             }
         }
         if let Some(label) = &self.label {
-            write!(f, ";{}={}", LABEL, label)?;
+            write!(f, ";{}=\"{}\"", LABEL, escape_parameter(label))?;
         }
         Ok(())
     }
+}
+
+fn escape_parameter(s: &str) -> String {
+    s.replace('\n', "\\n")
 }
 
 fn comma_delimited(items: &Vec<impl std::fmt::Display>) -> String {

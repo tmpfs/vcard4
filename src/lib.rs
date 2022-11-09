@@ -31,6 +31,37 @@
 //! * The `XML` property is parsed and propagated but it is not
 //!   validated per RFC as it is optional.
 //! * IANA Tokens are not implemented.
+//!
+//! ## Examples
+//!
+//! Create a new vCard:
+//!
+//! ```
+//! use vcard4::Vcard;
+//! let mut card = Vcard::new(String::from("John Doe"));
+//! card.nickname.push(String::from("Johnny").into());
+//! print!("{}", card);
+//! ```
+//!
+//! Decoding and encoding:
+//!
+//! ```
+//! use anyhow::Result;
+//! use vcard4::parse;
+//! pub fn main() -> Result<()> {
+//!     let input = r#"BEGIN:VCARD
+//! VERSION:4.0
+//! FN:John Doe
+//! NICKNAME:Johnny
+//! END:VCARD"#;
+//!     let cards = parse(input)?;
+//!     let card = cards.first().unwrap();
+//!     let encoded = card.to_string();
+//!     let decoded = parse(&encoded)?.remove(0);
+//!     assert_eq!(card, &decoded);
+//!     Ok(())
+//! }
+//! ```
 
 mod error;
 mod name;

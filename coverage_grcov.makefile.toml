@@ -47,11 +47,21 @@ args = ["build"]
 "RUSTFLAGS"= "-Cinstrument-coverage -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off"
 "RUSTDOCFLAGS"="-Cpanic=abort"
 
+[tasks.coverage_grcov_run_test_stable_all_features]
+condition = { rust_version = { min = "1.60.0" } }
+private=true
+command = "cargo"
+args = ["test", "--all-features"]
+
+[tasks.coverage_grcov_run_test_stable_all_features.env]
+"CARGO_BUILD_TARGET_DIR"="${COVERAGE_TARGET_DIRECTORY}"
+"LLVM_PROFILE_FILE"="${COVERAGE_PROF_OUTPUT}/coverage-%p-%m.profraw"
+
 [tasks.coverage_grcov_run_test_stable]
 condition = { rust_version = { min = "1.60.0" } }
 private=true
 command = "cargo"
-args = ["test", "--all"]
+args = ["test"]
 
 [tasks.coverage_grcov_run_test_stable.env]
 "CARGO_BUILD_TARGET_DIR"="${COVERAGE_TARGET_DIRECTORY}"
@@ -79,7 +89,7 @@ grcov ${COVERAGE_PROF_OUTPUT} \
   -b ${COVERAGE_BINARIES} -s ${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY} \
   -t lcov --llvm --branch --ignore-not-existing --ignore "/*" -o ${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/target/lcov.info
 '''
-dependencies=["coverage_grcov_build_stable", "coverage_grcov_prepare_outdir", "coverage_grcov_run_test_stable"]
+dependencies=["coverage_grcov_build_stable", "coverage_grcov_prepare_outdir", "coverage_grcov_run_test_stable", "coverage_grcov_run_test_stable_all_features"]
 
 [tasks.coverage_grcov]
 dependencies=["coverage_grcov_stable"]

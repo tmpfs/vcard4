@@ -1,4 +1,4 @@
-//! Type for vCards.
+//! Definition of a single vCard.
 
 use std::{borrow::Cow, fmt};
 
@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "zeroize")]
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-use crate::property::*;
+use crate::{property::*, Error, Result};
 
 /// The vCard type.
 #[derive(Debug, Default, Eq, PartialEq)]
@@ -17,97 +17,258 @@ use crate::property::*;
 pub struct Vcard {
     // General
     /// Value of the SOURCE property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub source: Vec<UriProperty>,
     /// Value of the KIND property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub kind: Option<KindProperty>,
     /// Value of the XML property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub xml: Vec<TextProperty>,
 
     // Identification
     /// Value of the FN property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub formatted_name: Vec<TextProperty>,
     /// Value of the N property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub name: Option<TextListProperty>,
     /// Value of the NICKNAME property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub nickname: Vec<TextProperty>,
     /// Value of the PHOTO property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub photo: Vec<UriProperty>,
     /// Value of the BDAY property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub bday: Option<DateTimeOrTextProperty>,
     /// Value of the ANNIVERSARY property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub anniversary: Option<DateTimeOrTextProperty>,
     /// Value of the GENDER property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub gender: Option<GenderProperty>,
     /// Value of the URL property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub url: Vec<UriProperty>,
 
     // Delivery Addressing
     /// Value of the ADR property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub address: Vec<AddressProperty>,
 
     // Organizational
     /// Value of the TITLE property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub title: Vec<TextProperty>,
     /// Value of the ROLE property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub role: Vec<TextProperty>,
     /// Value of the LOGO property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub logo: Vec<UriProperty>,
     /// Value of the ORG property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub org: Vec<TextListProperty>,
     /// Value of the MEMBER property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub member: Vec<UriProperty>,
     /// Value of the RELATED property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub related: Vec<TextOrUriProperty>,
 
     // Communications
     /// Value of the TEL property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub tel: Vec<TextOrUriProperty>,
     /// Value of the EMAIL property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub email: Vec<TextProperty>,
     /// Value of the IMPP property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub impp: Vec<UriProperty>,
     /// Value of the LANG property.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub lang: Vec<LanguageProperty>,
 
     // Geographic
     /// Value of the TZ property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub timezone: Vec<TimeZoneProperty>,
     /// Value of the GEO property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub geo: Vec<UriProperty>,
 
     // Explanatory
     /// Value of the CATEGORIES property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub categories: Vec<TextListProperty>,
     /// Value of the NOTE property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub note: Vec<TextProperty>,
     /// Value of the PRODID property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub prod_id: Option<TextProperty>,
     /// Value of the REV property.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub rev: Option<DateTimeProperty>,
     /// Value of the SOUND property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub sound: Vec<UriProperty>,
     /// Value of the UID property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub uid: Option<TextOrUriProperty>,
     /// Value of the CLIENTPIDMAP property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub client_pid_map: Vec<ClientPidMapProperty>,
 
     // Security
     /// Value of the KEY property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub key: Vec<TextOrUriProperty>,
 
     // Calendar
     /// Value of the FBURL property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub fburl: Vec<UriProperty>,
     /// Value of the CALADRURI property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub cal_adr_uri: Vec<UriProperty>,
     /// Value of the CALURI property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub cal_uri: Vec<UriProperty>,
 
     // Extensions
     /// Private property extensions (`X-`).
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub extensions: Vec<ExtensionProperty>,
+}
+
+impl Vcard {
+    /// Create a new vCard with the given formatted name.
+    pub fn new(formatted_name: String) -> Self {
+        let mut card: Vcard = Default::default();
+        card.formatted_name.push(formatted_name.into());
+        card
+    }
+
+    /// Validate this vCard.
+    pub fn validate(&self) -> Result<()> {
+        if self.formatted_name.is_empty() {
+            return Err(Error::NoFormattedName);
+        }
+        Ok(())
+    }
 }
 
 impl fmt::Display for Vcard {
@@ -261,8 +422,8 @@ fn content_line(prop: &impl Property, prop_name: &str) -> String {
     let value = prop.to_string();
     let value = value.replace('\\', "\\\\");
     let value = value.replace('\n', "\\n");
-    let value = value.replace(',', "\\,");
-    let value = value.replace(';', "\\;");
+    //let value = value.replace(',', "\\,");
+    //let value = value.replace(';', "\\;");
 
     let line = format!("{}{}:{}", name, params, value);
     fold_line(line, 75)

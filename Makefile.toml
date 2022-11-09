@@ -46,25 +46,20 @@ args = ["test"]
 dependencies = ["unit", "integration"]
 
 [tasks.dev]
-dependencies = ["check-wasm", "test", "format"]
+dependencies = ["check-wasm", "test", "format", "clippy"]
 
 [tasks.check-wasm]
 command = "cargo"
 args = ["check", "--target", "wasm32-unknown-unknown"]
 
-[tasks.clean-coverage]
-script = '''
-rm -rf ./target/coverage
-rm -f ./target/lcov.info
-'''
-
 [tasks.genhtml]
 script = '''
-grcov . -s . --binary-path ./target/debug -t html --branch --ignore-not-existing -o ./target/coverage/ --ignore 'tests/*' --ignore 'target/*'
+grcov . --source-dir src --binary-path ./target/cover/debug -t html --branch --ignore-not-existing -o ./target/coverage/
 '''
 
-[tasks.cover]
-alias = "coverage_grcov"
+[tasks.clean-cover]
+command = "cargo"
+args = ["clean", "--target-dir", "target/cover"]
 
-[tasks.coverage]
-dependencies = ["clean-coverage", "cover", "genhtml"]
+[tasks.cover]
+dependencies = ["clean-cover", "coverage_grcov", "genhtml"]

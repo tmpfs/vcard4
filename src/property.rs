@@ -18,7 +18,12 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{
     parameter::Parameters,
-    types::{ClientPidMap, DateAndOrTime, Float, Integer},
+    types::{
+        format_date_and_or_time_list, format_date_list, format_date_time,
+        format_date_time_list, format_float_list, format_integer_list,
+        format_time_list, format_timestamp_list, format_utc_offset,
+        parse_utc_offset, ClientPidMap, DateAndOrTime,
+    },
     Error, Result,
 };
 
@@ -161,10 +166,18 @@ impl FromStr for DeliveryAddress {
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct AddressProperty {
     /// Group for this property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub group: Option<String>,
     /// The value for the property.
     pub value: DeliveryAddress,
     /// The property parameters.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub parameters: Option<Parameters>,
 }
 
@@ -174,10 +187,18 @@ pub struct AddressProperty {
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct ClientPidMapProperty {
     /// Group for this property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub group: Option<String>,
     /// The value for the property.
     pub value: ClientPidMap,
     /// The property parameters.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub parameters: Option<Parameters>,
 }
 
@@ -189,15 +210,23 @@ pub struct ExtensionProperty {
     /// The property name.
     pub name: String,
     /// Group for this property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub group: Option<String>,
     /// The value for the property.
     pub value: AnyProperty,
     /// The property parameters.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub parameters: Option<Parameters>,
 }
 
 /// Value for any property type.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 #[allow(clippy::large_enum_variant)]
@@ -205,27 +234,27 @@ pub enum AnyProperty {
     /// Text property.
     Text(String),
     /// Integer property.
-    Integer(Integer),
+    Integer(Vec<i64>),
     /// Float property.
-    Float(Float),
+    Float(Vec<f64>),
     /// Boolean property.
     Boolean(bool),
 
     /// Date value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    Date(Date),
+    Date(Vec<Date>),
     /// Date and time value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    DateTime(OffsetDateTime),
+    DateTime(Vec<OffsetDateTime>),
     /// Time value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    Time(Time),
+    Time(Vec<(Time, UtcOffset)>),
     /// Date and or time value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    DateAndOrTime(DateAndOrTime),
+    DateAndOrTime(Vec<DateAndOrTime>),
     /// Timetamp value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    Timestamp(OffsetDateTime),
+    Timestamp(Vec<OffsetDateTime>),
     /// URI property.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     Uri(Uri<'static>),
@@ -242,20 +271,22 @@ pub enum AnyProperty {
     Language(String),
 }
 
+impl Eq for AnyProperty {}
+
 impl fmt::Display for AnyProperty {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Text(val) => write!(f, "{}", val),
-            Self::Integer(val) => write!(f, "{}", val),
-            Self::Float(val) => write!(f, "{}", val),
+            Self::Integer(val) => format_integer_list(f, val),
+            Self::Float(val) => format_float_list(f, val),
             Self::Boolean(val) => write!(f, "{}", val),
-            Self::Date(val) => write!(f, "{}", val),
-            Self::DateTime(val) => write!(f, "{}", val),
-            Self::Time(val) => write!(f, "{}", val),
-            Self::DateAndOrTime(val) => write!(f, "{}", val),
-            Self::Timestamp(val) => write!(f, "{}", val),
+            Self::Date(val) => format_date_list(f, val),
+            Self::DateTime(val) => format_date_time_list(f, val),
+            Self::Time(val) => format_time_list(f, val),
+            Self::DateAndOrTime(val) => format_date_and_or_time_list(f, val),
+            Self::Timestamp(val) => format_timestamp_list(f, val),
+            Self::UtcOffset(val) => format_utc_offset(f, val),
             Self::Uri(val) => write!(f, "{}", val),
-            Self::UtcOffset(val) => write!(f, "{}", val),
             Self::Language(val) => write!(f, "{}", val),
         }
     }
@@ -267,6 +298,10 @@ impl fmt::Display for AnyProperty {
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct LanguageProperty {
     /// Group for this property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub group: Option<String>,
     /// The value for the property.
     #[cfg(feature = "language-tags")]
@@ -278,6 +313,10 @@ pub struct LanguageProperty {
     pub value: String,
 
     /// The property parameters.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub parameters: Option<Parameters>,
 }
 
@@ -287,12 +326,30 @@ pub struct LanguageProperty {
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct DateTimeProperty {
     /// Group for this property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub group: Option<String>,
     /// The value for the property.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     pub value: OffsetDateTime,
     /// The property parameters.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub parameters: Option<Parameters>,
+}
+
+impl fmt::Display for DateTimeProperty {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            format_date_time(&self.value).map_err(|_| fmt::Error)?
+        )
+    }
 }
 
 /// Date and or time property.
@@ -300,11 +357,25 @@ pub struct DateTimeProperty {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct DateAndOrTimeProperty {
     /// Group for this property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub group: Option<String>,
     /// The value for the property.
-    pub value: DateAndOrTime,
+    pub value: Vec<DateAndOrTime>,
     /// The property parameters.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub parameters: Option<Parameters>,
+}
+
+impl fmt::Display for DateAndOrTimeProperty {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        format_date_and_or_time_list(f, &self.value)
+    }
 }
 
 /// Either text or a Uri.
@@ -387,11 +458,19 @@ impl fmt::Display for DateTimeOrTextProperty {
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct UtcOffsetProperty {
     /// Group for this property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub group: Option<String>,
     /// The value for the UTC offset.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     pub value: UtcOffset,
     /// The parameters for the property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub parameters: Option<Parameters>,
 }
 
@@ -419,27 +498,12 @@ impl FromStr for UtcOffsetProperty {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        if s.len() == 5 {
-            let sign = &s[0..1];
-            if sign != "+" && sign != "-" {
-                return Err(Error::InvalidUtcOffset(s.to_string()));
-            }
-            let hours = &s[1..3];
-            let minutes = &s[3..5];
-            let mut hours: i8 = hours.parse()?;
-            let mut minutes: i8 = minutes.parse()?;
-            if sign == "-" {
-                hours = -hours;
-                minutes = -minutes;
-            }
-            return Ok(Self {
-                value: UtcOffset::from_hms(hours, minutes, 0)?,
-                parameters: None,
-                group: None,
-            });
-        }
-
-        Err(Error::InvalidUtcOffset(s.to_string()))
+        let value = parse_utc_offset(s)?;
+        Ok(Self {
+            value,
+            parameters: None,
+            group: None,
+        })
     }
 }
 
@@ -491,17 +555,36 @@ impl fmt::Display for TimeZoneProperty {
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct TextProperty {
     /// Group for this property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub group: Option<String>,
     /// Value for this property.
     pub value: String,
     /// Parameters for this property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub parameters: Option<Parameters>,
+}
+
+impl From<String> for TextProperty {
+    fn from(value: String) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+        }
+    }
 }
 
 /// Delimiter used for a text list.
 #[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+#[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 pub enum TextListDelimiter {
     /// Text list with a comma delimiter.
     Comma,
@@ -515,10 +598,18 @@ pub enum TextListDelimiter {
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct TextListProperty {
     /// Group for this property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub group: Option<String>,
     /// Value for this property.
     pub value: Vec<String>,
     /// Parameters for this property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub parameters: Option<Parameters>,
     /// Delimiter for the list property.
     pub delimiter: TextListDelimiter,
@@ -545,11 +636,19 @@ impl fmt::Display for TextListProperty {
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct UriProperty {
     /// Group for this property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub group: Option<String>,
     /// Value for this property.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     pub value: Uri<'static>,
     /// Parameters for this property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub parameters: Option<Parameters>,
 }
 
@@ -559,10 +658,18 @@ pub struct UriProperty {
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct KindProperty {
     /// Group for this property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub group: Option<String>,
     /// The value for the property.
     pub value: Kind,
     /// The property parameters.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub parameters: Option<Parameters>,
 }
 
@@ -570,6 +677,7 @@ pub struct KindProperty {
 #[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+#[cfg_attr(feature = "serde", serde(rename_all = "lowercase"))]
 pub enum Kind {
     /// An individual.
     Individual,
@@ -618,10 +726,18 @@ impl FromStr for Kind {
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct GenderProperty {
     /// Group for this property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub group: Option<String>,
     /// The value for the property.
     pub value: Gender,
     /// The property parameters.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub parameters: Option<Parameters>,
 }
 
@@ -764,10 +880,8 @@ property_impl!(LanguageProperty);
 display_impl!(LanguageProperty);
 
 property_impl!(DateTimeProperty);
-display_impl!(DateTimeProperty);
 
 property_impl!(DateAndOrTimeProperty);
-display_impl!(DateAndOrTimeProperty);
 
 property_impl!(ClientPidMapProperty);
 display_impl!(ClientPidMapProperty);

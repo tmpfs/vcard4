@@ -2,9 +2,7 @@ mod test_helpers;
 
 use anyhow::Result;
 use test_helpers::assert_round_trip;
-use vcard_compact::{parse, property::*};
-
-// Identification
+use vcard4::{parse, property::*};
 
 #[test]
 fn identification_fn() -> Result<()> {
@@ -99,11 +97,36 @@ BDAY:19531015
 END:VCARD"#;
     let mut vcards = parse(input)?;
     assert_eq!(1, vcards.len());
-
     let card = vcards.remove(0);
     let bday = card.bday.as_ref().unwrap();
-    assert_eq!("1953-10-15", &bday.to_string(),);
+    assert_eq!("19531015", &bday.to_string());
     assert_round_trip(&card)?;
+
+    // Trigger some branches for using explicit VALUE parameter
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+BDAY;VALUE=date-and-or-time:19531015
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+    let card = vcards.remove(0);
+    let bday = card.bday.as_ref().unwrap();
+    assert_eq!("19531015", &bday.to_string());
+    assert_round_trip(&card)?;
+
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+BDAY;VALUE=text:Circa 1800
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+    let card = vcards.remove(0);
+    let bday = card.bday.as_ref().unwrap();
+    assert_eq!("Circa 1800", &bday.to_string());
+    assert_round_trip(&card)?;
+
     Ok(())
 }
 
@@ -119,8 +142,21 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
     let anniversary = card.anniversary.as_ref().unwrap();
-    assert_eq!("1996-04-15", &anniversary.to_string(),);
+    assert_eq!("19960415", &anniversary.to_string(),);
     assert_round_trip(&card)?;
+
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\, Esq.
+ANNIVERSARY:20090808T1430-0500
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+
+    println!("{}", card.anniversary.as_ref().unwrap());
+
     Ok(())
 }
 

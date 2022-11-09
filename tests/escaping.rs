@@ -2,7 +2,7 @@ mod test_helpers;
 
 use anyhow::Result;
 use test_helpers::assert_round_trip;
-use vcard_compact::parse;
+use vcard4::parse;
 
 #[test]
 fn escape_semi_colon() -> Result<()> {
@@ -32,6 +32,22 @@ END:VCARD"#;
     let card = vcards.remove(0);
     let fname = card.formatted_name.get(0).unwrap();
     assert_eq!("Mr. John Q. Public, Esq.", fname.value);
+    assert_round_trip(&card)?;
+    Ok(())
+}
+
+#[test]
+fn escape_backslash() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Mr. John Q. Public\ Esq.
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+
+    let card = vcards.remove(0);
+    let fname = card.formatted_name.get(0).unwrap();
+    assert_eq!("Mr. John Q. Public\\ Esq.", fname.value);
     assert_round_trip(&card)?;
     Ok(())
 }

@@ -22,11 +22,14 @@ enum Token {
     #[regex("(?i:VERSION:4\\.0)")]
     Version,
 
-    #[regex("(?i:([a-z0-9-]+\\.)?(SOURCE|KIND|FN|N|NICKNAME|PHOTO|BDAY|ANNIVERSARY|GENDER|ADR|TEL|EMAIL|IMPP|LANG|TZ|GEO|TITLE|ROLE|LOGO|ORG|MEMBER|RELATED|CATEGORIES|NOTE|PRODID|REV|SOUND|UID|CLIENTPIDMAP|URL|KEY|FBURL|CALADRURI|CALURI|XML|x-[a-z0-9]+))")]
+    #[regex("(?i:([a-z0-9-]+\\.)?(SOURCE|KIND|FN|N|NICKNAME|PHOTO|BDAY|ANNIVERSARY|GENDER|ADR|TEL|EMAIL|IMPP|LANG|TZ|GEO|TITLE|ROLE|LOGO|ORG|MEMBER|RELATED|CATEGORIES|NOTE|PRODID|REV|SOUND|UID|CLIENTPIDMAP|URL|KEY|FBURL|CALADRURI|CALURI|XML|VERSION|x-[a-z0-9]+))")]
     PropertyName,
 
     #[token(";")]
     ParameterDelimiter,
+
+    #[token("\"")]
+    DoubleQuote,
 
     #[regex("(?i:(LANGUAGE|VALUE|PREF|ALTID|PID|TYPE|MEDIATYPE|CALSCALE|SORT-AS|GEO|TZ|LABEL)=)")]
     ParameterKey,
@@ -88,11 +91,7 @@ impl VcardParser {
             }
 
             let card = self.parse_one(&mut lex, Some(first))?;
-
-            if card.formatted_name.is_empty() {
-                return Err(Error::NoFormattedName);
-            }
-
+            card.validate()?;
             cards.push(card);
         }
 
@@ -133,6 +132,9 @@ impl VcardParser {
             if first == Token::End {
                 break;
             }
+            if let Token::Version = first {
+                return Err(Error::VersionMisplaced);
+            }
             self.assert_token(Some(first), Token::PropertyName)?;
             if let Err(e) = self.parse_property(lex, card) {
                 if self.strict {
@@ -153,11 +155,10 @@ impl VcardParser {
         let mut name = lex.slice();
 
         let period = name.find('.');
-
         if let Some(pos) = period {
             let group_name = &name[0..pos];
             group = Some(group_name.to_string());
-            name = &name[pos..];
+            name = &name[pos + 1..];
         }
 
         let delimiter = lex.next();
@@ -192,19 +193,13 @@ impl VcardParser {
     ) -> Result<Parameters> {
         let property_upper_name = name.to_uppercase();
         let mut params: Parameters = Default::default();
-
         let mut next: Option<Token> = lex.next();
 
         while let Some(token) = next.take() {
-            if token == Token::PropertyDelimiter {
-                break;
-            }
-
             if token == Token::ParameterKey {
                 let source = lex.source();
                 let span = lex.span();
                 let parameter_name = &source[span.start..(span.end - 1)];
-
                 let upper_name = parameter_name.to_uppercase();
 
                 let (value, next_token, quoted) =
@@ -246,6 +241,8 @@ impl VcardParser {
                                 property_upper_name,
                             ));
                         }
+
+                        println!("Parsing type {}", value);
 
                         let mut type_params: Vec<TypeParameter> = Vec::new();
 
@@ -302,12 +299,11 @@ impl VcardParser {
                             params.timezone =
                                 Some(TimeZoneParameter::Uri(value));
                         } else {
-                            match value.parse::<UtcOffsetProperty>() {
+                            match parse_utc_offset(&value) {
                                 Ok(offset) => {
-                                    params.timezone =
-                                        Some(TimeZoneParameter::UtcOffset(
-                                            offset.value,
-                                        ));
+                                    params.timezone = Some(
+                                        TimeZoneParameter::UtcOffset(offset),
+                                    );
                                 }
                                 Err(_) => {
                                     params.timezone =
@@ -351,33 +347,68 @@ impl VcardParser {
         lex: &'a mut Lexer<'_, Token>,
     ) -> Result<(String, Token, bool)> {
         let mut first_range: Option<Range<usize>> = None;
+        let mut quoted = false;
+        let mut is_folded_or_escaped = false;
 
-        while let Some(token) = lex.next() {
+        while let Some(mut token) = lex.next() {
             let span = lex.span();
-            if first_range.is_none() {
-                first_range = Some(span.clone());
+
+            if token == Token::FoldedLine
+                || token == Token::EscapedNewLine
+                || token == Token::EscapedBackSlash
+            {
+                is_folded_or_escaped = true;
             }
 
-            if token == Token::PropertyDelimiter
-                || token == Token::ParameterDelimiter
-                || token == Token::ParameterKey
-            {
-                let mut quoted = false;
+            let completed = if first_range.is_some() && quoted {
+                token == Token::DoubleQuote
+            } else {
+                token == Token::PropertyDelimiter
+                    || token == Token::ParameterDelimiter
+                    || token == Token::ParameterKey
+            };
+
+            if first_range.is_none() {
+                first_range = Some(span.clone());
+                if token == Token::DoubleQuote {
+                    quoted = true;
+                }
+            }
+
+            if completed {
                 let source = lex.source();
                 let begin = first_range.unwrap().start;
                 let end = span.start;
                 let mut value = &source[begin..end];
 
                 // Remove double quotes if necessary
-                if value.len() >= 2
-                    && &value[0..1] == "\""
-                    && &value[value.len() - 1..] == "\""
-                {
-                    value = &source[begin + 1..end - 1];
-                    quoted = true;
+                if value.len() >= 2 && quoted {
+                    value = &source[begin + 1..end];
                 }
 
-                return Ok((String::from(value), token, quoted));
+                // Must consumer the next token
+                if quoted {
+                    token = if let Some(token) = lex.next() {
+                        if token != Token::PropertyDelimiter
+                            && token != Token::ParameterDelimiter
+                        {
+                            return Err(Error::DelimiterExpected);
+                        }
+                        token
+                    } else {
+                        return Err(Error::TokenExpected);
+                    };
+                }
+
+                let mut value = String::from(value);
+                if is_folded_or_escaped {
+                    value = value.replace('\r', "");
+                    value = value.replace("\n ", "");
+                    value = value.replace("\n\t", "");
+                    value = value.replace("\\n", "\n");
+                }
+
+                return Ok((value, token, quoted));
             }
         }
         Err(Error::TokenExpected)
@@ -727,6 +758,12 @@ impl VcardParser {
                 card.uid = Some(text_or_uri);
             }
             CLIENTPIDMAP => {
+                if let Some(params) = &parameters {
+                    if params.pid.is_some() {
+                        return Err(Error::ClientPidMapPidNotAllowed);
+                    }
+                }
+
                 let value: ClientPidMap = value.as_ref().parse()?;
                 card.client_pid_map.push(ClientPidMapProperty {
                     value,
@@ -806,36 +843,35 @@ impl VcardParser {
             match value_type {
                 ValueType::Text => AnyProperty::Text(value.into_owned()),
                 ValueType::Integer => {
-                    AnyProperty::Integer(value.as_ref().parse()?)
+                    AnyProperty::Integer(parse_integer_list(value.as_ref())?)
                 }
                 ValueType::Float => {
-                    AnyProperty::Float(value.as_ref().parse()?)
+                    AnyProperty::Float(parse_float_list(value.as_ref())?)
                 }
                 ValueType::Boolean => {
                     AnyProperty::Boolean(parse_boolean(value.as_ref())?)
                 }
                 ValueType::Date => {
-                    AnyProperty::Date(parse_date(value.as_ref())?)
+                    AnyProperty::Date(parse_date_list(value.as_ref())?)
                 }
-                ValueType::DateTime => {
-                    AnyProperty::DateTime(parse_date_time(value.as_ref())?)
-                }
+                ValueType::DateTime => AnyProperty::DateTime(
+                    parse_date_time_list(value.as_ref())?,
+                ),
                 ValueType::Time => {
-                    AnyProperty::Time(parse_time(value.as_ref())?)
+                    AnyProperty::Time(parse_time_list(value.as_ref())?)
                 }
-                ValueType::DateAndOrTime => {
-                    AnyProperty::DateAndOrTime(value.as_ref().parse()?)
-                }
-                ValueType::Timestamp => {
-                    AnyProperty::Timestamp(parse_date_time(value.as_ref())?)
-                }
+                ValueType::DateAndOrTime => AnyProperty::DateAndOrTime(
+                    parse_date_and_or_time_list(value.as_ref())?,
+                ),
+                ValueType::Timestamp => AnyProperty::Timestamp(
+                    parse_timestamp_list(value.as_ref())?,
+                ),
                 ValueType::LanguageTag => {
                     AnyProperty::Language(parse_language_tag(value)?)
                 }
                 ValueType::UtcOffset => {
-                    let property: UtcOffsetProperty =
-                        value.as_ref().parse()?;
-                    AnyProperty::UtcOffset(property.value)
+                    let value = parse_utc_offset(value.as_ref())?;
+                    AnyProperty::UtcOffset(value)
                 }
                 ValueType::Uri => {
                     let value = Uri::try_from(value.as_ref())?.into_owned();
@@ -1008,7 +1044,7 @@ fn parse_date_time_or_text(
                 }))
             }
             ValueType::DateAndOrTime => {
-                let value: DateAndOrTime = value.parse()?;
+                let value = parse_date_and_or_time_list(value.as_ref())?;
                 Ok(DateTimeOrTextProperty::DateTime(DateAndOrTimeProperty {
                     value,
                     parameters,
@@ -1021,7 +1057,7 @@ fn parse_date_time_or_text(
             )),
         }
     } else {
-        let value: DateAndOrTime = value.parse()?;
+        let value = parse_date_and_or_time_list(value.as_ref())?;
         Ok(DateTimeOrTextProperty::DateTime(DateAndOrTimeProperty {
             value,
             parameters,
