@@ -53,7 +53,7 @@ pub(crate) const TYPE_PROPERTIES: [&str; 23] = [
 ];
 
 /// Value for a TYPE parameter.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub enum TypeParameter {
@@ -94,7 +94,7 @@ impl FromStr for TypeParameter {
 }
 
 /// Values for a PID parameter.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct Pid {
@@ -147,7 +147,7 @@ impl FromStr for Pid {
 }
 
 /// Enumeration of related types.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub enum RelatedType {
@@ -255,7 +255,7 @@ impl FromStr for RelatedType {
 }
 
 /// Enumeration of telephone types.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 #[cfg_attr(feature = "serde", serde(rename_all = "lowercase"))]
@@ -314,7 +314,7 @@ impl FromStr for TelephoneType {
 }
 
 /// Enumeration of the different types of values.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
@@ -401,7 +401,7 @@ impl FromStr for ValueType {
 /// This is a different type so that we do not
 /// create infinite type recursion in `Parameters` which would
 /// require us to wrap it in a `Box`.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 #[allow(clippy::large_enum_variant)]
@@ -417,7 +417,7 @@ pub enum TimeZoneParameter {
 }
 
 /// Parameters for a vCard property.
-#[derive(Debug, Default, Eq, PartialEq)]
+#[derive(Debug, Default, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct Parameters {
