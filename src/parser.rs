@@ -11,9 +11,8 @@ use language_tags::LanguageTag;
 use mime::Mime;
 
 use crate::{
-    name::*, parameter::*, property::*, types::*, unescape_value, Error,
-    escape_control,
-    Result, Vcard,
+    escape_control, name::*, parameter::*, property::*, types::*,
+    unescape_value, Error, Result, Vcard,
 };
 
 #[derive(Logos, Debug, PartialEq)]
@@ -358,8 +357,9 @@ impl<'s> VcardParser<'s> {
             let span = lex.span();
 
             if token == Token::Control {
-                return Err(Error::ControlCharacter(
-                        escape_control(lex.slice())));
+                return Err(Error::ControlCharacter(escape_control(
+                    lex.slice(),
+                )));
             }
 
             if token == Token::FoldedLine
@@ -918,8 +918,9 @@ impl<'s> VcardParser<'s> {
             }
 
             if token == Token::Control {
-                return Err(Error::ControlCharacter(
-                        escape_control(lex.slice())));
+                return Err(Error::ControlCharacter(escape_control(
+                    lex.slice(),
+                )));
             }
 
             if token == Token::FoldedLine

@@ -153,7 +153,9 @@ pub(crate) fn unescape_value(value: &str) -> String {
 }
 
 pub(crate) fn escape_control(value: &str) -> String {
-    let values = value.chars()
-        .map(|c| c.escape_unicode().to_string()).collect::<Vec<_>>();
+    let values = value
+        .chars()
+        .map(|c| c.escape_unicode().to_string())
+        .collect::<Vec<_>>();
     values.join("")
 }
