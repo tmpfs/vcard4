@@ -82,7 +82,7 @@ pub enum Error {
     #[error("sex '{0}' is not supported")]
     UnknownSex(String),
 
-    /// Error generated when the a GENDER does not specify the sex.
+    /// Error generated when a GENDER does not specify the sex.
     #[error("gender value is missing sex")]
     NoSex,
 

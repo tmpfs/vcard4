@@ -254,7 +254,7 @@ END:VCARD"#;
 fn param_geo() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
-FN;GEO="geo:37.386013,-122.082932":Jane Doe
+FN;GEO="geo:37.386013\,-122.082932":Jane Doe
 END:VCARD"#;
     let mut vcards = parse(input)?;
     assert_eq!(1, vcards.len());

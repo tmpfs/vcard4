@@ -104,7 +104,7 @@ END:VCARD"#;
 fn error_parse_geo_not_quoted() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
-FN;GEO=geo:1,2:Jane Doe
+FN;GEO=geo:1\,2:Jane Doe
 END:VCARD"#;
     let result = parse(input);
     assert!(matches!(result, Err(Error::NotQuoted(_))));
