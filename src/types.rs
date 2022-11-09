@@ -96,7 +96,7 @@ fn do_parse_time(mut value: &str) -> Result<(Time, UtcOffset)> {
         value = &value[0..pos];
     }
 
-    if value.ends_with("Z") {
+    if value.ends_with('Z') {
         value = &value[0..value.len() - 1];
     }
 

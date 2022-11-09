@@ -11,8 +11,8 @@ use language_tags::LanguageTag;
 use mime::Mime;
 
 use crate::{
-    name::*, parameter::*, property::*, types::*, Error, Result, Vcard,
-    unescape_value,
+    name::*, parameter::*, property::*, types::*, unescape_value, Error,
+    Result, Vcard,
 };
 
 #[derive(Logos, Debug, PartialEq)]

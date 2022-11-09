@@ -640,11 +640,7 @@ impl fmt::Display for TextListProperty {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (index, item) in self.value.iter().enumerate() {
             let semi_colons =
-                if let TextListDelimiter::SemiColon = self.delimiter {
-                    true
-                } else {
-                    false
-                };
+                matches!(self.delimiter, TextListDelimiter::SemiColon);
             write!(f, "{}", escape_value(item, semi_colons))?;
             if index < self.value.len() - 1 {
                 write!(
