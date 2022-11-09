@@ -12,6 +12,7 @@ use mime::Mime;
 
 use crate::{
     name::*, parameter::*, property::*, types::*, unescape_value, Error,
+    escape_control,
     Result, Vcard,
 };
 
@@ -55,6 +56,9 @@ pub(crate) enum Token {
 
     #[regex("\\r?\\n")]
     NewLine,
+
+    #[regex("[[:cntrl:]]")]
+    Control,
 
     #[regex("(?i:END:VCARD)")]
     End,
@@ -352,6 +356,11 @@ impl<'s> VcardParser<'s> {
 
         while let Some(mut token) = lex.next() {
             let span = lex.span();
+
+            if token == Token::Control {
+                return Err(Error::ControlCharacter(
+                        escape_control(lex.slice())));
+            }
 
             if token == Token::FoldedLine
                 || token == Token::EscapedNewLine
@@ -906,6 +915,11 @@ impl<'s> VcardParser<'s> {
             let span = lex.span();
             if first_range.is_none() {
                 first_range = Some(span.clone());
+            }
+
+            if token == Token::Control {
+                return Err(Error::ControlCharacter(
+                        escape_control(lex.slice())));
             }
 
             if token == Token::FoldedLine

@@ -307,3 +307,19 @@ END:VCARD"#;
     assert!(matches!(result, Err(Error::UnsupportedValueType(_, _))));
     Ok(())
 }
+
+#[test]
+fn error_control_character_value() -> Result<()> {
+    let input = "BEGIN:VCARD\r\nVERSION:4.0\r\nFN:Jane Doe\x7F\r\nEND:VCARD";
+    let result = parse(input);
+    assert!(matches!(result, Err(Error::ControlCharacter(_))));
+    Ok(())
+}
+
+#[test]
+fn error_control_character_param() -> Result<()> {
+    let input = "BEGIN:VCARD\r\nVERSION:4.0\r\nFN:Jane Doe\r\nADR;LABEL=label\x7F:;;;;;;\r\nEND:VCARD";
+    let result = parse(input);
+    assert!(matches!(result, Err(Error::ControlCharacter(_))));
+    Ok(())
+}

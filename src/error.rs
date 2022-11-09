@@ -13,6 +13,10 @@ pub enum Error {
     #[error("version must be the first property")]
     VersionMisplaced,
 
+    /// Error generated when a control character is encountered.
+    #[error("control characters are not allowed, got '{0}'")]
+    ControlCharacter(String),
+
     /// Error generated when an expected token is of the wrong type.
     #[error("input token was incorrect")]
     IncorrectToken,
