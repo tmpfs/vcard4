@@ -87,12 +87,19 @@ pub fn parse_time(value: &str) -> Result<(Time, UtcOffset)> {
     }
 }
 
-fn do_parse_time(value: &str) -> Result<(Time, UtcOffset)> {
+fn do_parse_time(mut value: &str) -> Result<(Time, UtcOffset)> {
     let mut offset = UtcOffset::UTC;
-    if value.len() > 6 {
-        let offset_value = &value[6..];
+    let pos = value.find('-').or_else(|| value.find('+'));
+    if let Some(pos) = pos {
+        let offset_value = &value[pos..];
         offset = parse_utc_offset(offset_value)?;
+        value = &value[0..pos];
     }
+
+    if value.ends_with("Z") {
+        value = &value[0..value.len() - 1];
+    }
+
     let time = Time::parse(value, &Iso8601::DEFAULT)?;
     Ok((time, offset))
 }

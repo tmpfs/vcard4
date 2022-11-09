@@ -127,3 +127,27 @@ pub fn parse_loose<S: AsRef<str>>(input: S) -> Result<Vec<Vcard>> {
 pub fn iter(source: &str, strict: bool) -> VcardIterator<'_> {
     VcardIterator::new(source, strict)
 }
+
+/// Helper for escaping values.
+pub(crate) fn escape_value(value: &str, semi_colons: bool) -> String {
+    use aho_corasick::AhoCorasick;
+    if semi_colons {
+        let patterns = &["\\", "\n", ",", ";"];
+        let replace_with = &["\\\\", "\\n", "\\,", "\\;"];
+        let ac = AhoCorasick::new(patterns);
+        ac.replace_all(value, replace_with)
+    } else {
+        let patterns = &["\\", "\n", ","];
+        let replace_with = &["\\\\", "\\n", "\\,"];
+        let ac = AhoCorasick::new(patterns);
+        ac.replace_all(value, replace_with)
+    }
+}
+
+pub(crate) fn unescape_value(value: &str) -> String {
+    use aho_corasick::AhoCorasick;
+    let patterns = &["\r", "\n ", "\n\t", "\\n", "\\N", "\\,"];
+    let replace_with = &["", "", "", "\n", "\n", ","];
+    let ac = AhoCorasick::new(patterns);
+    ac.replace_all(value, replace_with)
+}

@@ -420,10 +420,11 @@ fn content_line(prop: &impl Property, prop_name: &str) -> String {
 
     // Handle escape sequences
     let value = prop.to_string();
-    let value = value.replace('\\', "\\\\");
-    let value = value.replace('\n', "\\n");
-    //let value = value.replace(',', "\\,");
-    //let value = value.replace(';', "\\;");
+    /*
+    let value = value
+        .replace('\\', "\\\\")
+        .replace('\n', "\\n");
+    */
 
     let line = format!("{}{}:{}", name, params, value);
     fold_line(line, 75)

@@ -11,7 +11,7 @@ fn general_source() -> Result<()> {
     let input = r#"BEGIN:VCARD
 VERSION:4.0
 FN:Jane Doe
-SOURCE:ldap://ldap.example.com/cn=Babs%20Jensen,%20o=Babsco,%20c=US
+SOURCE:ldap://ldap.example.com/cn=Babs%20Jensen\,%20o=Babsco\,%20c=US
 END:VCARD"#;
     let mut vcards = parse(input)?;
     assert_eq!(1, vcards.len());
@@ -37,9 +37,6 @@ END:VCARD"#;
     let mut vcards = parse(input)?;
     assert_eq!(1, vcards.len());
     let card = vcards.remove(0);
-
-    println!("{}", card);
-
     let url = card.source.get(0).unwrap();
     assert_eq!(
         "http://directory.example.com/addressbooks/jdoe/Jean%20Dupont.vcf",

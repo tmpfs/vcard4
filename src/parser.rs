@@ -12,6 +12,7 @@ use mime::Mime;
 
 use crate::{
     name::*, parameter::*, property::*, types::*, Error, Result, Vcard,
+    unescape_value,
 };
 
 #[derive(Logos, Debug, PartialEq)]
@@ -354,6 +355,7 @@ impl<'s> VcardParser<'s> {
 
             if token == Token::FoldedLine
                 || token == Token::EscapedNewLine
+                || token == Token::EscapedComma
                 || token == Token::EscapedBackSlash
             {
                 is_folded_or_escaped = true;
@@ -399,13 +401,11 @@ impl<'s> VcardParser<'s> {
                     };
                 }
 
-                let mut value = String::from(value);
-                if is_folded_or_escaped {
-                    value = value.replace('\r', "");
-                    value = value.replace("\n ", "");
-                    value = value.replace("\n\t", "");
-                    value = value.replace("\\n", "\n");
-                }
+                let value = if is_folded_or_escaped {
+                    unescape_value(value)
+                } else {
+                    value.to_string()
+                };
 
                 return Ok((value, token, quoted));
             }

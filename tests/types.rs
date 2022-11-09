@@ -56,6 +56,10 @@ fn types_date_only() -> Result<()> {
 
 #[test]
 fn types_date_time() -> Result<()> {
+
+    let date_time = parse_date_time("20090808T1430-0500")?;
+    assert_eq!("2009-08-08 14:30:00.0 -05:00:00", &date_time.to_string());
+
     let date_time = parse_date_time("19961022T140000Z")?;
     assert_eq!("1996-10-22 14:00:00.0 +00:00:00", &date_time.to_string());
 

@@ -17,6 +17,7 @@ use serde::{Deserialize, Serialize};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{
+    escape_value,
     parameter::Parameters,
     types::{
         format_date_and_or_time_list, format_date_list, format_date_time,
@@ -26,6 +27,11 @@ use crate::{
     },
     Error, Result,
 };
+
+const INDIVIDUAL: &str = "individual";
+const GROUP: &str = "group";
+const ORG: &str = "org";
+const LOCATION: &str = "location";
 
 /// Trait for vCard properties.
 pub trait Property: Display {
@@ -62,25 +68,34 @@ impl fmt::Display for DeliveryAddress {
         write!(
             f,
             "{};{};{};{};{};{};{}",
-            self.po_box.as_ref().map(|s| &s[..]).unwrap_or_else(|| ""),
+            self.po_box
+                .as_ref()
+                .map(|s| escape_value(&s[..], true))
+                .unwrap_or_default(),
             self.extended_address
                 .as_ref()
-                .map(|s| &s[..])
-                .unwrap_or_else(|| ""),
+                .map(|s| escape_value(&s[..], true))
+                .unwrap_or_default(),
             self.street_address
                 .as_ref()
-                .map(|s| &s[..])
-                .unwrap_or_else(|| ""),
-            self.locality.as_ref().map(|s| &s[..]).unwrap_or_else(|| ""),
-            self.region.as_ref().map(|s| &s[..]).unwrap_or_else(|| ""),
+                .map(|s| escape_value(&s[..], true))
+                .unwrap_or_default(),
+            self.locality
+                .as_ref()
+                .map(|s| escape_value(&s[..], true))
+                .unwrap_or_default(),
+            self.region
+                .as_ref()
+                .map(|s| escape_value(&s[..], true))
+                .unwrap_or_default(),
             self.postal_code
                 .as_ref()
-                .map(|s| &s[..])
-                .unwrap_or_else(|| ""),
+                .map(|s| escape_value(&s[..], true))
+                .unwrap_or_default(),
             self.country_name
                 .as_ref()
-                .map(|s| &s[..])
-                .unwrap_or_else(|| ""),
+                .map(|s| escape_value(&s[..], true))
+                .unwrap_or_default(),
         )
     }
 }
@@ -276,7 +291,7 @@ impl Eq for AnyProperty {}
 impl fmt::Display for AnyProperty {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Text(val) => write!(f, "{}", val),
+            Self::Text(val) => write!(f, "{}", escape_value(val, false)),
             Self::Integer(val) => format_integer_list(f, val),
             Self::Float(val) => format_float_list(f, val),
             Self::Boolean(val) => write!(f, "{}", val),
@@ -570,6 +585,12 @@ pub struct TextProperty {
     pub parameters: Option<Parameters>,
 }
 
+impl fmt::Display for TextProperty {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", escape_value(&self.value, false))
+    }
+}
+
 impl From<String> for TextProperty {
     fn from(value: String) -> Self {
         Self {
@@ -617,16 +638,26 @@ pub struct TextListProperty {
 
 impl fmt::Display for TextListProperty {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            self.value.join({
-                match self.delimiter {
-                    TextListDelimiter::Comma => ",",
-                    TextListDelimiter::SemiColon => ";",
-                }
-            })
-        )
+        for (index, item) in self.value.iter().enumerate() {
+            let semi_colons =
+                if let TextListDelimiter::SemiColon = self.delimiter {
+                    true
+                } else {
+                    false
+                };
+            write!(f, "{}", escape_value(item, semi_colons))?;
+            if index < self.value.len() - 1 {
+                write!(
+                    f,
+                    "{}",
+                    match self.delimiter {
+                        TextListDelimiter::Comma => ',',
+                        TextListDelimiter::SemiColon => ';',
+                    }
+                )?;
+            }
+        }
+        Ok(())
     }
 }
 
@@ -697,10 +728,10 @@ impl fmt::Display for Kind {
             f,
             "{}",
             match self {
-                Self::Individual => "individual",
-                Self::Group => "group",
-                Self::Org => "org",
-                Self::Location => "location",
+                Self::Individual => INDIVIDUAL,
+                Self::Group => GROUP,
+                Self::Org => ORG,
+                Self::Location => LOCATION,
             }
         )
     }
@@ -711,10 +742,10 @@ impl FromStr for Kind {
 
     fn from_str(s: &str) -> Result<Self> {
         match s {
-            "individual" => Ok(Self::Individual),
-            "group" => Ok(Self::Group),
-            "org" => Ok(Self::Org),
-            "location" => Ok(Self::Location),
+            INDIVIDUAL => Ok(Self::Individual),
+            GROUP => Ok(Self::Group),
+            ORG => Ok(Self::Org),
+            LOCATION => Ok(Self::Location),
             _ => Err(Error::UnknownKind(s.to_string())),
         }
     }
@@ -755,7 +786,7 @@ pub struct Gender {
 impl fmt::Display for Gender {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(identity) = &self.identity {
-            write!(f, "{};{}", self.sex, identity)
+            write!(f, "{};{}", self.sex, escape_value(identity, true))
         } else {
             write!(f, "{}", self.sex,)
         }
@@ -874,7 +905,6 @@ property_impl!(KindProperty);
 display_impl!(KindProperty);
 
 property_impl!(TextProperty);
-display_impl!(TextProperty);
 
 property_impl!(LanguageProperty);
 display_impl!(LanguageProperty);

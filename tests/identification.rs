@@ -154,8 +154,9 @@ END:VCARD"#;
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
-
-    println!("{}", card.anniversary.as_ref().unwrap());
+    let anniversary = card.anniversary.as_ref().unwrap();
+    assert_eq!("20090808T143000-0500", &anniversary.to_string(),);
+    assert_round_trip(&card)?;
 
     Ok(())
 }
