@@ -348,7 +348,7 @@ pub fn parse_date_and_or_time_list(
 }
 
 /// Date and or time.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum DateAndOrTime {
     /// Date value.
@@ -414,7 +414,7 @@ pub(crate) fn format_date_and_or_time_list(
 // Client PID Map
 
 /// Value for the CLIENTPIDMAP property.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct ClientPidMap {

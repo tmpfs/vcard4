@@ -11,7 +11,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 use crate::{property::*, Error, Result};
 
 /// The vCard type.
-#[derive(Debug, Default, Eq, PartialEq)]
+#[derive(Debug, Default, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct Vcard {

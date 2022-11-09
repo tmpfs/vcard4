@@ -43,7 +43,7 @@ pub trait Property: Display {
 }
 
 /// Delivery address for the ADR property.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct DeliveryAddress {
@@ -176,7 +176,7 @@ impl FromStr for DeliveryAddress {
 }
 
 /// The ADR property.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct AddressProperty {
@@ -197,7 +197,7 @@ pub struct AddressProperty {
 }
 
 /// Client PID map property.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct ClientPidMapProperty {
@@ -218,7 +218,7 @@ pub struct ClientPidMapProperty {
 }
 
 /// Extension property.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct ExtensionProperty {
@@ -241,7 +241,7 @@ pub struct ExtensionProperty {
 }
 
 /// Value for any property type.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 #[allow(clippy::large_enum_variant)]
@@ -308,7 +308,7 @@ impl fmt::Display for AnyProperty {
 }
 
 /// Language property.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct LanguageProperty {
@@ -336,7 +336,7 @@ pub struct LanguageProperty {
 }
 
 /// Date time property.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct DateTimeProperty {
@@ -368,7 +368,7 @@ impl fmt::Display for DateTimeProperty {
 }
 
 /// Date and or time property.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct DateAndOrTimeProperty {
     /// Group for this property.
@@ -394,7 +394,7 @@ impl fmt::Display for DateAndOrTimeProperty {
 }
 
 /// Either text or a Uri.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 #[allow(clippy::large_enum_variant)]
@@ -431,7 +431,7 @@ impl fmt::Display for TextOrUriProperty {
 }
 
 /// Either text or a date and or time.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub enum DateTimeOrTextProperty {
@@ -468,7 +468,7 @@ impl fmt::Display for DateTimeOrTextProperty {
 }
 
 /// Value for a UTC offset property.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct UtcOffsetProperty {
@@ -523,7 +523,7 @@ impl FromStr for UtcOffsetProperty {
 }
 
 /// Value for a timezone property.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 #[allow(clippy::large_enum_variant)]
@@ -565,7 +565,7 @@ impl fmt::Display for TimeZoneProperty {
 }
 
 /// Text property value.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct TextProperty {
@@ -602,7 +602,7 @@ impl From<String> for TextProperty {
 }
 
 /// Delimiter used for a text list.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
@@ -614,7 +614,7 @@ pub enum TextListDelimiter {
 }
 
 /// Text list property value.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct TextListProperty {
@@ -658,7 +658,7 @@ impl fmt::Display for TextListProperty {
 }
 
 /// Uri property value.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct UriProperty {
@@ -680,7 +680,7 @@ pub struct UriProperty {
 }
 
 /// Property for a vCard kind.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct KindProperty {
@@ -701,7 +701,7 @@ pub struct KindProperty {
 }
 
 /// Kind of vCard.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 #[cfg_attr(feature = "serde", serde(rename_all = "lowercase"))]
@@ -748,7 +748,7 @@ impl FromStr for Kind {
 }
 
 /// Property for a vCard gender.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct GenderProperty {
@@ -769,7 +769,7 @@ pub struct GenderProperty {
 }
 
 /// Represents a gender associated with a vCard.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct Gender {
@@ -816,7 +816,7 @@ impl FromStr for Gender {
 }
 
 /// Enumeration for sex.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub enum Sex {
