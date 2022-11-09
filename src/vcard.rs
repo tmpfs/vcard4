@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "zeroize")]
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-use crate::{property::*, Error, Result};
+use crate::{iter, property::*, Error, Result};
 
 /// The vCard type.
 #[derive(Debug, Default, Eq, PartialEq, Clone)]
@@ -268,6 +268,15 @@ impl Vcard {
             return Err(Error::NoFormattedName);
         }
         Ok(())
+    }
+}
+
+impl TryFrom<&str> for Vcard {
+    type Error = Error;
+    fn try_from(value: &str) -> Result<Self> {
+        let mut it = iter(value, true);
+        let card = it.next().ok_or(Error::TokenExpected)?;
+        card
     }
 }
 
