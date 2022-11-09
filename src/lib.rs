@@ -124,6 +124,6 @@ pub fn parse_loose<S: AsRef<str>>(input: S) -> Result<Vec<Vcard>> {
 }
 
 /// Create a parser iterator.
-pub fn iter<'a>(source: &'a str, strict: bool) -> VcardIterator<'a> {
-    VcardIterator::new(source.as_ref(), strict)
+pub fn iter(source: &str, strict: bool) -> VcardIterator<'_> {
+    VcardIterator::new(source, strict)
 }
