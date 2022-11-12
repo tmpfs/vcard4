@@ -1,4 +1,6 @@
 use anyhow::Result;
+use proptest::prelude::*;
+use time::UtcOffset;
 use vcard4::types::*;
 
 #[test]
@@ -217,4 +219,73 @@ fn types_timestamp() -> Result<()> {
     let timestamp = parse_timestamp("19961022T140000-0500")?;
     assert_eq!("1996-10-22 14:00:00.0 -05:00:00", &timestamp.to_string());
     Ok(())
+}
+
+/*
+#[test]
+fn prop_time_offset() {
+    let value = "020655-0057";
+    let (time, offset) = parse_time(&value).unwrap();
+    println!("{}", offset);
+}
+*/
+
+proptest! {
+    #[test]
+    fn prop_parse_time_random(s in "\\PC*") {
+        let _ = parse_time(&s);
+    }
+
+    #[test]
+    fn prop_parse_time_all(s in "[0-9]{2}[0-9]{2}-0-9]{2}") {
+        let _ = parse_time(&s);
+    }
+
+    #[test]
+    fn prop_parse_time_valid_utc(h in 0u8..23, m in 0u8..59, s in 0u8..59) {
+        let (time, offset) = parse_time(
+            &format!("{:02}{:02}{:02}Z", h, m, s)).unwrap();
+        let (h2, m2, s2) = (time.hour(), time.minute(), time.second());
+        prop_assert_eq!((h, m, s), (h2, m2, s2));
+        assert_eq!(UtcOffset::UTC, offset);
+    }
+
+    #[test]
+    fn prop_parse_time_valid_offset(h in 0u8..23, m in 0u8..59, s in 0u8..59, offset_h in 0u8..23, offset_m in 0u8..58) {
+
+        let value = format!("{:02}{:02}{:02}-{:02}{:02}", h, m, s, offset_h, offset_m);
+
+        // Negative to the West
+        let (time, offset) = parse_time(
+            &value).unwrap();
+        let (h2, m2, s2) = (time.hour(), time.minute(), time.second());
+        prop_assert_eq!((h, m, s), (h2, m2, s2));
+
+        if offset_h > 0 || offset_m > 0 {
+            //assert!(offset.is_negative());
+            if !offset.is_negative() {
+                println!("ERROR: {}", value);
+            }
+        }
+
+        println!("({} - {}) : {}", offset_h, offset_m, offset);
+
+        // Negative offsets yield negative i8 so we convert back to
+        // u8 for comparison
+        let (offset_hours, offset_minutes,_) = offset.as_hms();
+        let abs_offset_hours = (offset_hours + 127) as u8;
+        //let abs_offset_minutes = (offset_minutes + 127) as u8;
+
+        println!("{} {}", abs_offset_hours, offset_minutes);
+    }
+
+    #[test]
+    fn prop_date_random(s in "\\PC*") {
+        let _ = parse_date(&s);
+    }
+
+    #[test]
+    fn prop_date_time_random(s in "\\PC*") {
+        let _ = parse_date_time(&s);
+    }
 }
