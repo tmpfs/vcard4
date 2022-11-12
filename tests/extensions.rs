@@ -362,3 +362,42 @@ END:VCARD"#;
     assert_round_trip(&card)?;
     Ok(())
 }
+
+#[test]
+fn extension_parameter() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Jane Doe
+X-FOO;X-QUX=baz,zub;x-foo=bar;VALUE=text:BAR
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+    let card = vcards.remove(0);
+
+    let prop = card.extensions.get(0).unwrap();
+
+    assert!(prop.group.is_none());
+    assert_eq!("X-FOO", &prop.name);
+    assert_eq!(
+        &ValueType::Text,
+        prop.parameters.as_ref().unwrap().value.as_ref().unwrap()
+    );
+
+    assert_eq!(
+        Some(
+            vec![
+                ("X-QUX".to_owned(), vec!["baz".to_owned(), "zub".to_owned()]),
+                ("x-foo".to_owned(), vec!["bar".to_owned()])
+            ]
+        ),
+        prop.parameters.as_ref().unwrap().extensions
+    );
+
+    assert_eq!(
+        &AnyProperty::Text("BAR".to_string()),
+        &prop.value
+    );
+
+    assert_round_trip(&card)?;
+    Ok(())
+}

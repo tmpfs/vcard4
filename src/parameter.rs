@@ -522,6 +522,13 @@ pub struct Parameters {
         serde(default, skip_serializing_if = "Option::is_none")
     )]
     pub label: Option<String>,
+
+    /// Any `X-` parameter extensions.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
+    pub extensions: Option<Vec<(String, Vec<String>)>>,
 }
 
 impl fmt::Display for Parameters {
@@ -537,7 +544,7 @@ impl fmt::Display for Parameters {
             write!(f, ";{}={}", PREF, pref)?;
         }
         if let Some(alt_id) = &self.alt_id {
-            write!(f, ";{}={}", ALTID, alt_id)?;
+            write!(f, ";{}=\"{}\"", ALTID, alt_id)?;
         }
         if let Some(pids) = &self.pid {
             write!(f, ";{}={}", PID, comma_delimited(pids))?;
@@ -574,6 +581,11 @@ impl fmt::Display for Parameters {
         }
         if let Some(label) = &self.label {
             write!(f, ";{}=\"{}\"", LABEL, escape_parameter(label))?;
+        }
+        if let Some(extensions) = &self.extensions {
+            for (name, value) in extensions {
+                write!(f, ";{}=\"{}\"", name, comma_delimited(value))?;
+            }
         }
         Ok(())
     }
