@@ -11,7 +11,7 @@ use language_tags::LanguageTag;
 use mime::Mime;
 
 use crate::{
-    escape_control, name::*, parameter::*, property::*, types::*,
+    escape_control, helper::*, name::*, parameter::*, property::*,
     unescape_value, Error, Result, Vcard,
 };
 

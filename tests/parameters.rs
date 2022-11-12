@@ -4,12 +4,12 @@ use anyhow::Result;
 use uriparse::uri::URI as Uri;
 
 use vcard4::{
+    helper::parse_utc_offset,
     parameter::{
         Pid, RelatedType, TelephoneType, TimeZoneParameter, TypeParameter,
         ValueType,
     },
     parse,
-    types::parse_utc_offset,
 };
 
 use test_helpers::{assert_language, assert_media_type, assert_round_trip};

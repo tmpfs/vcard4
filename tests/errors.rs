@@ -1,7 +1,7 @@
 mod test_helpers;
 
 use anyhow::Result;
-use vcard4::{parameter::*, parse, types::*, Error};
+use vcard4::{helper::*, parameter::*, parse, property::ClientPidMap, Error};
 
 #[test]
 fn error_empty() -> Result<()> {

@@ -20,8 +20,8 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 use mime::Mime;
 
 use crate::{
+    helper::format_utc_offset,
     name::{HOME, WORK},
-    types::format_utc_offset,
     Error, Result,
 };
 
@@ -313,7 +313,7 @@ impl FromStr for TelephoneType {
     }
 }
 
-/// Enumeration of the different types of values.
+/// Enumeration of types for the VALUE parameter.
 #[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
@@ -396,7 +396,7 @@ impl FromStr for ValueType {
     }
 }
 
-/// Value for a timezone parameter.
+/// Value for a TZ parameter.
 ///
 /// This is a different type so that we do not
 /// create infinite type recursion in `Parameters` which would

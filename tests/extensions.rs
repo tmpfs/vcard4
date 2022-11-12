@@ -4,13 +4,13 @@ use anyhow::Result;
 use test_helpers::{assert_language, assert_round_trip};
 use uriparse::uri::URI as Uri;
 use vcard4::{
+    helper::{
+        parse_date_list, parse_date_time_list, parse_time_list,
+        parse_timestamp, parse_utc_offset,
+    },
     parameter::ValueType,
     parse,
-    property::AnyProperty,
-    types::{
-        parse_date_list, parse_date_time_list, parse_time_list,
-        parse_timestamp, parse_utc_offset, DateAndOrTime,
-    },
+    property::{AnyProperty, DateAndOrTime},
 };
 
 #[test]

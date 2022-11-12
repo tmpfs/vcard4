@@ -18,13 +18,14 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{
     escape_value,
-    parameter::Parameters,
-    types::{
-        format_date_and_or_time_list, format_date_list, format_date_time,
-        format_date_time_list, format_float_list, format_integer_list,
-        format_time_list, format_timestamp_list, format_utc_offset,
-        parse_utc_offset, DateAndOrTime,
+    helper::{
+        format_date, format_date_and_or_time_list, format_date_list,
+        format_date_time, format_date_time_list, format_float_list,
+        format_integer_list, format_time, format_time_list,
+        format_timestamp_list, format_utc_offset, parse_date,
+        parse_date_time, parse_time, parse_utc_offset,
     },
+    parameter::Parameters,
     Error, Result,
 };
 
@@ -406,6 +407,57 @@ impl fmt::Display for DateTimeProperty {
             "{}",
             format_date_time(&self.value).map_err(|_| fmt::Error)?
         )
+    }
+}
+
+/// Date and or time.
+#[derive(Debug, Eq, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum DateAndOrTime {
+    /// Date value.
+    Date(Date),
+    /// Date and time value.
+    DateTime(OffsetDateTime),
+    /// Time value.
+    Time((Time, UtcOffset)),
+}
+
+impl fmt::Display for DateAndOrTime {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Date(val) => {
+                write!(f, "{}", format_date(val).map_err(|_| fmt::Error)?)
+            }
+            Self::DateTime(val) => write!(
+                f,
+                "{}",
+                format_date_time(val).map_err(|_| fmt::Error)?
+            ),
+            Self::Time(val) => {
+                write!(f, "{}", format_time(val).map_err(|_| fmt::Error)?)
+            }
+        }
+    }
+}
+
+impl FromStr for DateAndOrTime {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        if !s.is_empty() && &s[0..1] == "T" {
+            return Ok(Self::Time(parse_time(&s[1..])?));
+        }
+
+        match parse_date_time(s) {
+            Ok(value) => Ok(Self::DateTime(value)),
+            Err(_) => match parse_date(s) {
+                Ok(value) => Ok(Self::Date(value)),
+                Err(_) => match parse_time(s) {
+                    Ok(val) => Ok(Self::Time(val)),
+                    Err(e) => Err(e),
+                },
+            },
+        }
     }
 }
 
