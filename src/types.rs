@@ -22,6 +22,8 @@ pub fn parse_utc_offset(value: &str) -> Result<UtcOffset> {
         return Ok(UtcOffset::UTC);
     }
 
+    //println!("Parsing value {}", value);
+
     let offset_format = format_description::parse(
         "[offset_hour sign:mandatory][offset_minute]",
     )?;
