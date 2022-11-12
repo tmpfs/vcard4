@@ -6,3 +6,5 @@
 # everyone who runs the test benefits from these saved cases.
 cc 315d769b86224eb20b7da245a51003a77dd25d6e75c3bf3fe2cc907faf76788c # shrinks to s = "0000-0-9]]"
 cc 78456589cd4322131a99229ae40c5de2859b712f5f6100bb4dec78227f0b159f # shrinks to h = 0, m = 0, s = 0, offset_h = 0, offset_m = 0
+cc 6a301c8efc51aa4c1241bca306b372bc50d1f84c8e55fa851aa16d77fd014f94 # shrinks to y = 0, m = 0, d = 0
+cc b4486450ecf7c67346ebb60a76f0fdad9477c13a6a66fc211510c4b4e5271da7 # shrinks to y = 897, m = 2, d = 29

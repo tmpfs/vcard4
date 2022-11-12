@@ -237,12 +237,20 @@ proptest! {
     }
 
     #[test]
-    fn prop_parse_time_all(s in "[0-9]{2}[0-9]{2}-0-9]{2}") {
+    fn prop_parse_time_all(s in "[0-9]{2}[0-9]{2}[0-9]{2}") {
         let _ = parse_time(&s);
     }
 
     #[test]
-    fn prop_parse_time_valid_utc(h in 0u8..23, m in 0u8..59, s in 0u8..59) {
+    fn prop_parse_time_valid_utc(h in 0u8..24, m in 0u8..60, s in 0u8..60) {
+        // Without Z
+        let (time, offset) = parse_time(
+            &format!("{:02}{:02}{:02}", h, m, s)).unwrap();
+        let (h2, m2, s2) = (time.hour(), time.minute(), time.second());
+        prop_assert_eq!((h, m, s), (h2, m2, s2));
+        assert_eq!(UtcOffset::UTC, offset);
+
+        // With Z
         let (time, offset) = parse_time(
             &format!("{:02}{:02}{:02}Z", h, m, s)).unwrap();
         let (h2, m2, s2) = (time.hour(), time.minute(), time.second());
@@ -251,7 +259,12 @@ proptest! {
     }
 
     #[test]
-    fn prop_parse_time_valid_offset(h in 0u8..23, m in 0u8..59, s in 0u8..59, offset_h in 0u8..23, offset_m in 0u8..58) {
+    fn prop_parse_time_valid_offset(
+        h in 0u8..24,
+        m in 0u8..60,
+        s in 0u8..60,
+        offset_h in 0u8..24,
+        offset_m in 0u8..60) {
 
         let value = format!("{:02}{:02}{:02}-{:02}{:02}", h, m, s, offset_h, offset_m);
 
@@ -261,11 +274,9 @@ proptest! {
         let (h2, m2, s2) = (time.hour(), time.minute(), time.second());
         prop_assert_eq!((h, m, s), (h2, m2, s2));
 
+        /*
         if offset_h > 0 || offset_m > 0 {
-            //assert!(offset.is_negative());
-            if !offset.is_negative() {
-                println!("ERROR: {}", value);
-            }
+            assert!(offset.is_negative());
         }
 
         println!("({} - {}) : {}", offset_h, offset_m, offset);
@@ -277,6 +288,7 @@ proptest! {
         //let abs_offset_minutes = (offset_minutes + 127) as u8;
 
         println!("{} {}", abs_offset_hours, offset_minutes);
+        */
     }
 
     #[test]
@@ -285,7 +297,60 @@ proptest! {
     }
 
     #[test]
+    fn prop_parse_date_all(s in "[0-9]{4}[0-9]{2}[0-9]{2}") {
+        let _ = parse_date(&s);
+    }
+
+    #[test]
+    fn prop_parse_date_valid(
+        y in 0i32..10000,
+        m in 1u8..=12,
+        // Only test upto 29 otherwise an error in February
+        d in 1u8..29) {
+        let value = format!("{:04}{:02}{:02}", y, m, d);
+        //println!("{}", value);
+        let date = parse_date(&value).unwrap();
+
+        let m2: u8 = date.month().try_into().unwrap();
+        let (y2, d2) = (date.year(), date.day());
+        prop_assert_eq!((y, m, d), (y2, m2, d2));
+    }
+
+    #[test]
     fn prop_date_time_random(s in "\\PC*") {
         let _ = parse_date_time(&s);
+    }
+
+    #[test]
+    fn prop_parse_date_time_all(
+        s in "[0-9]{4}[0-9]{2}[0-9]{2}T[0-9]{2}[0-9]{2}[0-9]{2}[+-][0-9]{2}[0-9]{2}") {
+        let _ = parse_date_time(&s);
+    }
+
+    #[test]
+    fn prop_parse_date_time_valid(
+        y in 0i32..10000,
+        m in 1u8..=12,
+        // Only test upto 29 otherwise an error in February
+        d in 1u8..29,
+        h in 0u8..24,
+        mi in 0u8..60,
+        s in 0u8..60,
+        offset_h in 0u8..24,
+        offset_m in 0u8..60,
+    ) {
+        // No offset
+        let value = format!(
+            "{:04}{:02}{:02}T{:02}{:02}{:02}",
+            y, m, d, h, mi, s);
+        let date_time = parse_date_time(&value).unwrap();
+        let m2: u8 = date_time.month().try_into().unwrap();
+        let (y2, d2) = (date_time.year(), date_time.day());
+        let (h2, mi2, s2) = (
+            date_time.hour(), date_time.minute(), date_time.second());
+        prop_assert_eq!((y, m, d, h, mi, s), (y2, m2, d2, h2, mi2, s2));
+
+        // TODO: test negative offset
+        // TODO: test positive offset
     }
 }
