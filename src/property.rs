@@ -23,7 +23,7 @@ use crate::{
         format_date_and_or_time_list, format_date_list, format_date_time,
         format_date_time_list, format_float_list, format_integer_list,
         format_time_list, format_timestamp_list, format_utc_offset,
-        parse_utc_offset, ClientPidMap, DateAndOrTime,
+        parse_utc_offset, DateAndOrTime,
     },
     Error, Result,
 };
@@ -194,6 +194,48 @@ pub struct AddressProperty {
         serde(default, skip_serializing_if = "Option::is_none")
     )]
     pub parameters: Option<Parameters>,
+}
+
+/// Value for the CLIENTPIDMAP property.
+#[derive(Debug, Eq, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+pub struct ClientPidMap {
+    /// The source identifier.
+    pub source: u64,
+    /// The URI for the map.
+    #[cfg_attr(feature = "zeroize", zeroize(skip))]
+    pub uri: Uri<'static>,
+}
+
+impl fmt::Display for ClientPidMap {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{};{}", self.source, self.uri)
+    }
+}
+
+impl FromStr for ClientPidMap {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let mut it = s.splitn(2, ';');
+        let source = it
+            .next()
+            .ok_or_else(|| Error::InvalidClientPidMap(s.to_string()))?;
+        let uri = it
+            .next()
+            .ok_or_else(|| Error::InvalidClientPidMap(s.to_string()))?;
+        let source: u64 = source.parse()?;
+
+        // Must be positive according to the RFC
+        // https://www.rfc-editor.org/rfc/rfc6350#section-6.7.7
+        if source == 0 {
+            return Err(Error::InvalidClientPidMap(s.to_string()));
+        }
+
+        let uri = Uri::try_from(uri)?.into_owned();
+        Ok(ClientPidMap { source, uri })
+    }
 }
 
 /// Client PID map property.

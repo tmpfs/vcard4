@@ -4,13 +4,9 @@ use time::{
     format_description::{self, well_known::Iso8601},
     Date, OffsetDateTime, PrimitiveDateTime, Time, UtcOffset,
 };
-use uriparse::uri::URI as Uri;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "zeroize")]
-use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{Error, Result};
 
@@ -411,50 +407,6 @@ pub(crate) fn format_date_and_or_time_list(
         }
     }
     Ok(())
-}
-
-// Client PID Map
-
-/// Value for the CLIENTPIDMAP property.
-#[derive(Debug, Eq, PartialEq, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
-pub struct ClientPidMap {
-    /// The source identifier.
-    pub source: u64,
-    /// The URI for the map.
-    #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    pub uri: Uri<'static>,
-}
-
-impl fmt::Display for ClientPidMap {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{};{}", self.source, self.uri)
-    }
-}
-
-impl FromStr for ClientPidMap {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        let mut it = s.splitn(2, ';');
-        let source = it
-            .next()
-            .ok_or_else(|| Error::InvalidClientPidMap(s.to_string()))?;
-        let uri = it
-            .next()
-            .ok_or_else(|| Error::InvalidClientPidMap(s.to_string()))?;
-        let source: u64 = source.parse()?;
-
-        // Must be positive according to the RFC
-        // https://www.rfc-editor.org/rfc/rfc6350#section-6.7.7
-        if source == 0 {
-            return Err(Error::InvalidClientPidMap(s.to_string()));
-        }
-
-        let uri = Uri::try_from(uri)?.into_owned();
-        Ok(ClientPidMap { source, uri })
-    }
 }
 
 // Primitives
