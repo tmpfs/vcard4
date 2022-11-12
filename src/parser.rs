@@ -62,6 +62,9 @@ pub(crate) enum Token {
     #[regex("\\r?\\n")]
     NewLine,
 
+    #[regex("[[:blank:]]", priority = 2)]
+    WhiteSpace,
+
     #[regex("[[:cntrl:]]")]
     Control,
 
