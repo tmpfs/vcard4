@@ -147,7 +147,8 @@ impl<'s> VcardParser<'s> {
             }
             self.assert_token(
                 Some(&first),
-                &[Token::PropertyName, Token::ExtensionName])?;
+                &[Token::PropertyName, Token::ExtensionName],
+            )?;
 
             if let Err(e) = self.parse_property(lex, first, card) {
                 if self.strict {
@@ -189,7 +190,9 @@ impl<'s> VcardParser<'s> {
                     group,
                 )?;
             } else if delimiter == Token::PropertyDelimiter {
-                self.parse_property_by_name(lex, token, card, name, None, group)?;
+                self.parse_property_by_name(
+                    lex, token, card, name, None, group,
+                )?;
             } else {
                 return Err(Error::DelimiterExpected);
             }
@@ -211,7 +214,9 @@ impl<'s> VcardParser<'s> {
         let mut next: Option<Token> = lex.next();
 
         while let Some(token) = next.take() {
-            if token == Token::ParameterKey || token == Token::ParameterExtensionName {
+            if token == Token::ParameterKey
+                || token == Token::ParameterExtensionName
+            {
                 let source = lex.source();
                 let span = lex.span();
                 let parameter_name = &source[span.start..(span.end - 1)];
@@ -221,7 +226,8 @@ impl<'s> VcardParser<'s> {
                     self.parse_property_parameters_value(lex)?;
 
                 if token == Token::ParameterExtensionName {
-                    let values = value.split(',')
+                    let values = value
+                        .split(',')
                         .map(|s| s.to_owned())
                         .collect::<Vec<_>>();
                     let x_param = (parameter_name.to_owned(), values);
@@ -231,7 +237,6 @@ impl<'s> VcardParser<'s> {
                         params.extensions = Some(vec![x_param]);
                     }
                 } else {
-
                     match &upper_name[..] {
                         LANGUAGE => {
                             let tag = parse_language_tag(Cow::Owned(value))?;
@@ -269,7 +274,8 @@ impl<'s> VcardParser<'s> {
                                 ));
                             }
 
-                            let mut type_params: Vec<TypeParameter> = Vec::new();
+                            let mut type_params: Vec<TypeParameter> =
+                                Vec::new();
 
                             for val in value.split(',') {
                                 let param: TypeParameter =
@@ -281,9 +287,9 @@ impl<'s> VcardParser<'s> {
                                                 val.parse()?,
                                             ),
                                         },
-                                        RELATED => {
-                                            TypeParameter::Related(val.parse()?)
-                                        }
+                                        RELATED => TypeParameter::Related(
+                                            val.parse()?,
+                                        ),
                                         _ => val.parse()?,
                                     };
                                 type_params.push(param);
@@ -327,12 +333,15 @@ impl<'s> VcardParser<'s> {
                                 match parse_utc_offset(&value) {
                                     Ok(offset) => {
                                         params.timezone = Some(
-                                            TimeZoneParameter::UtcOffset(offset),
+                                            TimeZoneParameter::UtcOffset(
+                                                offset,
+                                            ),
                                         );
                                     }
                                     Err(_) => {
-                                        params.timezone =
-                                            Some(TimeZoneParameter::Text(value));
+                                        params.timezone = Some(
+                                            TimeZoneParameter::Text(value),
+                                        );
                                     }
                                 }
                             }
@@ -351,7 +360,6 @@ impl<'s> VcardParser<'s> {
                             ))
                         }
                     }
-
                 }
 
                 if next_token == Token::PropertyDelimiter {

@@ -384,19 +384,14 @@ END:VCARD"#;
     );
 
     assert_eq!(
-        Some(
-            vec![
-                ("X-QUX".to_owned(), vec!["baz".to_owned(), "zub".to_owned()]),
-                ("x-foo".to_owned(), vec!["bar".to_owned()])
-            ]
-        ),
+        Some(vec![
+            ("X-QUX".to_owned(), vec!["baz".to_owned(), "zub".to_owned()]),
+            ("x-foo".to_owned(), vec!["bar".to_owned()])
+        ]),
         prop.parameters.as_ref().unwrap().extensions
     );
 
-    assert_eq!(
-        &AnyProperty::Text("BAR".to_string()),
-        &prop.value
-    );
+    assert_eq!(&AnyProperty::Text("BAR".to_string()), &prop.value);
 
     assert_round_trip(&card)?;
     Ok(())

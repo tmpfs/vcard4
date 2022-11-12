@@ -275,8 +275,7 @@ impl TryFrom<&str> for Vcard {
     type Error = Error;
     fn try_from(value: &str) -> Result<Self> {
         let mut it = iter(value, true);
-        let card = it.next().ok_or(Error::TokenExpected)?;
-        card
+        it.next().ok_or(Error::TokenExpected)?
     }
 }
 
