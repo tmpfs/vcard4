@@ -23,7 +23,15 @@ pub(crate) enum Token {
     #[regex("(?i:VERSION:4\\.0)")]
     Version,
 
-    #[regex("(?i:([a-z0-9-]+\\.)?(SOURCE|KIND|FN|N|NICKNAME|PHOTO|BDAY|ANNIVERSARY|GENDER|ADR|TEL|EMAIL|IMPP|LANG|TZ|GEO|TITLE|ROLE|LOGO|ORG|MEMBER|RELATED|CATEGORIES|NOTE|PRODID|REV|SOUND|UID|CLIENTPIDMAP|URL|KEY|FBURL|CALADRURI|CALURI|XML|VERSION))")]
+    // Special case shared between property and parameter
+    #[token("TZ")]
+    TimeZone,
+
+    // Special case shared between property and parameter
+    #[token("GEO")]
+    Geo,
+
+    #[regex("(?i:([a-z0-9-]+\\.)?(SOURCE|KIND|FN|N|NICKNAME|PHOTO|BDAY|ANNIVERSARY|GENDER|ADR|TEL|EMAIL|IMPP|LANG|TITLE|ROLE|LOGO|ORG|MEMBER|RELATED|CATEGORIES|NOTE|PRODID|REV|SOUND|UID|CLIENTPIDMAP|URL|KEY|FBURL|CALADRURI|CALURI|XML|VERSION))")]
     PropertyName,
 
     #[regex("(?i:x-[a-z0-9-]+)")]
@@ -35,11 +43,11 @@ pub(crate) enum Token {
     #[token("\"")]
     DoubleQuote,
 
-    #[regex("(?i:(LANGUAGE|VALUE|PREF|ALTID|PID|TYPE|MEDIATYPE|CALSCALE|SORT-AS|GEO|TZ|LABEL)=)")]
+    #[regex("(?i:LANGUAGE|VALUE|PREF|ALTID|PID|TYPE|MEDIATYPE|CALSCALE|SORT-AS|LABEL)")]
     ParameterKey,
 
-    #[regex("(?i:x-[a-z0-9-]+=)")]
-    ParameterExtensionName,
+    #[token("=")]
+    ValueDelimiter,
 
     #[token(":")]
     PropertyDelimiter,
@@ -148,9 +156,15 @@ impl<'s> VcardParser<'s> {
             if let Token::Version = first {
                 return Err(Error::VersionMisplaced);
             }
+
             self.assert_token(
                 Some(&first),
-                &[Token::PropertyName, Token::ExtensionName],
+                &[
+                    Token::PropertyName,
+                    Token::ExtensionName,
+                    Token::TimeZone,
+                    Token::Geo,
+                ],
             )?;
 
             if let Err(e) = self.parse_property(lex, first, card) {
@@ -183,7 +197,7 @@ impl<'s> VcardParser<'s> {
 
         if let Some(delimiter) = delimiter {
             if delimiter == Token::ParameterDelimiter {
-                let parameters = self.parse_property_parameters(lex, name)?;
+                let parameters = self.parse_parameters(lex, name)?;
                 self.parse_property_by_name(
                     lex,
                     token,
@@ -207,7 +221,7 @@ impl<'s> VcardParser<'s> {
     }
 
     /// Parse property parameters.
-    fn parse_property_parameters(
+    fn parse_parameters(
         &self,
         lex: &mut Lexer<'_, Token>,
         name: &str,
@@ -218,17 +232,24 @@ impl<'s> VcardParser<'s> {
 
         while let Some(token) = next.take() {
             if token == Token::ParameterKey
-                || token == Token::ParameterExtensionName
+                || token == Token::ExtensionName
+                || token == Token::TimeZone
+                || token == Token::Geo
             {
                 let source = lex.source();
                 let span = lex.span();
-                let parameter_name = &source[span.start..(span.end - 1)];
+                let parameter_name = &source[span.start..span.end];
                 let upper_name = parameter_name.to_uppercase();
 
-                let (value, next_token, quoted) =
-                    self.parse_property_parameters_value(lex)?;
+                self.assert_token(
+                    lex.next().as_ref(),
+                    &[Token::ValueDelimiter],
+                )?;
 
-                if token == Token::ParameterExtensionName {
+                let (value, next_token, quoted) =
+                    self.parse_parameter_value(lex)?;
+
+                if token == Token::ExtensionName {
                     let values = value
                         .split(',')
                         .map(|s| s.to_owned())
@@ -380,7 +401,7 @@ impl<'s> VcardParser<'s> {
     }
 
     /// Parse the raw value for a property parameter.
-    fn parse_property_parameters_value<'a>(
+    fn parse_parameter_value<'a>(
         &self,
         lex: &'a mut Lexer<'_, Token>,
     ) -> Result<(String, Token, bool)> {
@@ -410,7 +431,7 @@ impl<'s> VcardParser<'s> {
             } else {
                 token == Token::PropertyDelimiter
                     || token == Token::ParameterDelimiter
-                    || token == Token::ParameterKey
+                //|| token == Token::ParameterKey
             };
 
             if first_range.is_none() {
