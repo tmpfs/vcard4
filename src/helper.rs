@@ -1,18 +1,11 @@
-//! Custom data types.
-use std::{fmt, str::FromStr};
+//! Utilities for parsing dates, times and primitive values.
+use std::fmt;
 use time::{
     format_description::{self, well_known::Iso8601},
     Date, OffsetDateTime, PrimitiveDateTime, Time, UtcOffset,
 };
-use uriparse::uri::URI as Uri;
 
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "zeroize")]
-use zeroize::{Zeroize, ZeroizeOnDrop};
-
-use crate::{Error, Result};
+use crate::{property::DateAndOrTime, Error, Result};
 
 // UTC OFFSET
 
@@ -349,57 +342,6 @@ pub fn parse_date_and_or_time_list(
     Ok(values)
 }
 
-/// Date and or time.
-#[derive(Debug, Eq, PartialEq, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum DateAndOrTime {
-    /// Date value.
-    Date(Date),
-    /// Date and time value.
-    DateTime(OffsetDateTime),
-    /// Time value.
-    Time((Time, UtcOffset)),
-}
-
-impl fmt::Display for DateAndOrTime {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Date(val) => {
-                write!(f, "{}", format_date(val).map_err(|_| fmt::Error)?)
-            }
-            Self::DateTime(val) => write!(
-                f,
-                "{}",
-                format_date_time(val).map_err(|_| fmt::Error)?
-            ),
-            Self::Time(val) => {
-                write!(f, "{}", format_time(val).map_err(|_| fmt::Error)?)
-            }
-        }
-    }
-}
-
-impl FromStr for DateAndOrTime {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        if !s.is_empty() && &s[0..1] == "T" {
-            return Ok(Self::Time(parse_time(&s[1..])?));
-        }
-
-        match parse_date_time(s) {
-            Ok(value) => Ok(Self::DateTime(value)),
-            Err(_) => match parse_date(s) {
-                Ok(value) => Ok(Self::Date(value)),
-                Err(_) => match parse_time(s) {
-                    Ok(val) => Ok(Self::Time(val)),
-                    Err(e) => Err(e),
-                },
-            },
-        }
-    }
-}
-
 pub(crate) fn format_date_and_or_time_list(
     f: &mut fmt::Formatter<'_>,
     val: &[DateAndOrTime],
@@ -411,50 +353,6 @@ pub(crate) fn format_date_and_or_time_list(
         }
     }
     Ok(())
-}
-
-// Client PID Map
-
-/// Value for the CLIENTPIDMAP property.
-#[derive(Debug, Eq, PartialEq, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
-pub struct ClientPidMap {
-    /// The source identifier.
-    pub source: u64,
-    /// The URI for the map.
-    #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    pub uri: Uri<'static>,
-}
-
-impl fmt::Display for ClientPidMap {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{};{}", self.source, self.uri)
-    }
-}
-
-impl FromStr for ClientPidMap {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        let mut it = s.splitn(2, ';');
-        let source = it
-            .next()
-            .ok_or_else(|| Error::InvalidClientPidMap(s.to_string()))?;
-        let uri = it
-            .next()
-            .ok_or_else(|| Error::InvalidClientPidMap(s.to_string()))?;
-        let source: u64 = source.parse()?;
-
-        // Must be positive according to the RFC
-        // https://www.rfc-editor.org/rfc/rfc6350#section-6.7.7
-        if source == 0 {
-            return Err(Error::InvalidClientPidMap(s.to_string()));
-        }
-
-        let uri = Uri::try_from(uri)?.into_owned();
-        Ok(ClientPidMap { source, uri })
-    }
 }
 
 // Primitives

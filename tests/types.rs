@@ -1,7 +1,7 @@
 use anyhow::Result;
 use proptest::prelude::*;
 use time::UtcOffset;
-use vcard4::types::*;
+use vcard4::{helper::*, property::DateAndOrTime};
 
 #[test]
 fn types_time_only() -> Result<()> {

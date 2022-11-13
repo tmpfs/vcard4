@@ -26,12 +26,6 @@
 //!
 //! Serde support can be enabled with the `serde` feature.
 //!
-//! ## Implementation
-//!
-//! * The `XML` property is parsed and propagated but it is not
-//!   validated per RFC as it is optional.
-//! * IANA Tokens are not implemented.
-//!
 //! ## Examples
 //!
 //! Create a new vCard:
@@ -88,8 +82,19 @@
 //!     Ok(())
 //! }
 //! ```
+//!
+//! ## Implementation
+//!
+//! * The `XML` property is parsed and propagated but it is not
+//!   validated as it is optional in the RFC.
+//! * IANA Tokens are not implemented.
+//! * The RFC requires a CRLF sequence for line breaks but for
+//!   easier interoperability between platforms we treat the
+//!   carriage return as optional.
+//!
 
 mod error;
+pub mod helper;
 mod iter;
 mod name;
 pub mod parameter;
@@ -97,7 +102,6 @@ mod parser;
 pub mod property;
 #[cfg(feature = "serde")]
 mod serde;
-pub mod types;
 mod vcard;
 
 pub use error::Error;

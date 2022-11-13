@@ -11,7 +11,7 @@ use language_tags::LanguageTag;
 use mime::Mime;
 
 use crate::{
-    escape_control, name::*, parameter::*, property::*, types::*,
+    escape_control, helper::*, name::*, parameter::*, property::*,
     unescape_value, Error, Result, Vcard,
 };
 
@@ -23,8 +23,19 @@ pub(crate) enum Token {
     #[regex("(?i:VERSION:4\\.0)")]
     Version,
 
-    #[regex("(?i:([a-z0-9-]+\\.)?(SOURCE|KIND|FN|N|NICKNAME|PHOTO|BDAY|ANNIVERSARY|GENDER|ADR|TEL|EMAIL|IMPP|LANG|TZ|GEO|TITLE|ROLE|LOGO|ORG|MEMBER|RELATED|CATEGORIES|NOTE|PRODID|REV|SOUND|UID|CLIENTPIDMAP|URL|KEY|FBURL|CALADRURI|CALURI|XML|VERSION|x-[a-z0-9]+))")]
+    // Special case shared between property and parameter
+    #[token("TZ")]
+    TimeZone,
+
+    // Special case shared between property and parameter
+    #[token("GEO")]
+    Geo,
+
+    #[regex("(?i:([a-z0-9-]+\\.)?(SOURCE|KIND|FN|N|NICKNAME|PHOTO|BDAY|ANNIVERSARY|GENDER|ADR|TEL|EMAIL|IMPP|LANG|TITLE|ROLE|LOGO|ORG|MEMBER|RELATED|CATEGORIES|NOTE|PRODID|REV|SOUND|UID|CLIENTPIDMAP|URL|KEY|FBURL|CALADRURI|CALURI|XML|VERSION))")]
     PropertyName,
+
+    #[regex("(?i:x-[a-z0-9-]+)")]
+    ExtensionName,
 
     #[token(";")]
     ParameterDelimiter,
@@ -32,8 +43,11 @@ pub(crate) enum Token {
     #[token("\"")]
     DoubleQuote,
 
-    #[regex("(?i:(LANGUAGE|VALUE|PREF|ALTID|PID|TYPE|MEDIATYPE|CALSCALE|SORT-AS|GEO|TZ|LABEL)=)")]
+    #[regex("(?i:LANGUAGE|VALUE|PREF|ALTID|PID|TYPE|MEDIATYPE|CALSCALE|SORT-AS|LABEL)")]
     ParameterKey,
+
+    #[token("=")]
+    ValueDelimiter,
 
     #[token(":")]
     PropertyDelimiter,
@@ -55,6 +69,9 @@ pub(crate) enum Token {
 
     #[regex("\\r?\\n")]
     NewLine,
+
+    #[regex("[[:blank:]]", priority = 2)]
+    WhiteSpace,
 
     #[regex("[[:cntrl:]]")]
     Control,
@@ -113,12 +130,11 @@ impl<'s> VcardParser<'s> {
         lex: &mut Lexer<'_, Token>,
         first: Option<Token>,
     ) -> Result<(Vcard, Range<usize>)> {
-        self.assert_token(first, Token::Begin)?;
-        self.assert_token(lex.next(), Token::NewLine)?;
+        self.assert_token(first.as_ref(), &[Token::Begin])?;
+        self.assert_token(lex.next().as_ref(), &[Token::NewLine])?;
 
-        let version = lex.next();
-        self.assert_token(version, Token::Version)?;
-        self.assert_token(lex.next(), Token::NewLine)?;
+        self.assert_token(lex.next().as_ref(), &[Token::Version])?;
+        self.assert_token(lex.next().as_ref(), &[Token::NewLine])?;
 
         let mut card: Vcard = Default::default();
 
@@ -140,8 +156,18 @@ impl<'s> VcardParser<'s> {
             if let Token::Version = first {
                 return Err(Error::VersionMisplaced);
             }
-            self.assert_token(Some(first), Token::PropertyName)?;
-            if let Err(e) = self.parse_property(lex, card) {
+
+            self.assert_token(
+                Some(&first),
+                &[
+                    Token::PropertyName,
+                    Token::ExtensionName,
+                    Token::TimeZone,
+                    Token::Geo,
+                ],
+            )?;
+
+            if let Err(e) = self.parse_property(lex, first, card) {
                 if self.strict {
                     return Err(e);
                 }
@@ -154,6 +180,7 @@ impl<'s> VcardParser<'s> {
     fn parse_property(
         &self,
         lex: &mut Lexer<'_, Token>,
+        token: Token,
         card: &mut Vcard,
     ) -> Result<()> {
         let mut group: Option<String> = None;
@@ -170,16 +197,19 @@ impl<'s> VcardParser<'s> {
 
         if let Some(delimiter) = delimiter {
             if delimiter == Token::ParameterDelimiter {
-                let parameters = self.parse_property_parameters(lex, name)?;
+                let parameters = self.parse_parameters(lex, name)?;
                 self.parse_property_by_name(
                     lex,
+                    token,
                     card,
                     name,
                     Some(parameters),
                     group,
                 )?;
             } else if delimiter == Token::PropertyDelimiter {
-                self.parse_property_by_name(lex, card, name, None, group)?;
+                self.parse_property_by_name(
+                    lex, token, card, name, None, group,
+                )?;
             } else {
                 return Err(Error::DelimiterExpected);
             }
@@ -191,7 +221,7 @@ impl<'s> VcardParser<'s> {
     }
 
     /// Parse property parameters.
-    fn parse_property_parameters(
+    fn parse_parameters(
         &self,
         lex: &mut Lexer<'_, Token>,
         name: &str,
@@ -201,132 +231,158 @@ impl<'s> VcardParser<'s> {
         let mut next: Option<Token> = lex.next();
 
         while let Some(token) = next.take() {
-            if token == Token::ParameterKey {
+            if token == Token::ParameterKey
+                || token == Token::ExtensionName
+                || token == Token::TimeZone
+                || token == Token::Geo
+            {
                 let source = lex.source();
                 let span = lex.span();
-                let parameter_name = &source[span.start..(span.end - 1)];
+                let parameter_name = &source[span.start..span.end];
                 let upper_name = parameter_name.to_uppercase();
 
+                self.assert_token(
+                    lex.next().as_ref(),
+                    &[Token::ValueDelimiter],
+                )?;
+
                 let (value, next_token, quoted) =
-                    self.parse_property_parameters_value(lex)?;
+                    self.parse_parameter_value(lex)?;
 
-                match &upper_name[..] {
-                    LANGUAGE => {
-                        let tag = parse_language_tag(Cow::Owned(value))?;
-                        params.language = Some(tag);
+                if token == Token::ExtensionName {
+                    let values = value
+                        .split(',')
+                        .map(|s| s.to_owned())
+                        .collect::<Vec<_>>();
+                    let x_param = (parameter_name.to_owned(), values);
+                    if let Some(extensions) = params.extensions.as_mut() {
+                        extensions.push(x_param);
+                    } else {
+                        params.extensions = Some(vec![x_param]);
                     }
-                    VALUE => {
-                        let value: ValueType = value.parse()?;
-                        params.value = Some(value);
-                    }
-                    PREF => {
-                        let value: u8 = value.parse()?;
-                        if !(1..=100).contains(&value) {
-                            return Err(Error::PrefOutOfRange(value));
+                } else {
+                    match &upper_name[..] {
+                        LANGUAGE => {
+                            let tag = parse_language_tag(Cow::Owned(value))?;
+                            params.language = Some(tag);
                         }
-                        params.pref = Some(value);
-                    }
-                    ALTID => {
-                        params.alt_id = Some(value);
-                    }
-                    PID => {
-                        let mut pids: Vec<Pid> = Vec::new();
-                        let values = value.split(',');
-                        for value in values {
-                            pids.push(value.parse()?);
+                        VALUE => {
+                            let value: ValueType = value.parse()?;
+                            params.value = Some(value);
                         }
-                        params.pid = Some(pids);
-                    }
-                    TYPE => {
-                        // Check this parameter is allowed
-                        if !TYPE_PROPERTIES
-                            .contains(&&property_upper_name[..])
-                        {
-                            return Err(Error::TypeParameter(
-                                property_upper_name,
-                            ));
+                        PREF => {
+                            let value: u8 = value.parse()?;
+                            if !(1..=100).contains(&value) {
+                                return Err(Error::PrefOutOfRange(value));
+                            }
+                            params.pref = Some(value);
                         }
+                        ALTID => {
+                            params.alt_id = Some(value);
+                        }
+                        PID => {
+                            let mut pids: Vec<Pid> = Vec::new();
+                            let values = value.split(',');
+                            for value in values {
+                                pids.push(value.parse()?);
+                            }
+                            params.pid = Some(pids);
+                        }
+                        TYPE => {
+                            // Check this parameter is allowed
+                            if !TYPE_PROPERTIES
+                                .contains(&&property_upper_name[..])
+                            {
+                                return Err(Error::TypeParameter(
+                                    property_upper_name,
+                                ));
+                            }
 
-                        let mut type_params: Vec<TypeParameter> = Vec::new();
+                            let mut type_params: Vec<TypeParameter> =
+                                Vec::new();
 
-                        for val in value.split(',') {
-                            let param: TypeParameter =
-                                match &property_upper_name[..] {
-                                    TEL => match val {
-                                        HOME => TypeParameter::Home,
-                                        WORK => TypeParameter::Work,
-                                        _ => TypeParameter::Telephone(
+                            for val in value.split(',') {
+                                let param: TypeParameter =
+                                    match &property_upper_name[..] {
+                                        TEL => match val {
+                                            HOME => TypeParameter::Home,
+                                            WORK => TypeParameter::Work,
+                                            _ => TypeParameter::Telephone(
+                                                val.parse()?,
+                                            ),
+                                        },
+                                        RELATED => TypeParameter::Related(
                                             val.parse()?,
                                         ),
-                                    },
-                                    RELATED => {
-                                        TypeParameter::Related(val.parse()?)
-                                    }
-                                    _ => val.parse()?,
-                                };
-                            type_params.push(param);
-                        }
+                                        _ => val.parse()?,
+                                    };
+                                type_params.push(param);
+                            }
 
-                        if let Some(types) = params.types.as_mut() {
-                            types.append(&mut type_params);
-                        } else {
-                            params.types = Some(type_params);
+                            if let Some(types) = params.types.as_mut() {
+                                types.append(&mut type_params);
+                            } else {
+                                params.types = Some(type_params);
+                            }
                         }
-                    }
-                    MEDIATYPE => {
-                        parse_media_type(value, &mut params)?;
-                    }
-                    CALSCALE => {
-                        params.calscale = Some(value);
-                    }
-                    SORT_AS => {
-                        let sort_values = value
-                            .split(',')
-                            .map(|s| s.to_string())
-                            .collect::<Vec<_>>();
-                        params.sort_as = Some(sort_values);
-                    }
-                    GEO => {
-                        if !quoted {
-                            return Err(Error::NotQuoted(
-                                property_upper_name,
-                            ));
+                        MEDIATYPE => {
+                            parse_media_type(value, &mut params)?;
                         }
-                        let geo = Uri::try_from(&value[..])?.into_owned();
-                        params.geo = Some(geo);
-                    }
-                    TZ => {
-                        if quoted {
-                            let value =
-                                Uri::try_from(&value[..])?.into_owned();
-                            params.timezone =
-                                Some(TimeZoneParameter::Uri(value));
-                        } else {
-                            match parse_utc_offset(&value) {
-                                Ok(offset) => {
-                                    params.timezone = Some(
-                                        TimeZoneParameter::UtcOffset(offset),
-                                    );
-                                }
-                                Err(_) => {
-                                    params.timezone =
-                                        Some(TimeZoneParameter::Text(value));
+                        CALSCALE => {
+                            params.calscale = Some(value);
+                        }
+                        SORT_AS => {
+                            let sort_values = value
+                                .split(',')
+                                .map(|s| s.to_string())
+                                .collect::<Vec<_>>();
+                            params.sort_as = Some(sort_values);
+                        }
+                        GEO => {
+                            if !quoted {
+                                return Err(Error::NotQuoted(
+                                    property_upper_name,
+                                ));
+                            }
+                            let geo = Uri::try_from(&value[..])?.into_owned();
+                            params.geo = Some(geo);
+                        }
+                        TZ => {
+                            if quoted {
+                                let value =
+                                    Uri::try_from(&value[..])?.into_owned();
+                                params.timezone =
+                                    Some(TimeZoneParameter::Uri(value));
+                            } else {
+                                match parse_utc_offset(&value) {
+                                    Ok(offset) => {
+                                        params.timezone = Some(
+                                            TimeZoneParameter::UtcOffset(
+                                                offset,
+                                            ),
+                                        );
+                                    }
+                                    Err(_) => {
+                                        params.timezone = Some(
+                                            TimeZoneParameter::Text(value),
+                                        );
+                                    }
                                 }
                             }
                         }
-                    }
-                    LABEL => {
-                        if property_upper_name != ADR {
-                            return Err(Error::InvalidLabel(
-                                property_upper_name,
-                            ));
+                        LABEL => {
+                            if property_upper_name != ADR {
+                                return Err(Error::InvalidLabel(
+                                    property_upper_name,
+                                ));
+                            }
+                            params.label = Some(value);
                         }
-                        params.label = Some(value);
-                    }
-                    _ => {
-                        return Err(Error::UnknownParameter(
-                            parameter_name.to_string(),
-                        ))
+                        _ => {
+                            return Err(Error::UnknownParameter(
+                                parameter_name.to_string(),
+                            ))
+                        }
                     }
                 }
 
@@ -345,7 +401,7 @@ impl<'s> VcardParser<'s> {
     }
 
     /// Parse the raw value for a property parameter.
-    fn parse_property_parameters_value<'a>(
+    fn parse_parameter_value<'a>(
         &self,
         lex: &'a mut Lexer<'_, Token>,
     ) -> Result<(String, Token, bool)> {
@@ -375,7 +431,7 @@ impl<'s> VcardParser<'s> {
             } else {
                 token == Token::PropertyDelimiter
                     || token == Token::ParameterDelimiter
-                    || token == Token::ParameterKey
+                //|| token == Token::ParameterKey
             };
 
             if first_range.is_none() {
@@ -426,20 +482,22 @@ impl<'s> VcardParser<'s> {
     fn parse_property_by_name(
         &self,
         lex: &mut Lexer<'_, Token>,
+        token: Token,
         card: &mut Vcard,
         name: &str,
         parameters: Option<Parameters>,
         group: Option<String>,
     ) -> Result<()> {
         let value = self.parse_property_value(lex)?;
-        let upper_name = name.to_uppercase();
 
-        if name.len() > 2 && &upper_name[0..2] == "X-" {
+        if token == Token::ExtensionName {
             self.parse_extension_property_by_name(
                 card, name, value, parameters, group,
             )?;
             return Ok(());
         }
+
+        let upper_name = name.to_uppercase();
 
         match &upper_name[..] {
             // General properties
@@ -1021,15 +1079,23 @@ impl<'s> VcardParser<'s> {
     /// Assert we have an expected token.
     fn assert_token(
         &self,
-        value: Option<Token>,
-        expected: Token,
+        value: Option<&Token>,
+        expected: &[Token],
     ) -> Result<()> {
         if let Some(value) = value {
+            if expected.contains(value) {
+                Ok(())
+            } else {
+                Err(Error::IncorrectToken)
+            }
+
+            /*
             if value == expected {
                 Ok(())
             } else {
                 Err(Error::IncorrectToken)
             }
+            */
         } else {
             Err(Error::TokenExpected)
         }
