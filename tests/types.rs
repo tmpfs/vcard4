@@ -275,6 +275,8 @@ proptest! {
         prop_assert_eq!((h, m, s), (h2, m2, s2));
 
         /*
+        println!("({} - {}) : {}", offset_h, offset_m, offset);
+
         if offset_h > 0 || offset_m > 0 {
             assert!(offset.is_negative());
         }
