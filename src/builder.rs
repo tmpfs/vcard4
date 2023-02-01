@@ -294,7 +294,8 @@ mod tests {
     fn builder_vcard() {
         let mut rev = OffsetDateTime::now_utc();
         rev = rev.replace_date(
-            Date::from_calendar_date(2000, Month::January, 3).unwrap());
+            Date::from_calendar_date(2000, Month::January, 3).unwrap(),
+        );
         rev = rev.replace_time(Time::MIDNIGHT);
 
         let card = VcardBuilder::new("Jane Doe".to_owned())
