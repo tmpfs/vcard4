@@ -1,7 +1,7 @@
 //! Builder for creating vCards.
 //!
 use crate::{
-    property::{DeliveryAddress, Gender, TextListProperty},
+    property::{DeliveryAddress, Gender, TextListProperty, Kind},
     Vcard,
 };
 use time::Date;
@@ -15,6 +15,10 @@ use language_tags::LanguageTag;
 /// This is a high-level interface for creating vCards programatically;
 /// if you need to assign parameters or use a group then either use
 /// [Vcard](Vcard) directly or update properties after finishing a builder.
+///
+/// The card is not validated so it is possible to create 
+/// invalid vCards using the builder. To ensure you have a valid vCard call 
+/// [validate](Vcard::validate) afterwards.
 pub struct VcardBuilder {
     card: Vcard,
 }
@@ -25,6 +29,14 @@ impl VcardBuilder {
         Self {
             card: Vcard::new(formatted_name),
         }
+    }
+
+    // General
+
+    /// Set the kind of vCard.
+    pub fn kind(mut self, value: Kind) -> Self {
+        self.card.kind = Some(value.into());
+        self
     }
 
     // Identification
@@ -143,6 +155,26 @@ impl VcardBuilder {
         self
     }
 
+    /// Add logo to the vCard.
+    pub fn logo(mut self, value: Uri<'static>) -> Self {
+        self.card.logo.push(value.into());
+        self
+    }
+
+    /// Add an organization to the vCard.
+    pub fn org(mut self, value: &[String]) -> Self {
+        self.card.org.push(TextListProperty::new_semi_colon(value.to_vec()));
+        self
+    }
+
+    /// Add a member to the vCard.
+    ///
+    /// The vCard should be of the group kind to be valid.
+    pub fn member(mut self, value: Uri<'static>) -> Self {
+        self.card.member.push(value.into());
+        self
+    }
+
     /// Finish building the vCard.
     pub fn finish(self) -> Vcard {
         self.card
@@ -152,7 +184,7 @@ impl VcardBuilder {
 #[cfg(test)]
 mod tests {
     use super::VcardBuilder;
-    use crate::property::{DeliveryAddress, LanguageProperty};
+    use crate::property::{DeliveryAddress, LanguageProperty, Kind};
     use time::{Date, Month};
 
     #[test]
@@ -193,13 +225,34 @@ mod tests {
             // Organizational
             .title("Dr".to_owned())
             .role("Surgeon".to_owned())
+            .logo("https://example.com/mock.jpeg".try_into().unwrap())
             .finish();
         println!("{}", card);
     }
 
+    #[test]
+    fn builder_member_group() {
+        let card = VcardBuilder::new("Mock Company".to_owned())
+            .kind(Kind::Group)
+            .member("https://example.com/foo".try_into().unwrap())
+            .member("https://example.com/bar".try_into().unwrap())
+            .finish();
+        assert_eq!(2, card.member.len());
+        assert!(card.validate().is_ok());
+    }
+
+    #[test]
+    fn builder_member_invalid() {
+        let card = VcardBuilder::new("Mock Company".to_owned())
+            .member("https://example.com/bar".try_into().unwrap())
+            .finish();
+        assert_eq!(1, card.member.len());
+        assert!(card.validate().is_err());
+    }
+
     #[cfg(not(feature = "language-tags"))]
     #[test]
-    fn builder_vcard_language() {
+    fn builder_language() {
         let card = VcardBuilder::new("Jane Doe".to_owned())
             .lang("en".to_owned())
             .lang("fr".to_owned())
@@ -224,7 +277,7 @@ mod tests {
 
     #[cfg(feature = "language-tags")]
     #[test]
-    fn builder_vcard_language_tags() {
+    fn builder_language_tags() {
         use language_tags::LanguageTag;
         let card = VcardBuilder::new("Jane Doe".to_owned())
             .lang("en".parse::<LanguageTag>().unwrap())

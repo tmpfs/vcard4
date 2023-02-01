@@ -267,6 +267,15 @@ impl Vcard {
         if self.formatted_name.is_empty() {
             return Err(Error::NoFormattedName);
         }
+        if !self.member.is_empty() {
+            if let Some(kind) = &self.kind {
+                if kind.value != Kind::Group {
+                    return Err(Error::MemberRequiresGroup);
+                }
+            } else {
+                return Err(Error::MemberRequiresGroup);
+            }
+        }
         Ok(())
     }
 }

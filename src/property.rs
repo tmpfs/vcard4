@@ -932,6 +932,16 @@ pub struct KindProperty {
     pub parameters: Option<Parameters>,
 }
 
+impl From<Kind> for KindProperty {
+    fn from(value: Kind) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+        }
+    }
+}
+
 /// Kind of vCard.
 #[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
