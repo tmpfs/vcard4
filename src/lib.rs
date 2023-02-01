@@ -93,6 +93,7 @@
 //!   carriage return as optional.
 //!
 
+pub mod builder;
 mod error;
 pub mod helper;
 mod iter;

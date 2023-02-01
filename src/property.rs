@@ -730,6 +730,18 @@ pub struct TextListProperty {
     pub delimiter: TextListDelimiter,
 }
 
+impl TextListProperty {
+    /// Create a new text list property delimited with a semi-colon.
+    pub fn new_semi_colon(value: Vec<String>) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+            delimiter: TextListDelimiter::SemiColon,
+        }
+    }
+}
+
 impl fmt::Display for TextListProperty {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (index, item) in self.value.iter().enumerate() {
@@ -771,6 +783,17 @@ pub struct UriProperty {
         serde(default, skip_serializing_if = "Option::is_none")
     )]
     pub parameters: Option<Parameters>,
+}
+
+impl UriProperty {
+    /// Create a new URI property.
+    pub fn new(value: Uri<'static>) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+        }
+    }
 }
 
 /// Property for a vCard kind.
