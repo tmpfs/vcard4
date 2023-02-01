@@ -31,9 +31,10 @@
 //! Create a new vCard:
 //!
 //! ```
-//! use vcard4::Vcard;
-//! let mut card = Vcard::new(String::from("John Doe"));
-//! card.nickname.push(String::from("Johnny").into());
+//! use vcard4::VcardBuilder;
+//! let card = VcardBuilder::new("John Doe".to_owned())
+//!     .nickname("Johnny".to_owned())
+//!     .finish();
 //! print!("{}", card);
 //! ```
 //!
@@ -93,6 +94,7 @@
 //!   carriage return as optional.
 //!
 
+mod builder;
 mod error;
 pub mod helper;
 mod iter;
@@ -104,6 +106,7 @@ pub mod property;
 mod serde;
 mod vcard;
 
+pub use builder::VcardBuilder;
 pub use error::Error;
 pub use iter::VcardIterator;
 pub use vcard::Vcard;

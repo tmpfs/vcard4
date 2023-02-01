@@ -197,6 +197,16 @@ pub struct AddressProperty {
     pub parameters: Option<Parameters>,
 }
 
+impl From<DeliveryAddress> for AddressProperty {
+    fn from(value: DeliveryAddress) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+        }
+    }
+}
+
 /// Value for the CLIENTPIDMAP property.
 #[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -378,6 +388,28 @@ pub struct LanguageProperty {
     pub parameters: Option<Parameters>,
 }
 
+#[cfg(not(feature = "language-tags"))]
+impl From<String> for LanguageProperty {
+    fn from(value: String) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+        }
+    }
+}
+
+#[cfg(feature = "language-tags")]
+impl From<LanguageTag> for LanguageProperty {
+    fn from(value: LanguageTag) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+        }
+    }
+}
+
 /// Date time property.
 #[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -400,6 +432,16 @@ pub struct DateTimeProperty {
     pub parameters: Option<Parameters>,
 }
 
+impl From<OffsetDateTime> for DateTimeProperty {
+    fn from(value: OffsetDateTime) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+        }
+    }
+}
+
 impl fmt::Display for DateTimeProperty {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -420,6 +462,24 @@ pub enum DateAndOrTime {
     DateTime(OffsetDateTime),
     /// Time value.
     Time((Time, UtcOffset)),
+}
+
+impl From<Date> for DateAndOrTime {
+    fn from(value: Date) -> Self {
+        Self::Date(value)
+    }
+}
+
+impl From<OffsetDateTime> for DateAndOrTime {
+    fn from(value: OffsetDateTime) -> Self {
+        Self::DateTime(value)
+    }
+}
+
+impl From<(Time, UtcOffset)> for DateAndOrTime {
+    fn from(value: (Time, UtcOffset)) -> Self {
+        Self::Time(value)
+    }
 }
 
 impl fmt::Display for DateAndOrTime {
@@ -481,6 +541,36 @@ pub struct DateAndOrTimeProperty {
     pub parameters: Option<Parameters>,
 }
 
+impl From<Date> for DateAndOrTimeProperty {
+    fn from(value: Date) -> Self {
+        Self {
+            value: vec![value.into()],
+            group: None,
+            parameters: None,
+        }
+    }
+}
+
+impl From<OffsetDateTime> for DateAndOrTimeProperty {
+    fn from(value: OffsetDateTime) -> Self {
+        Self {
+            value: vec![value.into()],
+            group: None,
+            parameters: None,
+        }
+    }
+}
+
+impl From<(Time, UtcOffset)> for DateAndOrTimeProperty {
+    fn from(value: (Time, UtcOffset)) -> Self {
+        Self {
+            value: vec![value.into()],
+            group: None,
+            parameters: None,
+        }
+    }
+}
+
 impl fmt::Display for DateAndOrTimeProperty {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         format_date_and_or_time_list(f, &self.value)
@@ -497,6 +587,18 @@ pub enum TextOrUriProperty {
     Text(TextProperty),
     /// Uri value.
     Uri(UriProperty),
+}
+
+impl From<String> for TextOrUriProperty {
+    fn from(value: String) -> Self {
+        Self::Text(value.into())
+    }
+}
+
+impl From<Uri<'static>> for TextOrUriProperty {
+    fn from(value: Uri<'static>) -> Self {
+        Self::Uri(value.into())
+    }
 }
 
 impl Property for TextOrUriProperty {
@@ -534,6 +636,30 @@ pub enum DateTimeOrTextProperty {
     DateTime(DateAndOrTimeProperty),
     /// Text value.
     Text(TextProperty),
+}
+
+impl From<String> for DateTimeOrTextProperty {
+    fn from(value: String) -> Self {
+        Self::Text(value.into())
+    }
+}
+
+impl From<Date> for DateTimeOrTextProperty {
+    fn from(value: Date) -> Self {
+        Self::DateTime(value.into())
+    }
+}
+
+impl From<OffsetDateTime> for DateTimeOrTextProperty {
+    fn from(value: OffsetDateTime) -> Self {
+        Self::DateTime(value.into())
+    }
+}
+
+impl From<(Time, UtcOffset)> for DateTimeOrTextProperty {
+    fn from(value: (Time, UtcOffset)) -> Self {
+        Self::DateTime(value.into())
+    }
 }
 
 impl Property for DateTimeOrTextProperty {
@@ -583,6 +709,16 @@ pub struct UtcOffsetProperty {
     pub parameters: Option<Parameters>,
 }
 
+impl From<UtcOffset> for UtcOffsetProperty {
+    fn from(value: UtcOffset) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+        }
+    }
+}
+
 impl fmt::Display for UtcOffsetProperty {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let (h, m, _) = self.value.as_hms();
@@ -628,6 +764,24 @@ pub enum TimeZoneProperty {
     Uri(UriProperty),
     /// UTC offset value.
     UtcOffset(UtcOffsetProperty),
+}
+
+impl From<String> for TimeZoneProperty {
+    fn from(value: String) -> Self {
+        Self::Text(value.into())
+    }
+}
+
+impl From<Uri<'static>> for TimeZoneProperty {
+    fn from(value: Uri<'static>) -> Self {
+        Self::Uri(value.into())
+    }
+}
+
+impl From<UtcOffset> for TimeZoneProperty {
+    fn from(value: UtcOffset) -> Self {
+        Self::UtcOffset(value.into())
+    }
 }
 
 impl Property for TimeZoneProperty {
@@ -730,6 +884,28 @@ pub struct TextListProperty {
     pub delimiter: TextListDelimiter,
 }
 
+impl TextListProperty {
+    /// Create a new text list property delimited with a semi-colon.
+    pub fn new_semi_colon(value: Vec<String>) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+            delimiter: TextListDelimiter::SemiColon,
+        }
+    }
+
+    /// Create a new text list property delimited with a comma.
+    pub fn new_comma(value: Vec<String>) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+            delimiter: TextListDelimiter::Comma,
+        }
+    }
+}
+
 impl fmt::Display for TextListProperty {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (index, item) in self.value.iter().enumerate() {
@@ -773,6 +949,16 @@ pub struct UriProperty {
     pub parameters: Option<Parameters>,
 }
 
+impl From<Uri<'static>> for UriProperty {
+    fn from(value: Uri<'static>) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+        }
+    }
+}
+
 /// Property for a vCard kind.
 #[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -792,6 +978,16 @@ pub struct KindProperty {
         serde(default, skip_serializing_if = "Option::is_none")
     )]
     pub parameters: Option<Parameters>,
+}
+
+impl From<Kind> for KindProperty {
+    fn from(value: Kind) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+        }
+    }
 }
 
 /// Kind of vCard.
@@ -860,6 +1056,16 @@ pub struct GenderProperty {
         serde(default, skip_serializing_if = "Option::is_none")
     )]
     pub parameters: Option<Parameters>,
+}
+
+impl From<Gender> for GenderProperty {
+    fn from(value: Gender) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+        }
+    }
 }
 
 /// Represents a gender associated with a vCard.

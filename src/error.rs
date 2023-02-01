@@ -120,6 +120,10 @@ pub enum Error {
     #[error("'{0}' must be enclosed in quotes")]
     NotQuoted(String),
 
+    /// Error generated when MEMBER is specified but the kind is not group.
+    #[error("member property is only allowed when the kind is group")]
+    MemberRequiresGroup,
+
     /// Error generated when the PID parameter is used on the
     /// CLIENTPIDMAP property.
     #[error("PID parameter not allowed for CLIENTPIDMAP")]
