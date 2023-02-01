@@ -857,9 +857,8 @@ pub struct UriProperty {
     pub parameters: Option<Parameters>,
 }
 
-impl UriProperty {
-    /// Create a new URI property.
-    pub fn new(value: Uri<'static>) -> Self {
+impl From<Uri<'static>> for UriProperty {
+    fn from(value: Uri<'static>) -> Self {
         Self {
             value,
             group: None,
