@@ -388,6 +388,28 @@ pub struct LanguageProperty {
     pub parameters: Option<Parameters>,
 }
 
+#[cfg(not(feature = "language-tags"))]
+impl From<String> for LanguageProperty {
+    fn from(value: String) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+        }
+    }
+}
+
+#[cfg(feature = "language-tags")]
+impl From<LanguageTag> for LanguageProperty {
+    fn from(value: LanguageTag) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+        }
+    }
+}
+
 /// Date time property.
 #[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -555,6 +577,18 @@ pub enum TextOrUriProperty {
     Text(TextProperty),
     /// Uri value.
     Uri(UriProperty),
+}
+
+impl From<String> for TextOrUriProperty {
+    fn from(value: String) -> Self {
+        Self::Text(value.into())
+    }
+}
+
+impl From<Uri<'static>> for TextOrUriProperty {
+    fn from(value: Uri<'static>) -> Self {
+        Self::Uri(value.into())
+    }
 }
 
 impl Property for TextOrUriProperty {

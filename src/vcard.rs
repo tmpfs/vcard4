@@ -93,6 +93,33 @@ pub struct Vcard {
     )]
     pub address: Vec<AddressProperty>,
 
+    // Communications
+    /// Value of the TEL property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
+    pub tel: Vec<TextOrUriProperty>,
+    /// Value of the EMAIL property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
+    pub email: Vec<TextProperty>,
+    /// Value of the IMPP property.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
+    pub impp: Vec<UriProperty>,
+    /// Value of the LANG property.
+    #[cfg_attr(feature = "zeroize", zeroize(skip))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
+    pub lang: Vec<LanguageProperty>,
+
     // Organizational
     /// Value of the TITLE property.
     #[cfg_attr(
@@ -130,33 +157,6 @@ pub struct Vcard {
         serde(default, skip_serializing_if = "Vec::is_empty")
     )]
     pub related: Vec<TextOrUriProperty>,
-
-    // Communications
-    /// Value of the TEL property.
-    #[cfg_attr(
-        feature = "serde",
-        serde(default, skip_serializing_if = "Vec::is_empty")
-    )]
-    pub tel: Vec<TextOrUriProperty>,
-    /// Value of the EMAIL property.
-    #[cfg_attr(
-        feature = "serde",
-        serde(default, skip_serializing_if = "Vec::is_empty")
-    )]
-    pub email: Vec<TextProperty>,
-    /// Value of the IMPP property.
-    #[cfg_attr(
-        feature = "serde",
-        serde(default, skip_serializing_if = "Vec::is_empty")
-    )]
-    pub impp: Vec<UriProperty>,
-    /// Value of the LANG property.
-    #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    #[cfg_attr(
-        feature = "serde",
-        serde(default, skip_serializing_if = "Vec::is_empty")
-    )]
-    pub lang: Vec<LanguageProperty>,
 
     // Geographic
     /// Value of the TZ property.
