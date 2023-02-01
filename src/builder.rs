@@ -1,14 +1,14 @@
 //! Builder for creating vCards.
 //!
-//! This is a high-level interface for creating vCards programatically;
-//! if you need to assign parameters or use a group then either use
-//! Vcard directly or update properties after finishing a builder.
-
 use crate::{property::{TextListProperty, Gender, DeliveryAddress}, Vcard};
 use time::Date;
 use uriparse::uri::URI as Uri;
 
 /// Build vCard instances.
+///
+/// This is a high-level interface for creating vCards programatically;
+/// if you need to assign parameters or use a group then either use
+/// [Vcard](Vcard) directly or update properties after finishing a builder.
 pub struct VcardBuilder {
     card: Vcard,
 }
@@ -21,11 +21,11 @@ impl VcardBuilder {
         }
     }
 
-    /// Update the formatted name for the vCard.
+    // Identification
+
+    /// Add a formatted name to the vCard.
     pub fn formatted_name(mut self, value: String) -> Self {
-        if let Some(name) = self.card.formatted_name.get_mut(0) {
-            *name = value.into();
-        }
+        self.card.formatted_name.push(value.into());
         self
     }
 
@@ -89,6 +89,20 @@ impl VcardBuilder {
         self
     }
 
+    // Organizational
+
+    /// Add a title to the vCard.
+    pub fn title(mut self, value: String) -> Self {
+        self.card.title.push(value.into());
+        self
+    }
+
+    /// Add a role to the vCard.
+    pub fn role(mut self, value: String) -> Self {
+        self.card.role.push(value.into());
+        self
+    }
+
     /// Finish building the vCard.
     pub fn finish(self) -> Vcard {
         self.card
@@ -130,6 +144,8 @@ mod tests {
                 country_name: Some("Mock Country".to_owned()),
                 postal_code: Some("123".to_owned()),
             })
+            .title("Dr".to_owned())
+            .role("Surgeon".to_owned())
             .finish();
         println!("{}", card);
     }
