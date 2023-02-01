@@ -197,6 +197,16 @@ pub struct AddressProperty {
     pub parameters: Option<Parameters>,
 }
 
+impl From<DeliveryAddress> for AddressProperty {
+    fn from(value: DeliveryAddress) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+        }
+    }
+}
+
 /// Value for the CLIENTPIDMAP property.
 #[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

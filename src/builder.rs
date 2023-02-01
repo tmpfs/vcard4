@@ -4,7 +4,7 @@
 //! if you need to assign parameters or use a group then either use
 //! Vcard directly or update properties after finishing a builder.
 
-use crate::{property::*, Vcard};
+use crate::{property::{TextListProperty, Gender, DeliveryAddress}, Vcard};
 use time::Date;
 use uriparse::uri::URI as Uri;
 
@@ -82,6 +82,12 @@ impl VcardBuilder {
         self.card.url.push(value.into());
         self
     }
+    
+    /// Add an address to the vCard.
+    pub fn address(mut self, value: DeliveryAddress) -> Self {
+        self.card.address.push(value.into());
+        self
+    }
 
     /// Finish building the vCard.
     pub fn finish(self) -> Vcard {
@@ -92,6 +98,7 @@ impl VcardBuilder {
 #[cfg(test)]
 mod tests {
     use super::VcardBuilder;
+    use crate::property::DeliveryAddress;
     use time::{Date, Month};
 
     #[test]
@@ -104,7 +111,7 @@ mod tests {
                 "Dr.".to_owned(),
                 "MS".to_owned(),
             ])
-            .nickname("Doc J".to_owned())
+            .nickname("JC".to_owned())
             .photo("file:///images/jdoe.jpeg".try_into().unwrap())
             .birthday(
                 Date::from_calendar_date(1986, Month::February, 7).unwrap(),
@@ -114,6 +121,15 @@ mod tests {
             )
             .gender("F")
             .url("https://example.com/jdoe".try_into().unwrap())
+            .address(DeliveryAddress {
+                po_box: None,
+                extended_address: None,
+                street_address: Some("123 Main Street".to_owned()),
+                locality: Some("Mock City".to_owned()),
+                region: Some("Mock State".to_owned()),
+                country_name: Some("Mock Country".to_owned()),
+                postal_code: Some("123".to_owned()),
+            })
             .finish();
         println!("{}", card);
     }
