@@ -422,6 +422,24 @@ pub enum DateAndOrTime {
     Time((Time, UtcOffset)),
 }
 
+impl From<Date> for DateAndOrTime {
+    fn from(value: Date) -> Self {
+        Self::Date(value)
+    }
+}
+
+impl From<OffsetDateTime> for DateAndOrTime {
+    fn from(value: OffsetDateTime) -> Self {
+        Self::DateTime(value)
+    }
+}
+
+impl From<(Time, UtcOffset)> for DateAndOrTime {
+    fn from(value: (Time, UtcOffset)) -> Self {
+        Self::Time(value)
+    }
+}
+
 impl fmt::Display for DateAndOrTime {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -481,6 +499,36 @@ pub struct DateAndOrTimeProperty {
     pub parameters: Option<Parameters>,
 }
 
+impl From<Date> for DateAndOrTimeProperty {
+    fn from(value: Date) -> Self {
+        Self {
+            value: vec![value.into()],
+            group: None,
+            parameters: None,
+        }
+    }
+}
+
+impl From<OffsetDateTime> for DateAndOrTimeProperty {
+    fn from(value: OffsetDateTime) -> Self {
+        Self {
+            value: vec![value.into()],
+            group: None,
+            parameters: None,
+        }
+    }
+}
+
+impl From<(Time, UtcOffset)> for DateAndOrTimeProperty {
+    fn from(value: (Time, UtcOffset)) -> Self {
+        Self {
+            value: vec![value.into()],
+            group: None,
+            parameters: None,
+        }
+    }
+}
+
 impl fmt::Display for DateAndOrTimeProperty {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         format_date_and_or_time_list(f, &self.value)
@@ -534,6 +582,30 @@ pub enum DateTimeOrTextProperty {
     DateTime(DateAndOrTimeProperty),
     /// Text value.
     Text(TextProperty),
+}
+
+impl From<String> for DateTimeOrTextProperty {
+    fn from(value: String) -> Self {
+        Self::Text(value.into())
+    }
+}
+
+impl From<Date> for DateTimeOrTextProperty {
+    fn from(value: Date) -> Self {
+        Self::DateTime(value.into())
+    }
+}
+
+impl From<OffsetDateTime> for DateTimeOrTextProperty {
+    fn from(value: OffsetDateTime) -> Self {
+        Self::DateTime(value.into())
+    }
+}
+
+impl From<(Time, UtcOffset)> for DateTimeOrTextProperty {
+    fn from(value: (Time, UtcOffset)) -> Self {
+        Self::DateTime(value.into())
+    }
 }
 
 impl Property for DateTimeOrTextProperty {
