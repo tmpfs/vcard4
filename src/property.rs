@@ -432,6 +432,16 @@ pub struct DateTimeProperty {
     pub parameters: Option<Parameters>,
 }
 
+impl From<OffsetDateTime> for DateTimeProperty {
+    fn from(value: OffsetDateTime) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+        }
+    }
+}
+
 impl fmt::Display for DateTimeProperty {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -699,6 +709,16 @@ pub struct UtcOffsetProperty {
     pub parameters: Option<Parameters>,
 }
 
+impl From<UtcOffset> for UtcOffsetProperty {
+    fn from(value: UtcOffset) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+        }
+    }
+}
+
 impl fmt::Display for UtcOffsetProperty {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let (h, m, _) = self.value.as_hms();
@@ -744,6 +764,24 @@ pub enum TimeZoneProperty {
     Uri(UriProperty),
     /// UTC offset value.
     UtcOffset(UtcOffsetProperty),
+}
+
+impl From<String> for TimeZoneProperty {
+    fn from(value: String) -> Self {
+        Self::Text(value.into())
+    }
+}
+
+impl From<Uri<'static>> for TimeZoneProperty {
+    fn from(value: Uri<'static>) -> Self {
+        Self::Uri(value.into())
+    }
+}
+
+impl From<UtcOffset> for TimeZoneProperty {
+    fn from(value: UtcOffset) -> Self {
+        Self::UtcOffset(value.into())
+    }
 }
 
 impl Property for TimeZoneProperty {
@@ -854,6 +892,16 @@ impl TextListProperty {
             group: None,
             parameters: None,
             delimiter: TextListDelimiter::SemiColon,
+        }
+    }
+
+    /// Create a new text list property delimited with a comma.
+    pub fn new_comma(value: Vec<String>) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+            delimiter: TextListDelimiter::Comma,
         }
     }
 }

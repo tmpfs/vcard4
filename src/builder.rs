@@ -4,7 +4,7 @@ use crate::{
     property::{DeliveryAddress, Gender, Kind, TextListProperty},
     Vcard,
 };
-use time::Date;
+use time::{Date, OffsetDateTime};
 use uriparse::uri::URI as Uri;
 
 #[cfg(feature = "language-tags")]
@@ -19,6 +19,9 @@ use language_tags::LanguageTag;
 /// The card is not validated so it is possible to create
 /// invalid vCards using the builder. To ensure you have a valid vCard call
 /// [validate](Vcard::validate) afterwards.
+///
+/// The builder does not support the CLIENTPIDMAP property, if you need to
+/// use a CLIENTPIDMAP use [Vcard](Vcard).
 pub struct VcardBuilder {
     card: Vcard,
 }
@@ -36,6 +39,18 @@ impl VcardBuilder {
     /// Set the kind of vCard.
     pub fn kind(mut self, value: Kind) -> Self {
         self.card.kind = Some(value.into());
+        self
+    }
+
+    /// Add a source for the vCard.
+    pub fn source(mut self, value: Uri<'static>) -> Self {
+        self.card.source.push(value.into());
+        self
+    }
+
+    /// Add XML to the vCard.
+    pub fn xml(mut self, value: String) -> Self {
+        self.card.xml.push(value.into());
         self
     }
 
@@ -95,12 +110,6 @@ impl VcardBuilder {
         self
     }
 
-    /// Add a URL to the vCard.
-    pub fn url(mut self, value: Uri<'static>) -> Self {
-        self.card.url.push(value.into());
-        self
-    }
-
     /// Add an address to the vCard.
     pub fn address(mut self, value: DeliveryAddress) -> Self {
         self.card.address.push(value.into());
@@ -141,6 +150,20 @@ impl VcardBuilder {
         self
     }
 
+    // Geographical
+
+    /// Add a timezone to the vCard.
+    pub fn timezone(mut self, value: String) -> Self {
+        self.card.timezone.push(value.into());
+        self
+    }
+
+    /// Add a geographic location to the vCard.
+    pub fn geo(mut self, value: Uri<'static>) -> Self {
+        self.card.geo.push(value.into());
+        self
+    }
+
     // Organizational
 
     /// Add a title to the vCard.
@@ -162,10 +185,8 @@ impl VcardBuilder {
     }
 
     /// Add an organization to the vCard.
-    pub fn org(mut self, value: &[String]) -> Self {
-        self.card
-            .org
-            .push(TextListProperty::new_semi_colon(value.to_vec()));
+    pub fn org(mut self, value: Vec<String>) -> Self {
+        self.card.org.push(TextListProperty::new_semi_colon(value));
         self
     }
 
@@ -183,6 +204,80 @@ impl VcardBuilder {
         self
     }
 
+    // Explanatory
+
+    /// Add categories to the vCard.
+    pub fn categories(mut self, value: Vec<String>) -> Self {
+        self.card
+            .categories
+            .push(TextListProperty::new_comma(value));
+        self
+    }
+
+    /// Add a note to the vCard.
+    pub fn note(mut self, value: String) -> Self {
+        self.card.note.push(value.into());
+        self
+    }
+
+    /// Add a product identifier to the vCard.
+    pub fn prod_id(mut self, value: String) -> Self {
+        self.card.prod_id = Some(value.into());
+        self
+    }
+
+    /// Set the revision of the vCard.
+    pub fn rev(mut self, value: OffsetDateTime) -> Self {
+        self.card.rev = Some(value.into());
+        self
+    }
+
+    /// Add a sound to the vCard.
+    pub fn sound(mut self, value: Uri<'static>) -> Self {
+        self.card.sound.push(value.into());
+        self
+    }
+
+    /// Set the UID for the vCard.
+    pub fn uid(mut self, value: Uri<'static>) -> Self {
+        self.card.uid = Some(value.into());
+        self
+    }
+
+    /// Add a URL to the vCard.
+    pub fn url(mut self, value: Uri<'static>) -> Self {
+        self.card.url.push(value.into());
+        self
+    }
+
+    // Security
+
+    /// Add a key to the vCard.
+    pub fn key(mut self, value: Uri<'static>) -> Self {
+        self.card.key.push(value.into());
+        self
+    }
+
+    // Calendar
+
+    /// Add a fburl to the vCard.
+    pub fn fburl(mut self, value: Uri<'static>) -> Self {
+        self.card.fburl.push(value.into());
+        self
+    }
+
+    /// Add a calendar address URI to the vCard.
+    pub fn cal_adr_uri(mut self, value: Uri<'static>) -> Self {
+        self.card.cal_adr_uri.push(value.into());
+        self
+    }
+
+    /// Add a calendar URI to the vCard.
+    pub fn cal_uri(mut self, value: Uri<'static>) -> Self {
+        self.card.cal_uri.push(value.into());
+        self
+    }
+
     /// Finish building the vCard.
     pub fn finish(self) -> Vcard {
         self.card
@@ -193,11 +288,22 @@ impl VcardBuilder {
 mod tests {
     use super::VcardBuilder;
     use crate::property::{DeliveryAddress, Kind, LanguageProperty};
-    use time::{Date, Month};
+    use time::{Date, Month, OffsetDateTime, Time};
 
     #[test]
     fn builder_vcard() {
+        let mut rev = OffsetDateTime::now_utc();
+        rev = rev.replace_date(
+            Date::from_calendar_date(2000, Month::January, 3).unwrap());
+        rev = rev.replace_time(Time::MIDNIGHT);
+
         let card = VcardBuilder::new("Jane Doe".to_owned())
+            // General
+            .source(
+                "http://directory.example.com/addressbooks/jdoe.vcf"
+                    .try_into()
+                    .unwrap(),
+            )
             // Identification
             .name([
                 "Doe".to_owned(),
@@ -215,7 +321,6 @@ mod tests {
                 Date::from_calendar_date(2002, Month::March, 18).unwrap(),
             )
             .gender("F")
-            .url("https://example.com/jdoe".try_into().unwrap())
             .address(DeliveryAddress {
                 po_box: None,
                 extended_address: None,
@@ -229,13 +334,43 @@ mod tests {
             .telephone("+10987654321".to_owned())
             .email("janedoe@example.com".to_owned())
             .impp("im://example.com/messenger".try_into().unwrap())
+            // Geographical
+            .timezone("Raleigh/North America".to_owned())
+            .geo("geo:37.386013,-122.082932".try_into().unwrap())
             // Organizational
+            .org(vec!["Mock Hospital".to_owned(), "Surgery".to_owned()])
             .title("Dr".to_owned())
-            .role("Surgeon".to_owned())
+            .role("Master Surgeon".to_owned())
             .logo("https://example.com/mock.jpeg".try_into().unwrap())
             .related("https://example.com/johndoe".try_into().unwrap())
+            // Explanatory
+            .categories(vec!["Medical".to_owned(), "Health".to_owned()])
+            .note("Saved my life!".to_owned())
+            .prod_id("Contact App v1".to_owned())
+            .rev(rev)
+            .sound("https://example.com/janedoe.wav".try_into().unwrap())
+            .uid(
+                "urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
+                    .try_into()
+                    .unwrap(),
+            )
+            .url("https://example.com/janedoe".try_into().unwrap())
+            // Security
+            .key("urn:eth:0x00".try_into().unwrap())
+            // Calendar
+            .fburl("https://www.example.com/busy/janedoe".try_into().unwrap())
+            .cal_adr_uri(
+                "https://www.example.com/calendar/janedoe"
+                    .try_into()
+                    .unwrap(),
+            )
+            .cal_uri("https://calendar.example.com".try_into().unwrap())
             .finish();
-        println!("{}", card);
+
+        let expected = "BEGIN:VCARD\r\nVERSION:4.0\r\nSOURCE:http://directory.example.com/addressbooks/jdoe.vcf\r\nFN:Jane Doe\r\nN:Doe;Jane;Claire;Dr.;MS\r\nNICKNAME:JC\r\nPHOTO:file:///images/jdoe.jpeg\r\nBDAY:19860207\r\nANNIVERSARY:20020318\r\nGENDER:F\r\nURL:https://example.com/janedoe\r\nADR:;;123 Main Street;Mock City;Mock State;123;Mock Country\r\nTITLE:Dr\r\nROLE:Master Surgeon\r\nLOGO:https://example.com/mock.jpeg\r\nORG:Mock Hospital;Surgery\r\nRELATED:https://example.com/johndoe\r\nTEL:+10987654321\r\nEMAIL:janedoe@example.com\r\nIMPP:im://example.com/messenger\r\nTZ:Raleigh/North America\r\nGEO:geo:37.386013,-122.082932\r\nCATEGORIES:Medical,Health\r\nNOTE:Saved my life!\r\nPRODID:Contact App v1\r\nREV:20000103T000000Z\r\nSOUND:https://example.com/janedoe.wav\r\nUID:urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6\r\nKEY:urn:eth:0x00\r\nFBURL:https://www.example.com/busy/janedoe\r\nCALADRURI:https://www.example.com/calendar/janedoe\r\nCALURI:https://calendar.example.com/\r\nEND:VCARD\r\n";
+
+        let vcard = format!("{}", card);
+        assert_eq!(expected, &vcard);
     }
 
     #[test]
