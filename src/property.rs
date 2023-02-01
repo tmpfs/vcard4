@@ -957,6 +957,16 @@ pub struct GenderProperty {
     pub parameters: Option<Parameters>,
 }
 
+impl From<Gender> for GenderProperty {
+    fn from(value: Gender) -> Self {
+        Self {
+            value,
+            group: None,
+            parameters: None,
+        }
+    }
+}
+
 /// Represents a gender associated with a vCard.
 #[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

@@ -66,6 +66,17 @@ impl VcardBuilder {
         self
     }
 
+    /// Set the gender for the vCard.
+    ///
+    /// If the value cannot be parsed in to a gender according to 
+    /// RFC6350 then the gender will not be set.
+    pub fn gender(mut self, value: &str) -> Self {
+        if let Ok(gender) = value.parse::<Gender>() {
+            self.card.gender = Some(gender.into());
+        }
+        self
+    }
+
     /// Finish building the vCard.
     pub fn finish(self) -> Vcard {
         self.card
@@ -95,6 +106,7 @@ mod tests {
                 Date::from_calendar_date(1986, Month::February, 7).unwrap())
             .anniversary(
                 Date::from_calendar_date(2002, Month::March, 18).unwrap())
+            .gender("F")
             .finish();
         println!("{}", card);
     }
