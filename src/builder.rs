@@ -1,7 +1,7 @@
 //! Builder for creating vCards.
 //!
 use crate::{
-    property::{DeliveryAddress, Gender, TextListProperty, Kind},
+    property::{DeliveryAddress, Gender, Kind, TextListProperty},
     Vcard,
 };
 use time::Date;
@@ -16,8 +16,8 @@ use language_tags::LanguageTag;
 /// if you need to assign parameters or use a group then either use
 /// [Vcard](Vcard) directly or update properties after finishing a builder.
 ///
-/// The card is not validated so it is possible to create 
-/// invalid vCards using the builder. To ensure you have a valid vCard call 
+/// The card is not validated so it is possible to create
+/// invalid vCards using the builder. To ensure you have a valid vCard call
 /// [validate](Vcard::validate) afterwards.
 pub struct VcardBuilder {
     card: Vcard,
@@ -163,7 +163,9 @@ impl VcardBuilder {
 
     /// Add an organization to the vCard.
     pub fn org(mut self, value: &[String]) -> Self {
-        self.card.org.push(TextListProperty::new_semi_colon(value.to_vec()));
+        self.card
+            .org
+            .push(TextListProperty::new_semi_colon(value.to_vec()));
         self
     }
 
@@ -172,6 +174,12 @@ impl VcardBuilder {
     /// The vCard should be of the group kind to be valid.
     pub fn member(mut self, value: Uri<'static>) -> Self {
         self.card.member.push(value.into());
+        self
+    }
+
+    /// Add a related entry to the vCard.
+    pub fn related(mut self, value: Uri<'static>) -> Self {
+        self.card.related.push(value.into());
         self
     }
 
@@ -184,7 +192,7 @@ impl VcardBuilder {
 #[cfg(test)]
 mod tests {
     use super::VcardBuilder;
-    use crate::property::{DeliveryAddress, LanguageProperty, Kind};
+    use crate::property::{DeliveryAddress, Kind, LanguageProperty};
     use time::{Date, Month};
 
     #[test]
@@ -221,11 +229,11 @@ mod tests {
             .telephone("+10987654321".to_owned())
             .email("janedoe@example.com".to_owned())
             .impp("im://example.com/messenger".try_into().unwrap())
-
             // Organizational
             .title("Dr".to_owned())
             .role("Surgeon".to_owned())
             .logo("https://example.com/mock.jpeg".try_into().unwrap())
+            .related("https://example.com/johndoe".try_into().unwrap())
             .finish();
         println!("{}", card);
     }
