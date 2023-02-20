@@ -266,31 +266,26 @@ proptest! {
         offset_h in 0u8..24,
         offset_m in 0u8..60) {
 
-        let value = format!("{:02}{:02}{:02}-{:02}{:02}", h, m, s, offset_h, offset_m);
+        let west = format!("{:02}{:02}{:02}-{:02}{:02}", h, m, s, offset_h, offset_m);
+        let east = format!("{:02}{:02}{:02}+{:02}{:02}", h, m, s, offset_h, offset_m);
 
         // Negative to the West
-        let (time, offset) = parse_time(
-            &value).unwrap();
+        let (time, offset) = parse_time(&west).unwrap();
         let (h2, m2, s2) = (time.hour(), time.minute(), time.second());
         prop_assert_eq!((h, m, s), (h2, m2, s2));
-
-        /*
-        println!("({} - {}) : {}", offset_h, offset_m, offset);
 
         if offset_h > 0 || offset_m > 0 {
             assert!(offset.is_negative());
         }
 
-        println!("({} - {}) : {}", offset_h, offset_m, offset);
+        // Positive to the East
+        let (time, offset) = parse_time(&east).unwrap();
+        let (h2, m2, s2) = (time.hour(), time.minute(), time.second());
+        prop_assert_eq!((h, m, s), (h2, m2, s2));
 
-        // Negative offsets yield negative i8 so we convert back to
-        // u8 for comparison
-        let (offset_hours, offset_minutes,_) = offset.as_hms();
-        let abs_offset_hours = (offset_hours + 127) as u8;
-        //let abs_offset_minutes = (offset_minutes + 127) as u8;
-
-        println!("{} {}", abs_offset_hours, offset_minutes);
-        */
+        if offset_h > 0 || offset_m > 0 {
+            assert!(offset.is_positive());
+        }
     }
 
     #[test]

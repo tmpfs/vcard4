@@ -1,6 +1,6 @@
 [package]
 name = "vcard4"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 description = "Fast and correct vCard parser for RFC6350"
 repository = "https://github.com/tmpfs/vcard4"
@@ -11,7 +11,7 @@ license = "MIT OR Apache-2.0"
 thiserror = "1"
 logos = "0.12"
 uriparse = "0.6.4"
-time = { version = "0.3.17", features = ["parsing", "formatting"] }
+time = { version = "0.3.19", features = ["parsing", "formatting"] }
 unicode-segmentation="1"
 aho-corasick = "0.7"
 serde = { version = "1", features = ["derive"], optional = true }
