@@ -959,6 +959,15 @@ impl From<Uri<'static>> for UriProperty {
     }
 }
 
+impl TryFrom<&str> for UriProperty {
+    type Error = Error;
+
+    fn try_from(value: &str) -> Result<Self> {
+        let uri = Uri::try_from(value)?.into_owned();
+        Ok(uri.into())
+    }
+}
+
 /// Property for a vCard kind.
 #[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
