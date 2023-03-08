@@ -65,6 +65,8 @@ pub enum TypeParameter {
     Telephone(TelephoneType),
     /// Type for the RELATED property.
     Related(RelatedType),
+    /// Extension type parameter specified using the X- syntax.
+    Extension(String),
 }
 
 impl fmt::Display for TypeParameter {
@@ -74,6 +76,7 @@ impl fmt::Display for TypeParameter {
             Self::Work => write!(f, "{}", WORK),
             Self::Telephone(ref tel) => write!(f, "{}", tel),
             Self::Related(ref rel) => write!(f, "{}", rel),
+            Self::Extension(ref value) => write!(f, "X-{}", value),
         }
     }
 }
@@ -85,10 +88,21 @@ impl FromStr for TypeParameter {
         match s {
             HOME => Ok(Self::Home),
             WORK => Ok(Self::Work),
-            _ => match s.parse::<TelephoneType>() {
-                Ok(tel) => Ok(Self::Telephone(tel)),
-                Err(_) => Ok(Self::Related(s.parse()?)),
-            },
+            _ => {
+                if s.starts_with("x-") || s.starts_with("X-") {
+                    let value = if s.len() > 2 {
+                        s[2..].to_string()
+                    } else {
+                        String::new()
+                    };
+                    Ok(Self::Extension(value))   
+                } else {
+                    match s.parse::<TelephoneType>() {
+                        Ok(tel) => Ok(Self::Telephone(tel)),
+                        Err(_) => Ok(Self::Related(s.parse()?)),
+                    }
+                }
+            }
         }
     }
 }

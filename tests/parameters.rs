@@ -145,6 +145,7 @@ FN;TYPE={}:Jane Doe
 END:VCARD"#,
         value
     );
+        
     let mut vcards = parse(input)?;
     assert_eq!(1, vcards.len());
     let card = vcards.remove(0);
@@ -191,6 +192,8 @@ fn param_type() -> Result<()> {
     assert_param_type(TypeParameter::Related(RelatedType::Me))?;
     assert_param_type(TypeParameter::Related(RelatedType::Agent))?;
     assert_param_type(TypeParameter::Related(RelatedType::Emergency))?;
+
+    assert_param_type(TypeParameter::Extension("foo".to_string()))?;
 
     Ok(())
 }

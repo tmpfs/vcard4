@@ -333,8 +333,8 @@ proptest! {
         h in 0u8..24,
         mi in 0u8..60,
         s in 0u8..60,
-        offset_h in 0u8..24,
-        offset_m in 0u8..60,
+        _offset_h in 0u8..24,
+        _offset_m in 0u8..60,
     ) {
         // No offset
         let value = format!(
