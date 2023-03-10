@@ -99,7 +99,12 @@ impl FromStr for TypeParameter {
                 } else {
                     match s.parse::<TelephoneType>() {
                         Ok(tel) => Ok(Self::Telephone(tel)),
-                        Err(_) => Ok(Self::Related(s.parse()?)),
+                        Err(_) => {
+                            match s.parse::<RelatedType>() {
+                                Ok(value) => Ok(Self::Related(value)),
+                                Err(_) => Ok(Self::Extension(s.to_string())),
+                            }
+                        },
                     }
                 }
             }
@@ -290,9 +295,6 @@ pub enum TelephoneType {
     /// Indicates a telecommunication device for people with
     /// hearing or speech difficulties.  
     TextPhone,
-    /// Preferred string used by Apple contacts
-    /// deviating from the spec.
-    Pref,
 }
 
 impl fmt::Display for TelephoneType {
@@ -308,7 +310,6 @@ impl fmt::Display for TelephoneType {
                 Self::Video => "video",
                 Self::Pager => "pager",
                 Self::TextPhone => "textphone",
-                Self::Pref => "pref",
             }
         )
     }
@@ -326,7 +327,6 @@ impl FromStr for TelephoneType {
             "video" => Ok(Self::Video),
             "pager" => Ok(Self::Pager),
             "textphone" => Ok(Self::TextPhone),
-            "pref" => Ok(Self::Pref),
             _ => Err(Error::UnknownTelephoneType(s.to_string())),
         }
     }

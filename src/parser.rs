@@ -31,7 +31,7 @@ pub(crate) enum Token {
     #[token("GEO")]
     Geo,
 
-    #[regex("(?i:([a-z0-9-]+\\.)?(SOURCE|KIND|FN|N|NICKNAME|PHOTO|BDAY|ANNIVERSARY|GENDER|ADR|TEL|EMAIL|IMPP|LANG|TITLE|ROLE|LOGO|ORG|MEMBER|RELATED|CATEGORIES|NOTE|PRODID|REV|SOUND|UID|CLIENTPIDMAP|URL|KEY|FBURL|CALADRURI|CALURI|XML|VERSION))")]
+    #[regex("(?i:([a-z0-9-]+\\.)?(SOURCE|KIND|FN|N|NICKNAME|PHOTO|BDAY|ANNIVERSARY|GENDER|ADR|TEL|EMAIL|IMPP|LANG|TITLE|ROLE|LOGO|ORG|MEMBER|RELATED|CATEGORIES|NOTE|PRODID|REV|SOUND|UID|CLIENTPIDMAP|URL|KEY|FBURL|CALADRURI|CALURI|XML|VERSION|(X-[a-z0-9-]+)))")]
     PropertyName,
 
     #[regex("(?i:x-[a-z0-9-]+)")]
@@ -43,7 +43,7 @@ pub(crate) enum Token {
     #[token("\"")]
     DoubleQuote,
 
-    #[regex("(?i:LANGUAGE|VALUE|PREF|ALTID|PID|TYPE|MEDIATYPE|CALSCALE|SORT-AS|LABEL)")]
+    #[regex("(?i:LANGUAGE|VALUE|PREF|ALTID|PID|TYPE|MEDIATYPE|CALSCALE|SORT-AS|LABEL|ENCODING)")]
     ParameterKey,
 
     #[token("=")]
@@ -150,6 +150,7 @@ impl<'s> VcardParser<'s> {
         card: &mut Vcard,
     ) -> Result<()> {
         while let Some(first) = lex.next() {
+            println!("{:#?} {}", first, &self.source[lex.span()]);
             if first == Token::End {
                 break;
             }
@@ -220,6 +221,19 @@ impl<'s> VcardParser<'s> {
         Ok(())
     }
 
+    fn add_extension_parameter(&self, parameter_name: &str, value: String, params: &mut Parameters) {
+        let values = value
+            .split(',')
+            .map(|s| s.to_owned())
+            .collect::<Vec<_>>();
+        let x_param = (parameter_name.to_owned(), values);
+        if let Some(extensions) = params.extensions.as_mut() {
+            extensions.push(x_param);
+        } else {
+            params.extensions = Some(vec![x_param]);
+        }
+    }
+
     /// Parse property parameters.
     fn parse_parameters(
         &self,
@@ -250,16 +264,8 @@ impl<'s> VcardParser<'s> {
                     self.parse_parameter_value(lex)?;
 
                 if token == Token::ExtensionName {
-                    let values = value
-                        .split(',')
-                        .map(|s| s.to_owned())
-                        .collect::<Vec<_>>();
-                    let x_param = (parameter_name.to_owned(), values);
-                    if let Some(extensions) = params.extensions.as_mut() {
-                        extensions.push(x_param);
-                    } else {
-                        params.extensions = Some(vec![x_param]);
-                    }
+                    self.add_extension_parameter(
+                        parameter_name, value, &mut params);
                 } else {
                     match &upper_name[..] {
                         LANGUAGE => {
@@ -304,6 +310,7 @@ impl<'s> VcardParser<'s> {
                             for val in value.split(',') {
                                 let param: TypeParameter =
                                     match &property_upper_name[..] {
+                                        /*
                                         TEL => match val {
                                             HOME => TypeParameter::Home,
                                             WORK => TypeParameter::Work,
@@ -314,6 +321,7 @@ impl<'s> VcardParser<'s> {
                                         RELATED => TypeParameter::Related(
                                             val.parse()?,
                                         ),
+                                        */
                                         _ => val.parse()?,
                                     };
                                 type_params.push(param);
@@ -377,6 +385,10 @@ impl<'s> VcardParser<'s> {
                                 ));
                             }
                             params.label = Some(value);
+                        }
+                        ENCODING => {
+                            self.add_extension_parameter(
+                                parameter_name, value, &mut params);
                         }
                         _ => {
                             return Err(Error::UnknownParameter(
@@ -490,14 +502,14 @@ impl<'s> VcardParser<'s> {
     ) -> Result<()> {
         let value = self.parse_property_value(lex)?;
 
-        if token == Token::ExtensionName {
+        let upper_name = name.to_uppercase();
+
+        if token == Token::ExtensionName || upper_name.starts_with("X-") {
             self.parse_extension_property_by_name(
                 card, name, value, parameters, group,
             )?;
             return Ok(());
         }
-
-        let upper_name = name.to_uppercase();
 
         match &upper_name[..] {
             // General properties
@@ -561,12 +573,23 @@ impl<'s> VcardParser<'s> {
                 });
             }
             PHOTO => {
-                let value = Uri::try_from(value.as_ref())?.into_owned();
-                card.photo.push(UriProperty {
-                    value,
-                    parameters,
-                    group,
-                });
+                match Uri::try_from(value.as_ref()) {
+                    Ok(uri) => {
+                        let value = uri.into_owned();
+                        card.photo.push(TextOrUriProperty::Uri(UriProperty {
+                            value,
+                            parameters,
+                            group,
+                        }));
+                    }
+                    Err(_) => {
+                        card.photo.push(TextOrUriProperty::Text(TextProperty {
+                            value: value.into_owned(),
+                            parameters,
+                            group,
+                        }));
+                    }
+                }
             }
             BDAY => {
                 if card.bday.is_some() {
@@ -1086,16 +1109,8 @@ impl<'s> VcardParser<'s> {
             if expected.contains(value) {
                 Ok(())
             } else {
-                Err(Error::IncorrectToken)
+                Err(Error::IncorrectToken(format!("{:#?}", value)))
             }
-
-            /*
-            if value == expected {
-                Ok(())
-            } else {
-                Err(Error::IncorrectToken)
-            }
-            */
         } else {
             Err(Error::TokenExpected)
         }

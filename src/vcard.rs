@@ -55,11 +55,14 @@ pub struct Vcard {
     )]
     pub nickname: Vec<TextProperty>,
     /// Value of the PHOTO property.
+    ///
+    /// Note that the spec says this should be a URI but certain 
+    /// apps embed photos here for 3.0 version so we also accept text.
     #[cfg_attr(
         feature = "serde",
         serde(default, skip_serializing_if = "Vec::is_empty")
     )]
-    pub photo: Vec<UriProperty>,
+    pub photo: Vec<TextOrUriProperty>,
     /// Value of the BDAY property.
     #[cfg_attr(
         feature = "serde",

@@ -18,8 +18,8 @@ pub enum Error {
     ControlCharacter(String),
 
     /// Error generated when an expected token is of the wrong type.
-    #[error("input token was incorrect")]
-    IncorrectToken,
+    #[error("input token '{0}' was incorrect")]
+    IncorrectToken(String),
 
     /// Error generated when an unknown parameter is encountered.
     #[error("unknown parameter '{0}'")]

@@ -58,3 +58,6 @@ pub(crate) const SORT_AS: &str = "SORT-AS";
 // NOTE: we use GEO from the property names
 // NOTE: we use TZ from the property names
 pub(crate) const LABEL: &str = "LABEL";
+
+// Apple uses this for embedded photos
+pub(crate) const ENCODING: &str = "ENCODING";

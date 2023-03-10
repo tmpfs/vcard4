@@ -70,19 +70,26 @@ END:VCARD"#;
     let card = vcards.remove(0);
     assert_eq!(2, card.photo.len());
 
-    let photo1 = card.photo.get(0).unwrap();
-    let photo2 = card.photo.get(1).unwrap();
+    if let TextOrUriProperty::Uri(photo1) = card.photo.get(0).unwrap() {
+        assert_eq!(
+            "http://www.example.com/pub/photos/jqpublic.gif",
+            &photo1.value.to_string()
+        );
 
-    assert_eq!(
-        "http://www.example.com/pub/photos/jqpublic.gif",
-        &photo1.value.to_string()
-    );
+    } else {
+        panic!("expecting URI property");
+    }
 
-    assert!(photo2
-        .value
-        .to_string()
-        .starts_with("data:image/jpeg;base64,"));
-    assert!(photo2.value.to_string().ends_with("TeXN0"));
+    if let TextOrUriProperty::Uri(photo2) = card.photo.get(1).unwrap() {
+        assert!(photo2
+            .value
+            .to_string()
+            .starts_with("data:image/jpeg;base64,"));
+        assert!(photo2.value.to_string().ends_with("TeXN0"));
+
+    } else {
+        panic!("expecting URI property");
+    }
 
     assert_round_trip(&card)?;
     Ok(())
