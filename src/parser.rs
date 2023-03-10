@@ -150,7 +150,7 @@ impl<'s> VcardParser<'s> {
         card: &mut Vcard,
     ) -> Result<()> {
         while let Some(first) = lex.next() {
-            println!("{:#?} {}", first, &self.source[lex.span()]);
+            //println!("{:#?} {}", first, &self.source[lex.span()]);
             if first == Token::End {
                 break;
             }
