@@ -290,6 +290,9 @@ pub enum TelephoneType {
     /// Indicates a telecommunication device for people with
     /// hearing or speech difficulties.  
     TextPhone,
+    /// Preferred string used by Apple contacts
+    /// deviating from the spec.
+    Pref,
 }
 
 impl fmt::Display for TelephoneType {
@@ -305,6 +308,7 @@ impl fmt::Display for TelephoneType {
                 Self::Video => "video",
                 Self::Pager => "pager",
                 Self::TextPhone => "textphone",
+                Self::Pref => "pref",
             }
         )
     }
@@ -314,7 +318,7 @@ impl FromStr for TelephoneType {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        match s {
+        match &s.to_lowercase()[..] {
             "text" => Ok(Self::Text),
             "voice" => Ok(Self::Voice),
             "fax" => Ok(Self::Fax),
@@ -322,6 +326,7 @@ impl FromStr for TelephoneType {
             "video" => Ok(Self::Video),
             "pager" => Ok(Self::Pager),
             "textphone" => Ok(Self::TextPhone),
+            "pref" => Ok(Self::Pref),
             _ => Err(Error::UnknownTelephoneType(s.to_string())),
         }
     }

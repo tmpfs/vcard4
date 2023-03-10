@@ -20,7 +20,7 @@ pub(crate) enum Token {
     #[regex("(?i:BEGIN:VCARD)")]
     Begin,
 
-    #[regex("(?i:VERSION:4\\.0)")]
+    #[regex("(?i:VERSION:[3-4]\\.0)")]
     Version,
 
     // Special case shared between property and parameter
