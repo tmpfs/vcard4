@@ -287,6 +287,9 @@ pub fn parse_timestamp(value: &str) -> Result<OffsetDateTime> {
     let utc_format = format_description::parse(
         "[year][month][day]T[hour][minute][second]Z",
     )?;
+    let rfc3339_format = format_description::parse(
+        "[year]-[month]-[day]T[hour]:[minute]:[second]Z",
+    )?;
     let implicit_utc_format = format_description::parse(
         "[year][month][day]T[hour][minute][second]",
     )?;
@@ -298,6 +301,11 @@ pub fn parse_timestamp(value: &str) -> Result<OffsetDateTime> {
     {
         Ok(result)
     } else if let Ok(result) = PrimitiveDateTime::parse(value, &utc_format) {
+        let result = OffsetDateTime::now_utc().replace_date_time(result);
+        Ok(result)
+    } else if let Ok(result) =
+        PrimitiveDateTime::parse(value, &rfc3339_format)
+    {
         let result = OffsetDateTime::now_utc().replace_date_time(result);
         Ok(result)
     } else {
