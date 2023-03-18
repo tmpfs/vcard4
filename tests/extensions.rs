@@ -8,7 +8,7 @@ use vcard4::{
         parse_date_list, parse_date_time_list, parse_time_list,
         parse_timestamp, parse_utc_offset,
     },
-    parameter::ValueType,
+    parameter::{TypeParameter, ValueType},
     parse,
     property::{AnyProperty, DateAndOrTime},
 };
@@ -392,6 +392,32 @@ END:VCARD"#;
     );
 
     assert_eq!(&AnyProperty::Text("BAR".to_string()), &prop.value);
+
+    assert_round_trip(&card)?;
+    Ok(())
+}
+
+#[test]
+fn extension_with_type() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN:Jane Doe
+X-FOO;TYPE=baz:BAR
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+    let card = vcards.remove(0);
+
+    let prop = card.extensions.get(0).unwrap();
+
+    assert!(prop.group.is_none());
+    assert_eq!("X-FOO", &prop.name);
+    assert_eq!(
+        &vec![TypeParameter::Extension("baz".to_string())],
+        prop.parameters.as_ref().unwrap().types.as_ref().unwrap()
+    );
+
+    assert_eq!(AnyProperty::Text("BAR".to_string()), prop.value);
 
     assert_round_trip(&card)?;
     Ok(())

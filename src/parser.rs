@@ -298,6 +298,7 @@ impl<'s> VcardParser<'s> {
                             // Check this parameter is allowed
                             if !TYPE_PROPERTIES
                                 .contains(&&property_upper_name[..])
+                                && !property_upper_name.starts_with("X-")
                             {
                                 return Err(Error::TypeParameter(
                                     property_upper_name,
