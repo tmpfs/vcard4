@@ -3,7 +3,7 @@ mod test_helpers;
 use anyhow::Result;
 use vcard4::parse;
 
-use test_helpers::{assert_round_trip};
+use test_helpers::assert_round_trip;
 
 #[test]
 fn parse_version3() -> Result<()> {

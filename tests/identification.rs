@@ -75,7 +75,6 @@ END:VCARD"#;
             "http://www.example.com/pub/photos/jqpublic.gif",
             &photo1.value.to_string()
         );
-
     } else {
         panic!("expecting URI property");
     }
@@ -86,7 +85,6 @@ END:VCARD"#;
             .to_string()
             .starts_with("data:image/jpeg;base64,"));
         assert!(photo2.value.to_string().ends_with("TeXN0"));
-
     } else {
         panic!("expecting URI property");
     }

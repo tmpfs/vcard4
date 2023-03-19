@@ -95,15 +95,13 @@ impl FromStr for TypeParameter {
                     } else {
                         String::new()
                     };
-                    Ok(Self::Extension(value))   
+                    Ok(Self::Extension(value))
                 } else {
                     match s.parse::<TelephoneType>() {
                         Ok(tel) => Ok(Self::Telephone(tel)),
-                        Err(_) => {
-                            match s.parse::<RelatedType>() {
-                                Ok(value) => Ok(Self::Related(value)),
-                                Err(_) => Ok(Self::Extension(s.to_string())),
-                            }
+                        Err(_) => match s.parse::<RelatedType>() {
+                            Ok(value) => Ok(Self::Related(value)),
+                            Err(_) => Ok(Self::Extension(s.to_string())),
                         },
                     }
                 }

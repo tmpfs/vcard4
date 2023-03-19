@@ -221,11 +221,14 @@ impl<'s> VcardParser<'s> {
         Ok(())
     }
 
-    fn add_extension_parameter(&self, parameter_name: &str, value: String, params: &mut Parameters) {
-        let values = value
-            .split(',')
-            .map(|s| s.to_owned())
-            .collect::<Vec<_>>();
+    fn add_extension_parameter(
+        &self,
+        parameter_name: &str,
+        value: String,
+        params: &mut Parameters,
+    ) {
+        let values =
+            value.split(',').map(|s| s.to_owned()).collect::<Vec<_>>();
         let x_param = (parameter_name.to_owned(), values);
         if let Some(extensions) = params.extensions.as_mut() {
             extensions.push(x_param);
@@ -265,7 +268,10 @@ impl<'s> VcardParser<'s> {
 
                 if token == Token::ExtensionName {
                     self.add_extension_parameter(
-                        parameter_name, value, &mut params);
+                        parameter_name,
+                        value,
+                        &mut params,
+                    );
                 } else {
                     match &upper_name[..] {
                         LANGUAGE => {
@@ -389,7 +395,10 @@ impl<'s> VcardParser<'s> {
                         }
                         ENCODING => {
                             self.add_extension_parameter(
-                                parameter_name, value, &mut params);
+                                parameter_name,
+                                value,
+                                &mut params,
+                            );
                         }
                         _ => {
                             return Err(Error::UnknownParameter(
@@ -573,25 +582,23 @@ impl<'s> VcardParser<'s> {
                     group,
                 });
             }
-            PHOTO => {
-                match Uri::try_from(value.as_ref()) {
-                    Ok(uri) => {
-                        let value = uri.into_owned();
-                        card.photo.push(TextOrUriProperty::Uri(UriProperty {
-                            value,
-                            parameters,
-                            group,
-                        }));
-                    }
-                    Err(_) => {
-                        card.photo.push(TextOrUriProperty::Text(TextProperty {
-                            value: value.into_owned(),
-                            parameters,
-                            group,
-                        }));
-                    }
+            PHOTO => match Uri::try_from(value.as_ref()) {
+                Ok(uri) => {
+                    let value = uri.into_owned();
+                    card.photo.push(TextOrUriProperty::Uri(UriProperty {
+                        value,
+                        parameters,
+                        group,
+                    }));
                 }
-            }
+                Err(_) => {
+                    card.photo.push(TextOrUriProperty::Text(TextProperty {
+                        value: value.into_owned(),
+                        parameters,
+                        group,
+                    }));
+                }
+            },
             BDAY => {
                 if card.bday.is_some() {
                     return Err(Error::OnlyOnce(upper_name));
