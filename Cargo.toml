@@ -1,6 +1,6 @@
 [package]
 name = "vcard4"
-version = "0.4.2"
+version = "0.4.3"
 edition = "2021"
 description = "Fast and correct vCard parser for RFC6350"
 repository = "https://github.com/tmpfs/vcard4"
@@ -18,6 +18,7 @@ serde = { version = "1", features = ["derive"], optional = true }
 zeroize = { version = "1.5", features = ["derive"], optional = true }
 mime = { version = "0.3", optional = true }
 language-tags = { version = "0.3", optional = true }
+base64 = "0.21.0"
 
 [features]
 default = ["zeroize"]

@@ -166,4 +166,8 @@ pub enum Error {
     #[cfg(feature = "mime")]
     #[error(transparent)]
     Mime(#[from] mime::FromStrError),
+
+    /// Error generated decoding from base64.
+    #[error(transparent)]
+    Base64(#[from] base64::DecodeError),
 }

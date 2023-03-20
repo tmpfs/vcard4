@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "zeroize")]
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
+use base64::{engine::general_purpose, Engine};
+
 use crate::{iter, property::*, Error, Result};
 
 /// The vCard type.
@@ -280,6 +282,47 @@ impl Vcard {
             }
         }
         Ok(())
+    }
+
+    /// Parse any embedded JPEG photos from the vCard photo property.
+    ///
+    /// This function looks for photo entries with an ENCODING
+    /// parameter set to `b` denoting base64 encoding and
+    /// with a TYPE parameter set to a value of `JPEG`.
+    ///
+    /// Compatible with the format used by the MacOS Contacts app; it
+    /// may not be suitable for embedded JPEGs exported from other apps.
+    pub fn parse_photo_jpeg(&self) -> Result<Vec<Vec<u8>>> {
+        use crate::parameter::TypeParameter;
+        let mut jpegs = Vec::new();
+        for photo in self.photo.iter() {
+            if let TextOrUriProperty::Text(prop) = photo {
+                if let Some(params) = &prop.parameters {
+                    if let (Some(types), Some(extensions)) =
+                        (&params.types, &params.extensions)
+                    {
+                        if let (
+                            Some(TypeParameter::Extension(value)),
+                            Some((name, values)),
+                        ) = (types.get(0), extensions.get(0))
+                        {
+                            if name.to_uppercase() == "ENCODING"
+                                && values.get(0) == Some(&"b".to_string())
+                            {
+                                if value.to_uppercase() == "JPEG".to_string()
+                                {
+                                    let encoded = &prop.value;
+                                    let buffer = general_purpose::STANDARD
+                                        .decode(encoded)?;
+                                    jpegs.push(buffer);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Ok(jpegs)
     }
 }
 

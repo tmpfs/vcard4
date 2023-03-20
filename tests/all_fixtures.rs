@@ -13,6 +13,10 @@ fn parse_photo() -> Result<()> {
     assert_eq!(1, vcards.len());
 
     let card = vcards.remove(0);
+
+    let jpegs = card.parse_photo_jpeg()?;
+    assert_eq!(1, jpegs.len());
+
     assert_round_trip(&card)?;
     Ok(())
 }
