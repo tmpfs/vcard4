@@ -11,11 +11,15 @@ use language_tags::LanguageTag;
 use mime::Mime;
 
 use crate::{
+    error::LexError,
     escape_control, helper::*, name::*, parameter::*, property::*,
     unescape_value, Error, Result, Vcard,
 };
 
+type LexResult<T> = std::result::Result<T, LexError>;
+
 #[derive(Logos, Debug, PartialEq)]
+#[logos(error = LexError)]
 pub(crate) enum Token {
     #[regex("(?i:BEGIN:VCARD)")]
     Begin,
@@ -67,19 +71,19 @@ pub(crate) enum Token {
     #[regex("(?i:\\\\n)")]
     EscapedNewLine,
 
-    #[regex("\\r?\\n")]
+    #[regex("\\r?\\n", priority = 3)]
     NewLine,
 
     #[regex("[[:blank:]]", priority = 2)]
     WhiteSpace,
 
-    #[regex("[[:cntrl:]]")]
+    #[regex("[[:cntrl:]]", priority = 1)]
     Control,
 
     #[regex("(?i:END:VCARD)")]
     End,
 
-    #[error]
+    #[regex(".", priority = 0)]
     Text,
 }
 
@@ -103,7 +107,7 @@ impl<'s> VcardParser<'s> {
         while let Some(first) = lex.next() {
             // Allow leading newlines and newlines between
             // vCard definitions
-            if first == Token::NewLine {
+            if first == Ok(Token::NewLine) {
                 continue;
             }
 
@@ -128,7 +132,7 @@ impl<'s> VcardParser<'s> {
     pub(crate) fn parse_one(
         &self,
         lex: &mut Lexer<'_, Token>,
-        first: Option<Token>,
+        first: Option<LexResult<Token>>,
     ) -> Result<(Vcard, Range<usize>)> {
         self.assert_token(first.as_ref(), &[Token::Begin])?;
         self.assert_token(lex.next().as_ref(), &[Token::NewLine])?;
@@ -151,10 +155,10 @@ impl<'s> VcardParser<'s> {
     ) -> Result<()> {
         while let Some(first) = lex.next() {
             //println!("{:#?} {}", first, &self.source[lex.span()]);
-            if first == Token::End {
+            if first == Ok(Token::End) {
                 break;
             }
-            if let Token::Version = first {
+            if let Ok(Token::Version) = first {
                 return Err(Error::VersionMisplaced);
             }
 
@@ -181,7 +185,7 @@ impl<'s> VcardParser<'s> {
     fn parse_property(
         &self,
         lex: &mut Lexer<'_, Token>,
-        token: Token,
+        token: LexResult<Token>,
         card: &mut Vcard,
     ) -> Result<()> {
         let mut group: Option<String> = None;
@@ -197,7 +201,7 @@ impl<'s> VcardParser<'s> {
         let delimiter = lex.next();
 
         if let Some(delimiter) = delimiter {
-            if delimiter == Token::ParameterDelimiter {
+            if delimiter == Ok(Token::ParameterDelimiter) {
                 let parameters = self.parse_parameters(lex, name)?;
                 self.parse_property_by_name(
                     lex,
@@ -207,7 +211,7 @@ impl<'s> VcardParser<'s> {
                     Some(parameters),
                     group,
                 )?;
-            } else if delimiter == Token::PropertyDelimiter {
+            } else if delimiter == Ok(Token::PropertyDelimiter) {
                 self.parse_property_by_name(
                     lex, token, card, name, None, group,
                 )?;
@@ -245,13 +249,13 @@ impl<'s> VcardParser<'s> {
     ) -> Result<Parameters> {
         let property_upper_name = name.to_uppercase();
         let mut params: Parameters = Default::default();
-        let mut next: Option<Token> = lex.next();
+        let mut next: Option<LexResult<Token>> = lex.next();
 
         while let Some(token) = next.take() {
-            if token == Token::ParameterKey
-                || token == Token::ExtensionName
-                || token == Token::TimeZone
-                || token == Token::Geo
+            if token == Ok(Token::ParameterKey)
+                || token == Ok(Token::ExtensionName)
+                || token == Ok(Token::TimeZone)
+                || token == Ok(Token::Geo)
             {
                 let source = lex.source();
                 let span = lex.span();
@@ -266,7 +270,7 @@ impl<'s> VcardParser<'s> {
                 let (value, next_token, quoted) =
                     self.parse_parameter_value(lex)?;
 
-                if token == Token::ExtensionName {
+                if token == Ok(Token::ExtensionName) {
                     self.add_extension_parameter(
                         parameter_name,
                         value,
@@ -408,9 +412,9 @@ impl<'s> VcardParser<'s> {
                     }
                 }
 
-                if next_token == Token::PropertyDelimiter {
+                if next_token == Ok(Token::PropertyDelimiter) {
                     break;
-                } else if next_token == Token::ParameterKey {
+                } else if next_token == Ok(Token::ParameterKey) {
                     next = Some(next_token);
                 } else {
                     next = lex.next();
@@ -426,7 +430,7 @@ impl<'s> VcardParser<'s> {
     fn parse_parameter_value<'a>(
         &self,
         lex: &'a mut Lexer<'_, Token>,
-    ) -> Result<(String, Token, bool)> {
+    ) -> Result<(String, LexResult<Token>, bool)> {
         let mut first_range: Option<Range<usize>> = None;
         let mut quoted = false;
         let mut is_folded_or_escaped = false;
@@ -434,31 +438,31 @@ impl<'s> VcardParser<'s> {
         while let Some(mut token) = lex.next() {
             let span = lex.span();
 
-            if token == Token::Control {
+            if token == Ok(Token::Control) {
                 return Err(Error::ControlCharacter(escape_control(
                     lex.slice(),
                 )));
             }
 
-            if token == Token::FoldedLine
-                || token == Token::EscapedNewLine
-                || token == Token::EscapedComma
-                || token == Token::EscapedBackSlash
+            if token == Ok(Token::FoldedLine)
+                || token == Ok(Token::EscapedNewLine)
+                || token == Ok(Token::EscapedComma)
+                || token == Ok(Token::EscapedBackSlash)
             {
                 is_folded_or_escaped = true;
             }
 
             let completed = if first_range.is_some() && quoted {
-                token == Token::DoubleQuote
+                token == Ok(Token::DoubleQuote)
             } else {
-                token == Token::PropertyDelimiter
-                    || token == Token::ParameterDelimiter
+                token == Ok(Token::PropertyDelimiter)
+                    || token == Ok(Token::ParameterDelimiter)
                 //|| token == Token::ParameterKey
             };
 
             if first_range.is_none() {
                 first_range = Some(span.clone());
-                if token == Token::DoubleQuote {
+                if token == Ok(Token::DoubleQuote) {
                     quoted = true;
                 }
             }
@@ -476,13 +480,13 @@ impl<'s> VcardParser<'s> {
 
                 // Must consumer the next token
                 if quoted {
-                    token = if let Some(token) = lex.next() {
+                    token = if let Some(Ok(token)) = lex.next() {
                         if token != Token::PropertyDelimiter
                             && token != Token::ParameterDelimiter
                         {
                             return Err(Error::DelimiterExpected);
                         }
-                        token
+                        Ok(token)
                     } else {
                         return Err(Error::TokenExpected);
                     };
@@ -504,7 +508,7 @@ impl<'s> VcardParser<'s> {
     fn parse_property_by_name(
         &self,
         lex: &mut Lexer<'_, Token>,
-        token: Token,
+        token: LexResult<Token>,
         card: &mut Vcard,
         name: &str,
         parameters: Option<Parameters>,
@@ -514,7 +518,7 @@ impl<'s> VcardParser<'s> {
 
         let upper_name = name.to_uppercase();
 
-        if token == Token::ExtensionName || upper_name.starts_with("X-") {
+        if token == Ok(Token::ExtensionName) || upper_name.starts_with("X-") {
             self.parse_extension_property_by_name(
                 card, name, value, parameters, group,
             )?;
@@ -1006,22 +1010,22 @@ impl<'s> VcardParser<'s> {
                 first_range = Some(span.clone());
             }
 
-            if token == Token::Control {
+            if token == Ok(Token::Control) {
                 return Err(Error::ControlCharacter(escape_control(
                     lex.slice(),
                 )));
             }
 
-            if token == Token::FoldedLine
-                || token == Token::EscapedSemiColon
-                || token == Token::EscapedComma
-                || token == Token::EscapedNewLine
-                || token == Token::EscapedBackSlash
+            if token == Ok(Token::FoldedLine)
+                || token == Ok(Token::EscapedSemiColon)
+                || token == Ok(Token::EscapedComma)
+                || token == Ok(Token::EscapedNewLine)
+                || token == Ok(Token::EscapedBackSlash)
             {
                 needs_transform = true;
             }
 
-            if token == Token::NewLine {
+            if token == Ok(Token::NewLine) {
                 last_range = Some(span);
                 break;
             }
@@ -1033,18 +1037,18 @@ impl<'s> VcardParser<'s> {
             if needs_transform {
                 let mut value = String::new();
                 for (token, span) in tokens {
-                    if token == Token::FoldedLine {
+                    if token == Ok(Token::FoldedLine) {
                         continue;
-                    } else if token == Token::EscapedComma {
+                    } else if token == Ok(Token::EscapedComma) {
                         value.push(',');
                         continue;
-                    } else if token == Token::EscapedSemiColon {
+                    } else if token == Ok(Token::EscapedSemiColon) {
                         value.push(';');
                         continue;
-                    } else if token == Token::EscapedNewLine {
+                    } else if token == Ok(Token::EscapedNewLine) {
                         value.push('\n');
                         continue;
-                    } else if token == Token::EscapedBackSlash {
+                    } else if token == Ok(Token::EscapedBackSlash) {
                         value.push('\\');
                         continue;
                     }
@@ -1110,10 +1114,10 @@ impl<'s> VcardParser<'s> {
     /// Assert we have an expected token.
     fn assert_token(
         &self,
-        value: Option<&Token>,
+        value: Option<&LexResult<Token>>,
         expected: &[Token],
     ) -> Result<()> {
-        if let Some(value) = value {
+        if let Some(Ok(value)) = value {
             if expected.contains(value) {
                 Ok(())
             } else {

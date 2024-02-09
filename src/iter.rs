@@ -25,7 +25,7 @@ impl<'s> VcardIterator<'s> {
         let mut lex = self.parser.lexer();
         lex.bump(offset);
         while let Some(first) = lex.next() {
-            if first == Token::NewLine {
+            if first == Ok(Token::NewLine) {
                 continue;
             } else {
                 return self.parser.parse_one(&mut lex, Some(first));
