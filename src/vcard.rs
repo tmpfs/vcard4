@@ -304,18 +304,16 @@ impl Vcard {
                         if let (
                             Some(TypeParameter::Extension(value)),
                             Some((name, values)),
-                        ) = (types.get(0), extensions.get(0))
+                        ) = (types.first(), extensions.first())
                         {
                             if name.to_uppercase() == "ENCODING"
-                                && values.get(0) == Some(&"b".to_string())
+                                && values.first() == Some(&"b".to_string())
+                                && &value.to_uppercase() == "JPEG"
                             {
-                                if value.to_uppercase() == "JPEG".to_string()
-                                {
-                                    let encoded = &prop.value;
-                                    let buffer = general_purpose::STANDARD
-                                        .decode(encoded)?;
-                                    jpegs.push(buffer);
-                                }
+                                let encoded = &prop.value;
+                                let buffer = general_purpose::STANDARD
+                                    .decode(encoded)?;
+                                jpegs.push(buffer);
                             }
                         }
                     }

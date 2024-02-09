@@ -1,5 +1,5 @@
 use thiserror::Error;
-    
+
 /// Error lexing a vcard string.
 #[derive(Debug, Error, PartialEq, Clone, Default)]
 #[doc(hidden)]

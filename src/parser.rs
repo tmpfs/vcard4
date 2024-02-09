@@ -11,9 +11,8 @@ use language_tags::LanguageTag;
 use mime::Mime;
 
 use crate::{
-    error::LexError,
-    escape_control, helper::*, name::*, parameter::*, property::*,
-    unescape_value, Error, Result, Vcard,
+    error::LexError, escape_control, helper::*, name::*, parameter::*,
+    property::*, unescape_value, Error, Result, Vcard,
 };
 
 type LexResult<T> = std::result::Result<T, LexError>;
@@ -319,22 +318,7 @@ impl<'s> VcardParser<'s> {
                                 Vec::new();
 
                             for val in value.split(',') {
-                                let param: TypeParameter =
-                                    match &property_upper_name[..] {
-                                        /*
-                                        TEL => match val {
-                                            HOME => TypeParameter::Home,
-                                            WORK => TypeParameter::Work,
-                                            _ => TypeParameter::Telephone(
-                                                val.parse()?,
-                                            ),
-                                        },
-                                        RELATED => TypeParameter::Related(
-                                            val.parse()?,
-                                        ),
-                                        */
-                                        _ => val.parse()?,
-                                    };
+                                let param: TypeParameter = val.parse()?;
                                 type_params.push(param);
                             }
 
@@ -427,9 +411,9 @@ impl<'s> VcardParser<'s> {
     }
 
     /// Parse the raw value for a property parameter.
-    fn parse_parameter_value<'a>(
+    fn parse_parameter_value(
         &self,
-        lex: &'a mut Lexer<'_, Token>,
+        lex: &mut Lexer<'_, Token>,
     ) -> Result<(String, LexResult<Token>, bool)> {
         let mut first_range: Option<Range<usize>> = None;
         let mut quoted = false;
@@ -927,11 +911,11 @@ impl<'s> VcardParser<'s> {
     }
 
     /// Parse a private extension property (`x-`) by name.
-    fn parse_extension_property_by_name<'a>(
+    fn parse_extension_property_by_name(
         &self,
         card: &mut Vcard,
         name: &str,
-        value: Cow<'a, str>,
+        value: Cow<'_, str>,
         parameters: Option<Parameters>,
         group: Option<String>,
     ) -> Result<()> {
