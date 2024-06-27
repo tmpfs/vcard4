@@ -82,7 +82,7 @@ pub(crate) enum Token {
     #[regex("(?i:END:VCARD)")]
     End,
 
-    #[regex(".", priority = 0)]
+    #[regex("[\u{00}-\u{7F}]", priority = 0)]
     Text,
 }
 
@@ -153,7 +153,6 @@ impl<'s> VcardParser<'s> {
         card: &mut Vcard,
     ) -> Result<()> {
         while let Some(first) = lex.next() {
-            //println!("{:#?} {}", first, &self.source[lex.span()]);
             if first == Ok(Token::End) {
                 break;
             }
