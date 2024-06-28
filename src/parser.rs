@@ -46,7 +46,7 @@ pub(crate) enum Token {
     #[token("\"")]
     DoubleQuote,
 
-    #[regex("(?i:LANGUAGE|VALUE|PREF|ALTID|PID|TYPE|MEDIATYPE|CALSCALE|SORT-AS|LABEL|ENCODING)")]
+    #[regex("(?i:LANGUAGE|VALUE|PREF|ALTID|PID|TYPE|MEDIATYPE|CALSCALE|SORT-AS|CHARSET|LABEL|ENCODING)")]
     ParameterKey,
 
     #[token("=")]
@@ -370,6 +370,13 @@ impl<'s> VcardParser<'s> {
                                         );
                                     }
                                 }
+                            }
+                        }
+                        CHARSET => {
+                            // Ignore CHARSET=UTF-8 for compatibility with software that
+                            // unnecessarily (and in spite of RFC 6350) adds this parameter.
+                            if value != "UTF-8" {
+                                return Err(Error::CharsetParameter(value));
                             }
                         }
                         LABEL => {
