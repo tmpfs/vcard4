@@ -15,6 +15,7 @@ use crate::{iter, property::*, Error, Result};
 /// The vCard type.
 #[derive(Debug, Default, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct Vcard {
     // General
@@ -341,7 +342,7 @@ impl fmt::Display for Vcard {
         for val in &self.source {
             write!(f, "{}\r\n", content_line(val, SOURCE))?;
         }
-        for val in &self.kind {
+        if let Some(val) = &self.kind {
             write!(f, "{}\r\n", content_line(val, KIND))?;
         }
         for val in &self.xml {
@@ -352,7 +353,7 @@ impl fmt::Display for Vcard {
         for val in &self.formatted_name {
             write!(f, "{}\r\n", content_line(val, FN))?;
         }
-        for val in &self.name {
+        if let Some(val) = &self.name {
             write!(f, "{}\r\n", content_line(val, N))?;
         }
         for val in &self.nickname {
@@ -361,13 +362,13 @@ impl fmt::Display for Vcard {
         for val in &self.photo {
             write!(f, "{}\r\n", content_line(val, PHOTO))?;
         }
-        for val in &self.bday {
+        if let Some(val) = &self.bday {
             write!(f, "{}\r\n", content_line(val, BDAY))?;
         }
-        for val in &self.anniversary {
+        if let Some(val) = &self.anniversary {
             write!(f, "{}\r\n", content_line(val, ANNIVERSARY))?;
         }
-        for val in &self.gender {
+        if let Some(val) = &self.gender {
             write!(f, "{}\r\n", content_line(val, GENDER))?;
         }
         for val in &self.url {
@@ -428,16 +429,16 @@ impl fmt::Display for Vcard {
         for val in &self.note {
             write!(f, "{}\r\n", content_line(val, NOTE))?;
         }
-        for val in &self.prod_id {
+        if let Some(val) = &self.prod_id {
             write!(f, "{}\r\n", content_line(val, PRODID))?;
         }
-        for val in &self.rev {
+        if let Some(val) = &self.rev {
             write!(f, "{}\r\n", content_line(val, REV))?;
         }
         for val in &self.sound {
             write!(f, "{}\r\n", content_line(val, SOUND))?;
         }
-        for val in &self.uid {
+        if let Some(val) = &self.uid {
             write!(f, "{}\r\n", content_line(val, UID))?;
         }
         for val in &self.client_pid_map {
