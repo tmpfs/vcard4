@@ -10,23 +10,26 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 thiserror = "1"
 logos = { version = "0.14", features = ["export_derive"] }
-uriparse = "0.6.4"
+uriparse = "0.6"
 time = { version = "0.3.37", features = ["parsing", "formatting"] }
 unicode-segmentation="1"
 aho-corasick = "0.7"
+base64 = "0.21.0"
 serde = { version = "1", features = ["derive"], optional = true }
+serde_with = { version = "3", optional = true }
+cfg_eval = { version = "0.1", optional = true }
 zeroize = { version = "1.5", features = ["derive"], optional = true }
 mime = { version = "0.3", optional = true }
 language-tags = { version = "0.3", optional = true }
-base64 = "0.21.0"
 
 [features]
 default = ["zeroize"]
 serde = [
   "dep:serde",
+  "dep:serde_with",
+  "dep:cfg_eval",
   "time/serde-human-readable",
   "language-tags?/serde",
-  "uriparse/serde",
 ]
 zeroize = ["dep:zeroize"]
 mime = ["dep:mime"]

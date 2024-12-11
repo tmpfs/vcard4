@@ -2,10 +2,9 @@
 //!
 use crate::{
     property::{DeliveryAddress, Gender, Kind, TextListProperty},
-    Vcard,
+    Uri, Vcard,
 };
 use time::{Date, OffsetDateTime};
-use uriparse::uri::URI as Uri;
 
 #[cfg(feature = "language-tags")]
 use language_tags::LanguageTag;
@@ -43,7 +42,7 @@ impl VcardBuilder {
     }
 
     /// Add a source for the vCard.
-    pub fn source(mut self, value: Uri<'static>) -> Self {
+    pub fn source(mut self, value: Uri) -> Self {
         self.card.source.push(value.into());
         self
     }
@@ -79,7 +78,7 @@ impl VcardBuilder {
     }
 
     /// Add a photo to the vCard.
-    pub fn photo(mut self, value: Uri<'static>) -> Self {
+    pub fn photo(mut self, value: Uri) -> Self {
         self.card.photo.push(value.into());
         self
     }
@@ -131,7 +130,7 @@ impl VcardBuilder {
     }
 
     /// Add an instant messaging URI to the vCard.
-    pub fn impp(mut self, value: Uri<'static>) -> Self {
+    pub fn impp(mut self, value: Uri) -> Self {
         self.card.impp.push(value.into());
         self
     }
@@ -159,7 +158,7 @@ impl VcardBuilder {
     }
 
     /// Add a geographic location to the vCard.
-    pub fn geo(mut self, value: Uri<'static>) -> Self {
+    pub fn geo(mut self, value: Uri) -> Self {
         self.card.geo.push(value.into());
         self
     }
@@ -179,7 +178,7 @@ impl VcardBuilder {
     }
 
     /// Add logo to the vCard.
-    pub fn logo(mut self, value: Uri<'static>) -> Self {
+    pub fn logo(mut self, value: Uri) -> Self {
         self.card.logo.push(value.into());
         self
     }
@@ -193,13 +192,13 @@ impl VcardBuilder {
     /// Add a member to the vCard.
     ///
     /// The vCard should be of the group kind to be valid.
-    pub fn member(mut self, value: Uri<'static>) -> Self {
+    pub fn member(mut self, value: Uri) -> Self {
         self.card.member.push(value.into());
         self
     }
 
     /// Add a related entry to the vCard.
-    pub fn related(mut self, value: Uri<'static>) -> Self {
+    pub fn related(mut self, value: Uri) -> Self {
         self.card.related.push(value.into());
         self
     }
@@ -233,19 +232,19 @@ impl VcardBuilder {
     }
 
     /// Add a sound to the vCard.
-    pub fn sound(mut self, value: Uri<'static>) -> Self {
+    pub fn sound(mut self, value: Uri) -> Self {
         self.card.sound.push(value.into());
         self
     }
 
     /// Set the UID for the vCard.
-    pub fn uid(mut self, value: Uri<'static>) -> Self {
+    pub fn uid(mut self, value: Uri) -> Self {
         self.card.uid = Some(value.into());
         self
     }
 
     /// Add a URL to the vCard.
-    pub fn url(mut self, value: Uri<'static>) -> Self {
+    pub fn url(mut self, value: Uri) -> Self {
         self.card.url.push(value.into());
         self
     }
@@ -253,7 +252,7 @@ impl VcardBuilder {
     // Security
 
     /// Add a key to the vCard.
-    pub fn key(mut self, value: Uri<'static>) -> Self {
+    pub fn key(mut self, value: Uri) -> Self {
         self.card.key.push(value.into());
         self
     }
@@ -261,19 +260,19 @@ impl VcardBuilder {
     // Calendar
 
     /// Add a fburl to the vCard.
-    pub fn fburl(mut self, value: Uri<'static>) -> Self {
+    pub fn fburl(mut self, value: Uri) -> Self {
         self.card.fburl.push(value.into());
         self
     }
 
     /// Add a calendar address URI to the vCard.
-    pub fn cal_adr_uri(mut self, value: Uri<'static>) -> Self {
+    pub fn cal_adr_uri(mut self, value: Uri) -> Self {
         self.card.cal_adr_uri.push(value.into());
         self
     }
 
     /// Add a calendar URI to the vCard.
-    pub fn cal_uri(mut self, value: Uri<'static>) -> Self {
+    pub fn cal_uri(mut self, value: Uri) -> Self {
         self.card.cal_uri.push(value.into());
         self
     }
@@ -302,7 +301,7 @@ mod tests {
             // General
             .source(
                 "http://directory.example.com/addressbooks/jdoe.vcf"
-                    .try_into()
+                    .parse()
                     .unwrap(),
             )
             // Identification
@@ -314,7 +313,7 @@ mod tests {
                 "MS".to_owned(),
             ])
             .nickname("JC".to_owned())
-            .photo("file:///images/jdoe.jpeg".try_into().unwrap())
+            .photo("file:///images/jdoe.jpeg".parse().unwrap())
             .birthday(
                 Date::from_calendar_date(1986, Month::February, 7).unwrap(),
             )
@@ -334,38 +333,36 @@ mod tests {
             // Communication
             .telephone("+10987654321".to_owned())
             .email("janedoe@example.com".to_owned())
-            .impp("im://example.com/messenger".try_into().unwrap())
+            .impp("im://example.com/messenger".parse().unwrap())
             // Geographical
             .timezone("Raleigh/North America".to_owned())
-            .geo("geo:37.386013,-122.082932".try_into().unwrap())
+            .geo("geo:37.386013,-122.082932".parse().unwrap())
             // Organizational
             .org(vec!["Mock Hospital".to_owned(), "Surgery".to_owned()])
             .title("Dr".to_owned())
             .role("Master Surgeon".to_owned())
-            .logo("https://example.com/mock.jpeg".try_into().unwrap())
-            .related("https://example.com/johndoe".try_into().unwrap())
+            .logo("https://example.com/mock.jpeg".parse().unwrap())
+            .related("https://example.com/johndoe".parse().unwrap())
             // Explanatory
             .categories(vec!["Medical".to_owned(), "Health".to_owned()])
             .note("Saved my life!".to_owned())
             .prod_id("Contact App v1".to_owned())
             .rev(rev)
-            .sound("https://example.com/janedoe.wav".try_into().unwrap())
+            .sound("https://example.com/janedoe.wav".parse().unwrap())
             .uid(
                 "urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
-                    .try_into()
+                    .parse()
                     .unwrap(),
             )
-            .url("https://example.com/janedoe".try_into().unwrap())
+            .url("https://example.com/janedoe".parse().unwrap())
             // Security
-            .key("urn:eth:0x00".try_into().unwrap())
+            .key("urn:eth:0x00".parse().unwrap())
             // Calendar
-            .fburl("https://www.example.com/busy/janedoe".try_into().unwrap())
+            .fburl("https://www.example.com/busy/janedoe".parse().unwrap())
             .cal_adr_uri(
-                "https://www.example.com/calendar/janedoe"
-                    .try_into()
-                    .unwrap(),
+                "https://www.example.com/calendar/janedoe".parse().unwrap(),
             )
-            .cal_uri("https://calendar.example.com".try_into().unwrap())
+            .cal_uri("https://calendar.example.com".parse().unwrap())
             .finish();
 
         let expected = "BEGIN:VCARD\r\nVERSION:4.0\r\nSOURCE:http://directory.example.com/addressbooks/jdoe.vcf\r\nFN:Jane Doe\r\nN:Doe;Jane;Claire;Dr.;MS\r\nNICKNAME:JC\r\nPHOTO:file:///images/jdoe.jpeg\r\nBDAY:19860207\r\nANNIVERSARY:20020318\r\nGENDER:F\r\nURL:https://example.com/janedoe\r\nADR:;;123 Main Street;Mock City;Mock State;123;Mock Country\r\nTITLE:Dr\r\nROLE:Master Surgeon\r\nLOGO:https://example.com/mock.jpeg\r\nORG:Mock Hospital;Surgery\r\nRELATED:https://example.com/johndoe\r\nTEL:+10987654321\r\nEMAIL:janedoe@example.com\r\nIMPP:im://example.com/messenger\r\nTZ:Raleigh/North America\r\nGEO:geo:37.386013,-122.082932\r\nCATEGORIES:Medical,Health\r\nNOTE:Saved my life!\r\nPRODID:Contact App v1\r\nREV:20000103T000000Z\r\nSOUND:https://example.com/janedoe.wav\r\nUID:urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6\r\nKEY:urn:eth:0x00\r\nFBURL:https://www.example.com/busy/janedoe\r\nCALADRURI:https://www.example.com/calendar/janedoe\r\nCALURI:https://calendar.example.com/\r\nEND:VCARD\r\n";
@@ -378,8 +375,8 @@ mod tests {
     fn builder_member_group() {
         let card = VcardBuilder::new("Mock Company".to_owned())
             .kind(Kind::Group)
-            .member("https://example.com/foo".try_into().unwrap())
-            .member("https://example.com/bar".try_into().unwrap())
+            .member("https://example.com/foo".parse().unwrap())
+            .member("https://example.com/bar".parse().unwrap())
             .finish();
         assert_eq!(2, card.member.len());
         assert!(card.validate().is_ok());
@@ -388,7 +385,7 @@ mod tests {
     #[test]
     fn builder_member_invalid() {
         let card = VcardBuilder::new("Mock Company".to_owned())
-            .member("https://example.com/bar".try_into().unwrap())
+            .member("https://example.com/bar".parse().unwrap())
             .finish();
         assert_eq!(1, card.member.len());
         assert!(card.validate().is_err());

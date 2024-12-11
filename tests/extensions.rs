@@ -2,7 +2,6 @@ mod test_helpers;
 
 use anyhow::Result;
 use test_helpers::{assert_language, assert_round_trip};
-use uriparse::uri::URI as Uri;
 use vcard4::{
     helper::{
         parse_date_list, parse_date_time_list, parse_time_list,
@@ -81,9 +80,7 @@ END:VCARD"#;
         prop.parameters.as_ref().unwrap().value.as_ref().unwrap()
     );
     assert_eq!(
-        &AnyProperty::Uri(
-            Uri::try_from("http://example.com/foo")?.into_owned()
-        ),
+        &AnyProperty::Uri("http://example.com/foo".parse()?),
         &prop.value
     );
 

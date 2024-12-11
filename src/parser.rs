@@ -2,7 +2,6 @@
 
 use logos::{Lexer, Logos};
 use std::{borrow::Cow, ops::Range};
-use uriparse::uri::URI as Uri;
 
 #[cfg(feature = "language-tags")]
 use language_tags::LanguageTag;
@@ -12,7 +11,7 @@ use mime::Mime;
 
 use crate::{
     error::LexError, escape_control, helper::*, name::*, parameter::*,
-    property::*, unescape_value, Error, Result, Vcard,
+    property::*, unescape_value, Error, Result, Uri, Vcard,
 };
 
 type LexResult<T> = std::result::Result<T, LexError>;
@@ -346,13 +345,12 @@ impl<'s> VcardParser<'s> {
                                     property_upper_name,
                                 ));
                             }
-                            let geo = Uri::try_from(&value[..])?.into_owned();
+                            let geo = value.parse()?;
                             params.geo = Some(geo);
                         }
                         TZ => {
                             if quoted {
-                                let value =
-                                    Uri::try_from(&value[..])?.into_owned();
+                                let value = value.parse()?;
                                 params.timezone =
                                     Some(TimeZoneParameter::Uri(value));
                             } else {
@@ -519,7 +517,7 @@ impl<'s> VcardParser<'s> {
             // General properties
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.1
             SOURCE => {
-                let value = Uri::try_from(value.as_ref())?.into_owned();
+                let value = value.as_ref().parse()?;
                 card.source.push(UriProperty {
                     value,
                     parameters,
@@ -576,9 +574,8 @@ impl<'s> VcardParser<'s> {
                     group,
                 });
             }
-            PHOTO => match Uri::try_from(value.as_ref()) {
-                Ok(uri) => {
-                    let value = uri.into_owned();
+            PHOTO => match value.as_ref().parse::<Uri>() {
+                Ok(value) => {
                     card.photo.push(TextOrUriProperty::Uri(UriProperty {
                         value,
                         parameters,
@@ -660,7 +657,7 @@ impl<'s> VcardParser<'s> {
                 });
             }
             IMPP => {
-                let value = Uri::try_from(value.as_ref())?.into_owned();
+                let value = value.as_ref().parse()?;
                 card.impp.push(UriProperty {
                     value,
                     parameters,
@@ -696,8 +693,7 @@ impl<'s> VcardParser<'s> {
                                 .push(TimeZoneProperty::UtcOffset(value));
                         }
                         ValueType::Uri => {
-                            let value =
-                                Uri::try_from(value.as_ref())?.into_owned();
+                            let value = value.parse()?;
                             card.timezone.push(TimeZoneProperty::Uri(
                                 UriProperty {
                                     value,
@@ -724,7 +720,7 @@ impl<'s> VcardParser<'s> {
                 }
             }
             GEO => {
-                let value = Uri::try_from(value.as_ref())?.into_owned();
+                let value = value.parse()?;
                 card.geo.push(UriProperty {
                     value,
                     parameters,
@@ -749,7 +745,7 @@ impl<'s> VcardParser<'s> {
                 });
             }
             LOGO => {
-                let value = Uri::try_from(value.as_ref())?.into_owned();
+                let value = value.parse()?;
                 card.logo.push(UriProperty {
                     value,
                     parameters,
@@ -770,7 +766,7 @@ impl<'s> VcardParser<'s> {
                 });
             }
             MEMBER => {
-                let value = Uri::try_from(value.as_ref())?.into_owned();
+                let value = value.parse()?;
                 card.member.push(UriProperty {
                     value,
                     parameters,
@@ -830,7 +826,7 @@ impl<'s> VcardParser<'s> {
                 });
             }
             SOUND => {
-                let value = Uri::try_from(value.as_ref())?.into_owned();
+                let value = value.parse()?;
                 card.sound.push(UriProperty {
                     value,
                     parameters,
@@ -863,7 +859,7 @@ impl<'s> VcardParser<'s> {
                 });
             }
             URL => {
-                let value = Uri::try_from(value.as_ref())?.into_owned();
+                let value = value.as_ref().parse()?;
                 card.url.push(UriProperty {
                     value,
                     parameters,
@@ -888,7 +884,7 @@ impl<'s> VcardParser<'s> {
             // Calendar
             // https://www.rfc-editor.org/rfc/rfc6350#section-6.9
             FBURL => {
-                let value = Uri::try_from(value.as_ref())?.into_owned();
+                let value = value.as_ref().parse()?;
                 card.fburl.push(UriProperty {
                     value,
                     parameters,
@@ -896,7 +892,7 @@ impl<'s> VcardParser<'s> {
                 });
             }
             CALADRURI => {
-                let value = Uri::try_from(value.as_ref())?.into_owned();
+                let value = value.as_ref().parse()?;
                 card.cal_adr_uri.push(UriProperty {
                     value,
                     parameters,
@@ -904,7 +900,7 @@ impl<'s> VcardParser<'s> {
                 });
             }
             CALURI => {
-                let value = Uri::try_from(value.as_ref())?.into_owned();
+                let value = value.parse()?;
                 card.cal_uri.push(UriProperty {
                     value,
                     parameters,
@@ -965,7 +961,7 @@ impl<'s> VcardParser<'s> {
                     AnyProperty::UtcOffset(value)
                 }
                 ValueType::Uri => {
-                    let value = Uri::try_from(value.as_ref())?.into_owned();
+                    let value = value.parse()?;
                     AnyProperty::Uri(value)
                 }
             }
@@ -1076,7 +1072,7 @@ impl<'s> VcardParser<'s> {
                     group,
                 }))
             } else if let ValueType::Uri = value_type {
-                let value = Uri::try_from(value.as_ref())?.into_owned();
+                let value = value.as_ref().parse()?;
                 Ok(TextOrUriProperty::Uri(UriProperty {
                     value,
                     parameters,
@@ -1086,9 +1082,9 @@ impl<'s> VcardParser<'s> {
                 Err(Error::UnknownValueType(value_type.to_string()))
             }
         } else {
-            match Uri::try_from(value.as_ref()) {
+            match value.as_ref().parse::<Uri>() {
                 Ok(value) => Ok(TextOrUriProperty::Uri(UriProperty {
-                    value: value.into_owned(),
+                    value,
                     parameters,
                     group,
                 })),

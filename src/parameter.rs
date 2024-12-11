@@ -5,13 +5,15 @@ use std::{
     str::FromStr,
 };
 use time::UtcOffset;
-use uriparse::uri::URI as Uri;
 
 #[cfg(feature = "language-tags")]
 use language_tags::LanguageTag;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "serde")]
+use serde_with::{serde_as, DisplayFromStr};
 
 #[cfg(feature = "zeroize")]
 use zeroize::{Zeroize, ZeroizeOnDrop};
@@ -22,7 +24,7 @@ use mime::Mime;
 use crate::{
     helper::format_utc_offset,
     name::{HOME, WORK},
-    Error, Result,
+    Error, Result, Uri,
 };
 
 /// Names of properties that are allowed to specify a TYPE parameter.
@@ -56,6 +58,10 @@ pub(crate) const TYPE_PROPERTIES: [&str; 23] = [
 #[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+#[cfg_attr(
+    feature = "serde",
+    serde(rename_all = "lowercase", tag = "kind", content = "value")
+)]
 pub enum TypeParameter {
     /// Related to a home environment.
     Home,
@@ -419,6 +425,7 @@ impl FromStr for ValueType {
 /// create infinite type recursion in `Parameters` which would
 /// require us to wrap it in a `Box`.
 #[derive(Debug, Eq, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", cfg_eval::cfg_eval, serde_as)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 #[allow(clippy::large_enum_variant)]
@@ -427,7 +434,7 @@ pub enum TimeZoneParameter {
     Text(String),
     /// Uri value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    Uri(Uri<'static>),
+    Uri(#[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))] Uri),
     /// UTC offset value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     UtcOffset(UtcOffset),
@@ -435,8 +442,10 @@ pub enum TimeZoneParameter {
 
 /// Parameters for a vCard property.
 #[derive(Debug, Default, Eq, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", cfg_eval::cfg_eval, serde_as)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+#[cfg_attr(feature = "serde", serde(default))]
 pub struct Parameters {
     /// The LANGUAGE tag.
     #[cfg(feature = "language-tags")]
@@ -524,7 +533,8 @@ pub struct Parameters {
         feature = "serde",
         serde(default, skip_serializing_if = "Option::is_none")
     )]
-    pub geo: Option<Uri<'static>>,
+    #[cfg_attr(feature = "serde", serde_as(as = "Option<DisplayFromStr>"))]
+    pub geo: Option<Uri>,
     /// The TZ parameter.
     #[cfg_attr(
         feature = "serde",

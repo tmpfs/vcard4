@@ -1,7 +1,6 @@
 mod test_helpers;
 
 use anyhow::Result;
-use uriparse::uri::URI as Uri;
 
 use vcard4::{
     helper::parse_utc_offset,
@@ -318,8 +317,7 @@ END:VCARD"#;
     let prop = card.formatted_name.get(0).unwrap();
     assert_eq!(
         &TimeZoneParameter::Uri(
-            Uri::try_from("https://example.com/tz-database/acdt")?
-                .into_owned()
+            "https://example.com/tz-database/acdt".parse()?
         ),
         prop.parameters.as_ref().unwrap().timezone.as_ref().unwrap()
     );

@@ -1,17 +1,20 @@
 //! Types for properties.
 
+use crate::Uri;
 use std::{
     fmt::{self, Display},
     str::FromStr,
 };
 use time::{Date, OffsetDateTime, Time, UtcOffset};
-use uriparse::uri::URI as Uri;
 
 #[cfg(feature = "language-tags")]
 use language_tags::LanguageTag;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "serde")]
+use serde_with::{serde_as, DisplayFromStr};
 
 #[cfg(feature = "zeroize")]
 use zeroize::{Zeroize, ZeroizeOnDrop};
@@ -44,23 +47,52 @@ pub trait Property: Display {
 }
 
 /// Delivery address for the ADR property.
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Default, Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub struct DeliveryAddress {
     /// The post office box.
+    #[cfg_attr(
+        feature = "serde",
+        serde(skip_serializing_if = "Option::is_none")
+    )]
     pub po_box: Option<String>,
     /// The extended address (e.g: apartment or suite number).
+    #[cfg_attr(
+        feature = "serde",
+        serde(skip_serializing_if = "Option::is_none")
+    )]
     pub extended_address: Option<String>,
     /// The street address.
+    #[cfg_attr(
+        feature = "serde",
+        serde(skip_serializing_if = "Option::is_none")
+    )]
     pub street_address: Option<String>,
     /// The locality (e.g: city).
+    #[cfg_attr(
+        feature = "serde",
+        serde(skip_serializing_if = "Option::is_none")
+    )]
     pub locality: Option<String>,
     /// The region (e.g: state or province).
+    #[cfg_attr(
+        feature = "serde",
+        serde(skip_serializing_if = "Option::is_none")
+    )]
     pub region: Option<String>,
     /// The postal code.
+    #[cfg_attr(
+        feature = "serde",
+        serde(skip_serializing_if = "Option::is_none")
+    )]
     pub postal_code: Option<String>,
     /// The country name.
+    #[cfg_attr(
+        feature = "serde",
+        serde(skip_serializing_if = "Option::is_none")
+    )]
     pub country_name: Option<String>,
 }
 
@@ -209,6 +241,7 @@ impl From<DeliveryAddress> for AddressProperty {
 
 /// Value for the CLIENTPIDMAP property.
 #[derive(Debug, Eq, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", cfg_eval::cfg_eval, serde_as)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct ClientPidMap {
@@ -216,7 +249,8 @@ pub struct ClientPidMap {
     pub source: u64,
     /// The URI for the map.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    pub uri: Uri<'static>,
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
+    pub uri: Uri,
 }
 
 impl fmt::Display for ClientPidMap {
@@ -244,7 +278,7 @@ impl FromStr for ClientPidMap {
             return Err(Error::InvalidClientPidMap(s.to_string()));
         }
 
-        let uri = Uri::try_from(uri)?.into_owned();
+        let uri = uri.parse()?;
         Ok(ClientPidMap { source, uri })
     }
 }
@@ -295,8 +329,10 @@ pub struct ExtensionProperty {
 
 /// Value for any property type.
 #[derive(Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", cfg_eval::cfg_eval, serde_as)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+#[cfg_attr(feature = "serde", serde(tag = "kind", rename_all = "camelCase"))]
 #[allow(clippy::large_enum_variant)]
 pub enum AnyProperty {
     /// Text property.
@@ -325,7 +361,7 @@ pub enum AnyProperty {
     Timestamp(Vec<OffsetDateTime>),
     /// URI property.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    Uri(Uri<'static>),
+    Uri(#[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))] Uri),
     /// UTC offset property.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     UtcOffset(UtcOffset),
@@ -455,6 +491,7 @@ impl fmt::Display for DateTimeProperty {
 /// Date and or time.
 #[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(untagged))]
 pub enum DateAndOrTime {
     /// Date value.
     Date(Date),
@@ -581,6 +618,7 @@ impl fmt::Display for DateAndOrTimeProperty {
 #[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+#[cfg_attr(feature = "serde", serde(untagged))]
 #[allow(clippy::large_enum_variant)]
 pub enum TextOrUriProperty {
     /// Text value.
@@ -595,8 +633,8 @@ impl From<String> for TextOrUriProperty {
     }
 }
 
-impl From<Uri<'static>> for TextOrUriProperty {
-    fn from(value: Uri<'static>) -> Self {
+impl From<Uri> for TextOrUriProperty {
+    fn from(value: Uri) -> Self {
         Self::Uri(value.into())
     }
 }
@@ -630,6 +668,7 @@ impl fmt::Display for TextOrUriProperty {
 #[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+#[cfg_attr(feature = "serde", serde(untagged))]
 pub enum DateTimeOrTextProperty {
     /// Date time value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
@@ -756,6 +795,7 @@ impl FromStr for UtcOffsetProperty {
 #[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
+#[cfg_attr(feature = "serde", serde(untagged))]
 #[allow(clippy::large_enum_variant)]
 pub enum TimeZoneProperty {
     /// Text value.
@@ -772,8 +812,8 @@ impl From<String> for TimeZoneProperty {
     }
 }
 
-impl From<Uri<'static>> for TimeZoneProperty {
-    fn from(value: Uri<'static>) -> Self {
+impl From<Uri> for TimeZoneProperty {
+    fn from(value: Uri) -> Self {
         Self::Uri(value.into())
     }
 }
@@ -814,7 +854,7 @@ impl fmt::Display for TimeZoneProperty {
 
 /// Text property value.
 #[derive(Debug, Eq, PartialEq, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct TextProperty {
     /// Group for this property.
@@ -851,7 +891,7 @@ impl From<String> for TextProperty {
 
 /// Delimiter used for a text list.
 #[derive(Debug, Eq, PartialEq, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 pub enum TextListDelimiter {
@@ -863,7 +903,7 @@ pub enum TextListDelimiter {
 
 /// Text list property value.
 #[derive(Debug, Eq, PartialEq, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct TextListProperty {
     /// Group for this property.
@@ -929,6 +969,7 @@ impl fmt::Display for TextListProperty {
 
 /// Uri property value.
 #[derive(Debug, Eq, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", cfg_eval::cfg_eval, serde_as)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 pub struct UriProperty {
@@ -940,7 +981,8 @@ pub struct UriProperty {
     pub group: Option<String>,
     /// Value for this property.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    pub value: Uri<'static>,
+    #[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))]
+    pub value: Uri,
     /// Parameters for this property.
     #[cfg_attr(
         feature = "serde",
@@ -949,8 +991,8 @@ pub struct UriProperty {
     pub parameters: Option<Parameters>,
 }
 
-impl From<Uri<'static>> for UriProperty {
-    fn from(value: Uri<'static>) -> Self {
+impl From<Uri> for UriProperty {
+    fn from(value: Uri) -> Self {
         Self {
             value,
             group: None,
@@ -963,7 +1005,7 @@ impl TryFrom<&str> for UriProperty {
     type Error = Error;
 
     fn try_from(value: &str) -> Result<Self> {
-        let uri = Uri::try_from(value)?.into_owned();
+        let uri: Uri = value.parse()?;
         Ok(uri.into())
     }
 }
@@ -1085,6 +1127,10 @@ pub struct Gender {
     /// The sex for the gender.
     pub sex: Sex,
     /// The identity text.
+    #[cfg_attr(
+        feature = "serde",
+        serde(skip_serializing_if = "Option::is_none")
+    )]
     pub identity: Option<String>,
 }
 

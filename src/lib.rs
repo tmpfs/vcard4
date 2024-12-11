@@ -104,6 +104,7 @@ mod parser;
 pub mod property;
 #[cfg(feature = "serde")]
 mod serde;
+mod uri;
 mod vcard;
 
 pub use builder::VcardBuilder;
@@ -112,7 +113,7 @@ pub use iter::VcardIterator;
 pub use vcard::Vcard;
 
 pub use time;
-pub use uriparse;
+pub use uri::Uri;
 
 /// Result type for the vCard library.
 pub type Result<T> = std::result::Result<T, Error>;

@@ -2,8 +2,7 @@ mod test_helpers;
 
 use anyhow::Result;
 use test_helpers::assert_round_trip;
-use uriparse::uri::URI as Uri;
-use vcard4::{parameter::TypeParameter, parse, property::*};
+use vcard4::{parameter::TypeParameter, parse, property::*, Uri};
 
 #[test]
 fn organizational_title() -> Result<()> {
@@ -126,11 +125,11 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
     assert_eq!(
-        Uri::try_from("urn:uuid:03a0e51f-d1aa-4385-8a53-e29025acd8af")?,
+        "urn:uuid:03a0e51f-d1aa-4385-8a53-e29025acd8af".parse::<Uri>()?,
         card.member.get(0).unwrap().value
     );
     assert_eq!(
-        Uri::try_from("urn:uuid:b8767877-b4a1-4c70-9acc-505d3819e519")?,
+        "urn:uuid:b8767877-b4a1-4c70-9acc-505d3819e519".parse::<Uri>()?,
         card.member.get(1).unwrap().value
     );
     assert_round_trip(&card)?;
@@ -140,7 +139,8 @@ END:VCARD"#;
         card.uid.as_ref().unwrap()
     {
         assert_eq!(
-            &Uri::try_from("urn:uuid:03a0e51f-d1aa-4385-8a53-e29025acd8af")?,
+            &"urn:uuid:03a0e51f-d1aa-4385-8a53-e29025acd8af"
+                .parse::<Uri>()?,
             value
         );
     } else {
@@ -153,7 +153,8 @@ END:VCARD"#;
         card.uid.as_ref().unwrap()
     {
         assert_eq!(
-            &Uri::try_from("urn:uuid:b8767877-b4a1-4c70-9acc-505d3819e519")?,
+            &"urn:uuid:b8767877-b4a1-4c70-9acc-505d3819e519"
+                .parse::<Uri>()?,
             value
         );
     } else {
@@ -163,19 +164,19 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
     assert_eq!(
-        Uri::try_from("mailto:subscriber1@example.com")?,
+        "mailto:subscriber1@example.com".parse::<Uri>()?,
         card.member.get(0).unwrap().value
     );
     assert_eq!(
-        Uri::try_from("xmpp:subscriber2@example.com")?,
+        "xmpp:subscriber2@example.com".parse::<Uri>()?,
         card.member.get(1).unwrap().value
     );
     assert_eq!(
-        Uri::try_from("sip:subscriber3@example.com")?,
+        "sip:subscriber3@example.com".parse::<Uri>()?,
         card.member.get(2).unwrap().value
     );
     assert_eq!(
-        Uri::try_from("tel:+1-418-555-5555")?,
+        "tel:+1-418-555-5555".parse::<Uri>()?,
         card.member.get(3).unwrap().value
     );
     assert_round_trip(&card)?;
@@ -199,7 +200,8 @@ END:VCARD"#;
     }) = card.related.get(0).unwrap()
     {
         assert_eq!(
-            &Uri::try_from("urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6")?,
+            &"urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
+                .parse::<Uri>()?,
             value
         );
 
@@ -225,7 +227,7 @@ END:VCARD"#;
     }) = card.related.get(0).unwrap()
     {
         assert_eq!(
-            &Uri::try_from("http://example.com/directory/jdoe.vcf")?,
+            &"http://example.com/directory/jdoe.vcf".parse::<Uri>()?,
             value
         );
 
