@@ -108,7 +108,10 @@ END:VCARD"#;
         prop.parameters.as_ref().unwrap().value.as_ref().unwrap()
     );
 
-    let expected = parse_date_list("20221107")?;
+    let expected = parse_date_list("20221107")?
+        .into_iter()
+        .map(vcard4::Date::from)
+        .collect();
     assert_eq!(&AnyProperty::Date(expected), &prop.value);
 
     assert_round_trip(&card)?;

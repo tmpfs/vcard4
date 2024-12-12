@@ -2,9 +2,8 @@
 //!
 use crate::{
     property::{DeliveryAddress, Gender, Kind, TextListProperty},
-    Uri, Vcard,
+    Date, DateTime, Uri, Vcard,
 };
-use time::{Date, OffsetDateTime};
 
 #[cfg(feature = "language-tags")]
 use language_tags::LanguageTag;
@@ -226,7 +225,7 @@ impl VcardBuilder {
     }
 
     /// Set the revision of the vCard.
-    pub fn rev(mut self, value: OffsetDateTime) -> Self {
+    pub fn rev(mut self, value: DateTime) -> Self {
         self.card.rev = Some(value.into());
         self
     }
@@ -315,10 +314,14 @@ mod tests {
             .nickname("JC".to_owned())
             .photo("file:///images/jdoe.jpeg".parse().unwrap())
             .birthday(
-                Date::from_calendar_date(1986, Month::February, 7).unwrap(),
+                Date::from_calendar_date(1986, Month::February, 7)
+                    .unwrap()
+                    .into(),
             )
             .anniversary(
-                Date::from_calendar_date(2002, Month::March, 18).unwrap(),
+                Date::from_calendar_date(2002, Month::March, 18)
+                    .unwrap()
+                    .into(),
             )
             .gender("F")
             .address(DeliveryAddress {
@@ -347,7 +350,7 @@ mod tests {
             .categories(vec!["Medical".to_owned(), "Health".to_owned()])
             .note("Saved my life!".to_owned())
             .prod_id("Contact App v1".to_owned())
-            .rev(rev)
+            .rev(rev.into())
             .sound("https://example.com/janedoe.wav".parse().unwrap())
             .uid(
                 "urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"

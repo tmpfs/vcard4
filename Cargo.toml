@@ -28,7 +28,7 @@ serde = [
   "dep:serde",
   "dep:serde_with",
   "dep:cfg_eval",
-  "time/serde-human-readable",
+  "time/serde",
   "language-tags?/serde",
 ]
 zeroize = ["dep:zeroize"]

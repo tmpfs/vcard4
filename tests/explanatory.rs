@@ -60,7 +60,7 @@ END:VCARD"#;
 
     let card = vcards.remove(0);
     let prop = card.rev.as_ref().unwrap();
-    assert_eq!("1995-10-31 22:27:10.0 +00:00:00", &prop.value.to_string());
+    assert_eq!("1995-10-31T22:27:10Z", &prop.value.to_string());
     assert_round_trip(&card)?;
     Ok(())
 }
