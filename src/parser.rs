@@ -938,9 +938,12 @@ impl<'s> VcardParser<'s> {
                 ValueType::Boolean => {
                     AnyProperty::Boolean(parse_boolean(value.as_ref())?)
                 }
-                ValueType::Date => {
-                    AnyProperty::Date(parse_date_list(value.as_ref())?)
-                }
+                ValueType::Date => AnyProperty::Date(
+                    parse_date_list(value.as_ref())?
+                        .into_iter()
+                        .map(crate::Date::from)
+                        .collect(),
+                ),
                 ValueType::DateTime => AnyProperty::DateTime(
                     parse_date_time_list(value.as_ref())?,
                 ),

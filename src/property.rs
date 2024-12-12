@@ -1,11 +1,10 @@
 //! Types for properties.
 
-use crate::Uri;
 use std::{
     fmt::{self, Display},
     str::FromStr,
 };
-use time::{Date, OffsetDateTime, Time, UtcOffset};
+use time::{Time, UtcOffset};
 
 #[cfg(feature = "language-tags")]
 use language_tags::LanguageTag;
@@ -29,7 +28,7 @@ use crate::{
         parse_date_time, parse_time, parse_utc_offset,
     },
     parameter::Parameters,
-    Error, Result,
+    Date, DateTime, Error, Result, Uri,
 };
 
 const INDIVIDUAL: &str = "individual";
@@ -349,7 +348,7 @@ pub enum AnyProperty {
     Date(Vec<Date>),
     /// Date and time value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    DateTime(Vec<OffsetDateTime>),
+    DateTime(Vec<DateTime>),
     /// Time value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     Time(Vec<(Time, UtcOffset)>),
@@ -358,7 +357,7 @@ pub enum AnyProperty {
     DateAndOrTime(Vec<DateAndOrTime>),
     /// Timetamp value.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    Timestamp(Vec<OffsetDateTime>),
+    Timestamp(Vec<DateTime>),
     /// URI property.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
     Uri(#[cfg_attr(feature = "serde", serde_as(as = "DisplayFromStr"))] Uri),
@@ -459,7 +458,7 @@ pub struct DateTimeProperty {
     pub group: Option<String>,
     /// The value for the property.
     #[cfg_attr(feature = "zeroize", zeroize(skip))]
-    pub value: OffsetDateTime,
+    pub value: DateTime,
     /// The property parameters.
     #[cfg_attr(
         feature = "serde",
@@ -468,8 +467,8 @@ pub struct DateTimeProperty {
     pub parameters: Option<Parameters>,
 }
 
-impl From<OffsetDateTime> for DateTimeProperty {
-    fn from(value: OffsetDateTime) -> Self {
+impl From<DateTime> for DateTimeProperty {
+    fn from(value: DateTime) -> Self {
         Self {
             value,
             group: None,
@@ -496,7 +495,7 @@ pub enum DateAndOrTime {
     /// Date value.
     Date(Date),
     /// Date and time value.
-    DateTime(OffsetDateTime),
+    DateTime(DateTime),
     /// Time value.
     Time((Time, UtcOffset)),
 }
@@ -507,8 +506,8 @@ impl From<Date> for DateAndOrTime {
     }
 }
 
-impl From<OffsetDateTime> for DateAndOrTime {
-    fn from(value: OffsetDateTime) -> Self {
+impl From<DateTime> for DateAndOrTime {
+    fn from(value: DateTime) -> Self {
         Self::DateTime(value)
     }
 }
@@ -548,7 +547,7 @@ impl FromStr for DateAndOrTime {
         match parse_date_time(s) {
             Ok(value) => Ok(Self::DateTime(value)),
             Err(_) => match parse_date(s) {
-                Ok(value) => Ok(Self::Date(value)),
+                Ok(value) => Ok(Self::Date(value.into())),
                 Err(_) => match parse_time(s) {
                     Ok(val) => Ok(Self::Time(val)),
                     Err(e) => Err(e),
@@ -588,8 +587,8 @@ impl From<Date> for DateAndOrTimeProperty {
     }
 }
 
-impl From<OffsetDateTime> for DateAndOrTimeProperty {
-    fn from(value: OffsetDateTime) -> Self {
+impl From<DateTime> for DateAndOrTimeProperty {
+    fn from(value: DateTime) -> Self {
         Self {
             value: vec![value.into()],
             group: None,
@@ -689,8 +688,8 @@ impl From<Date> for DateTimeOrTextProperty {
     }
 }
 
-impl From<OffsetDateTime> for DateTimeOrTextProperty {
-    fn from(value: OffsetDateTime) -> Self {
+impl From<DateTime> for DateTimeOrTextProperty {
+    fn from(value: DateTime) -> Self {
         Self::DateTime(value.into())
     }
 }

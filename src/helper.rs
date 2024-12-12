@@ -5,7 +5,7 @@ use time::{
     Date, OffsetDateTime, PrimitiveDateTime, Time, UtcOffset,
 };
 
-use crate::{property::DateAndOrTime, Error, Result};
+use crate::{property::DateAndOrTime, DateTime, Error, Result};
 
 // UTC OFFSET
 
@@ -196,14 +196,14 @@ fn do_parse_date(s: &str) -> Result<Date> {
     }
 }
 
-pub(crate) fn format_date(value: &Date) -> Result<String> {
+pub(crate) fn format_date(value: &crate::Date) -> Result<String> {
     let date = format_description::parse("[year][month][day]")?;
-    Ok(value.format(&date)?)
+    Ok(value.as_ref().format(&date)?)
 }
 
 pub(crate) fn format_date_list(
     f: &mut fmt::Formatter<'_>,
-    val: &[Date],
+    val: &[crate::Date],
 ) -> fmt::Result {
     for (index, item) in val.iter().enumerate() {
         write!(f, "{}", &format_date(item).map_err(|_| fmt::Error)?)?;
@@ -217,7 +217,7 @@ pub(crate) fn format_date_list(
 // DATETIME
 
 /// Parse a list of date times separated by a comma.
-pub fn parse_date_time_list(value: &str) -> Result<Vec<OffsetDateTime>> {
+pub fn parse_date_time_list(value: &str) -> Result<Vec<DateTime>> {
     let mut values = Vec::new();
     for value in value.split(',') {
         values.push(parse_date_time(value)?);
@@ -226,7 +226,7 @@ pub fn parse_date_time_list(value: &str) -> Result<Vec<OffsetDateTime>> {
 }
 
 /// Parse a date time.
-pub fn parse_date_time(value: &str) -> Result<OffsetDateTime> {
+pub fn parse_date_time(value: &str) -> Result<DateTime> {
     let mut it = value.splitn(2, 'T');
     let date = it
         .next()
@@ -242,10 +242,11 @@ pub fn parse_date_time(value: &str) -> Result<OffsetDateTime> {
         .replace_date(date)
         .replace_time(time)
         .replace_offset(offset);
-    Ok(utc)
+    Ok(utc.into())
 }
 
-pub(crate) fn format_date_time(d: &OffsetDateTime) -> Result<String> {
+pub(crate) fn format_date_time(d: &DateTime) -> Result<String> {
+    let d = d.as_ref();
     let offset = (*d).offset();
 
     let format = if offset == UtcOffset::UTC {
@@ -263,7 +264,7 @@ pub(crate) fn format_date_time(d: &OffsetDateTime) -> Result<String> {
 
 pub(crate) fn format_date_time_list(
     f: &mut fmt::Formatter<'_>,
-    val: &[OffsetDateTime],
+    val: &[DateTime],
 ) -> fmt::Result {
     for (index, item) in val.iter().enumerate() {
         write!(f, "{}", &format_date_time(item).map_err(|_| fmt::Error)?)?;
@@ -277,7 +278,7 @@ pub(crate) fn format_date_time_list(
 // TIMESTAMP
 
 /// Parse a timestamp.
-pub fn parse_timestamp(value: &str) -> Result<OffsetDateTime> {
+pub fn parse_timestamp(value: &str) -> Result<DateTime> {
     let offset_format = format_description::parse(
             "[year][month][day]T[hour][minute][second][offset_hour sign:mandatory][offset_minute]",
         )?;
@@ -292,24 +293,24 @@ pub fn parse_timestamp(value: &str) -> Result<OffsetDateTime> {
     )?;
 
     if let Ok(result) = OffsetDateTime::parse(value, &offset_format) {
-        Ok(result)
+        Ok(result.into())
     } else if let Ok(result) =
-        OffsetDateTime::parse(value, &offset_format_hours)
+        OffsetDateTime::parse(value, &offset_format_hours).into()
     {
-        Ok(result)
+        Ok(result.into())
     } else if let Ok(result) = PrimitiveDateTime::parse(value, &utc_format) {
         let result = OffsetDateTime::now_utc().replace_date_time(result);
-        Ok(result)
+        Ok(result.into())
     } else {
         let result = PrimitiveDateTime::parse(value, &implicit_utc_format)?;
         let result = OffsetDateTime::now_utc().replace_date_time(result);
-        Ok(result)
+        Ok(result.into())
     }
 }
 
 pub(crate) fn format_timestamp_list(
     f: &mut fmt::Formatter<'_>,
-    val: &[OffsetDateTime],
+    val: &[DateTime],
 ) -> fmt::Result {
     for (index, item) in val.iter().enumerate() {
         write!(f, "{}", &format_date_time(item).map_err(|_| fmt::Error)?)?;
@@ -321,7 +322,7 @@ pub(crate) fn format_timestamp_list(
 }
 
 /// Parse a list of date and or time types possibly separated by a comma.
-pub fn parse_timestamp_list(value: &str) -> Result<Vec<OffsetDateTime>> {
+pub fn parse_timestamp_list(value: &str) -> Result<Vec<DateTime>> {
     let mut values = Vec::new();
     for value in value.split(',') {
         values.push(parse_timestamp(value)?);

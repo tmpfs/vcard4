@@ -95,6 +95,7 @@
 //!
 
 mod builder;
+mod date_time;
 mod error;
 pub mod helper;
 mod iter;
@@ -112,6 +113,7 @@ pub use error::Error;
 pub use iter::VcardIterator;
 pub use vcard::Vcard;
 
+pub use date_time::{Date, DateTime};
 pub use time;
 pub use uri::Uri;
 

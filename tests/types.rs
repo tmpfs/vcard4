@@ -59,22 +59,22 @@ fn types_date_only() -> Result<()> {
 #[test]
 fn types_date_time() -> Result<()> {
     let date_time = parse_date_time("20090808T1430-0500")?;
-    assert_eq!("2009-08-08 14:30:00.0 -05:00:00", &date_time.to_string());
+    assert_eq!("2009-08-08T14:30:00-05:00", &date_time.to_string());
 
     let date_time = parse_date_time("19961022T140000Z")?;
-    assert_eq!("1996-10-22 14:00:00.0 +00:00:00", &date_time.to_string());
+    assert_eq!("1996-10-22T14:00:00Z", &date_time.to_string());
 
     let date_time = parse_date_time("19961022T140000+0800")?;
-    assert_eq!("1996-10-22 14:00:00.0 +08:00:00", &date_time.to_string());
+    assert_eq!("1996-10-22T14:00:00+08:00", &date_time.to_string());
 
     let date_time = parse_date_time("19961022T140000")?;
-    assert_eq!("1996-10-22 14:00:00.0 +00:00:00", &date_time.to_string());
+    assert_eq!("1996-10-22T14:00:00Z", &date_time.to_string());
 
     let date_time = parse_date_time("--1022T1400")?;
-    assert_eq!("0000-10-22 14:00:00.0 +00:00:00", &date_time.to_string());
+    assert_eq!("0000-10-22T14:00:00Z", &date_time.to_string());
 
     let date_time = parse_date_time("---22T14")?;
-    assert_eq!("0000-01-22 14:00:00.0 +00:00:00", &date_time.to_string());
+    assert_eq!("0000-01-22T14:00:00Z", &date_time.to_string());
 
     Ok(())
 }
@@ -84,7 +84,7 @@ fn types_date_and_or_time() -> Result<()> {
     let value: DateAndOrTime = "19961022T140000".parse()?;
     if let DateAndOrTime::DateTime(value) = value {
         //let value = value.get(0).unwrap();
-        assert_eq!("1996-10-22 14:00:00.0 +00:00:00", &value.to_string());
+        assert_eq!("1996-10-22T14:00:00Z", &value.to_string());
     } else {
         panic!("expecting DateTime variant");
     }
@@ -92,7 +92,7 @@ fn types_date_and_or_time() -> Result<()> {
     let value: DateAndOrTime = "--1022T1400".parse()?;
     if let DateAndOrTime::DateTime(value) = value {
         //let value = value.get(0).unwrap();
-        assert_eq!("0000-10-22 14:00:00.0 +00:00:00", &value.to_string());
+        assert_eq!("0000-10-22T14:00:00Z", &value.to_string());
     } else {
         panic!("expecting DateTime variant");
     }
@@ -100,7 +100,7 @@ fn types_date_and_or_time() -> Result<()> {
     let value: DateAndOrTime = "---22T14".parse()?;
     if let DateAndOrTime::DateTime(value) = value {
         //let value = value.get(0).unwrap();
-        assert_eq!("0000-01-22 14:00:00.0 +00:00:00", &value.to_string());
+        assert_eq!("0000-01-22T14:00:00Z", &value.to_string());
     } else {
         panic!("expecting DateTime variant");
     }
@@ -208,16 +208,16 @@ fn types_date_and_or_time() -> Result<()> {
 #[test]
 fn types_timestamp() -> Result<()> {
     let timestamp = parse_timestamp("19961022T140000")?;
-    assert_eq!("1996-10-22 14:00:00.0 +00:00:00", &timestamp.to_string());
+    assert_eq!("1996-10-22T14:00:00Z", &timestamp.to_string());
 
     let timestamp = parse_timestamp("19961022T140000Z")?;
-    assert_eq!("1996-10-22 14:00:00.0 +00:00:00", &timestamp.to_string());
+    assert_eq!("1996-10-22T14:00:00Z", &timestamp.to_string());
 
     let timestamp = parse_timestamp("19961022T140000-05")?;
-    assert_eq!("1996-10-22 14:00:00.0 -05:00:00", &timestamp.to_string());
+    assert_eq!("1996-10-22T14:00:00-05:00", &timestamp.to_string());
 
     let timestamp = parse_timestamp("19961022T140000-0500")?;
-    assert_eq!("1996-10-22 14:00:00.0 -05:00:00", &timestamp.to_string());
+    assert_eq!("1996-10-22T14:00:00-05:00", &timestamp.to_string());
     Ok(())
 }
 
@@ -341,10 +341,10 @@ proptest! {
             "{:04}{:02}{:02}T{:02}{:02}{:02}",
             y, m, d, h, mi, s);
         let date_time = parse_date_time(&value).unwrap();
-        let m2: u8 = date_time.month().try_into().unwrap();
-        let (y2, d2) = (date_time.year(), date_time.day());
+        let m2: u8 = date_time.as_ref().month().try_into().unwrap();
+        let (y2, d2) = (date_time.as_ref().year(), date_time.as_ref().day());
         let (h2, mi2, s2) = (
-            date_time.hour(), date_time.minute(), date_time.second());
+            date_time.as_ref().hour(), date_time.as_ref().minute(), date_time.as_ref().second());
         prop_assert_eq!((y, m, d, h, mi, s), (y2, m2, d2, h2, mi2, s2));
 
         // TODO: test negative offset
