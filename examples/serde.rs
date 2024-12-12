@@ -2,10 +2,6 @@
 pub fn main() -> anyhow::Result<()> {
     use vcard4::parse;
 
-    let uri = "file:///images/jdoe.jpeg";
-
-    let parsed = uri.parse::<vcard4::Uri>()?;
-
     const VCF: &str = include_str!("simon-perrault.vcf");
 
     let cards = parse(VCF)?;

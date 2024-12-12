@@ -331,7 +331,7 @@ pub struct ExtensionProperty {
 #[cfg_attr(feature = "serde", cfg_eval::cfg_eval, serde_as)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
-#[cfg_attr(feature = "serde", serde(tag = "kind", rename_all = "camelCase"))]
+#[cfg_attr(feature = "serde", serde(untagged, rename_all = "camelCase"))]
 #[allow(clippy::large_enum_variant)]
 pub enum AnyProperty {
     /// Text property.
