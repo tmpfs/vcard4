@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 thiserror = "2"
-logos = { version = "0.14", features = ["export_derive"] }
+logos = { version = "0.15", features = ["export_derive"] }
 uriparse = "0.6"
 time = { version = "0.3.37", features = ["parsing", "formatting"] }
 unicode-segmentation="1"
