@@ -8,13 +8,13 @@ keywords = ["vcard", "contact", "parser", "rfc6350"]
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-thiserror = "1"
+thiserror = "2"
 logos = { version = "0.14", features = ["export_derive"] }
 uriparse = "0.6"
 time = { version = "0.3.37", features = ["parsing", "formatting"] }
 unicode-segmentation="1"
-aho-corasick = "0.7"
-base64 = "0.21.0"
+aho-corasick = "1"
+base64 = "0.22.0"
 serde = { version = "1", features = ["derive"], optional = true }
 serde_with = { version = "3", optional = true }
 cfg_eval = { version = "0.1", optional = true }

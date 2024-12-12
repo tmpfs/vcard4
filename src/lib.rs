@@ -142,12 +142,12 @@ pub(crate) fn escape_value(value: &str, semi_colons: bool) -> String {
     if semi_colons {
         let patterns = &["\\", "\n", ",", ";"];
         let replace_with = &["\\\\", "\\n", "\\,", "\\;"];
-        let ac = AhoCorasick::new(patterns);
+        let ac = AhoCorasick::new(patterns).unwrap();
         ac.replace_all(value, replace_with)
     } else {
         let patterns = &["\\", "\n", ","];
         let replace_with = &["\\\\", "\\n", "\\,"];
-        let ac = AhoCorasick::new(patterns);
+        let ac = AhoCorasick::new(patterns).unwrap();
         ac.replace_all(value, replace_with)
     }
 }
@@ -156,7 +156,7 @@ pub(crate) fn unescape_value(value: &str) -> String {
     use aho_corasick::AhoCorasick;
     let patterns = &["\r", "\n ", "\n\t", "\\n", "\\N", "\\,"];
     let replace_with = &["", "", "", "\n", "\n", ","];
-    let ac = AhoCorasick::new(patterns);
+    let ac = AhoCorasick::new(patterns).unwrap();
     ac.replace_all(value, replace_with)
 }
 
