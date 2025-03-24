@@ -251,7 +251,7 @@ impl FromStr for RelatedType {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        match s {
+        match &s.to_lowercase()[..] {
             "contact" => Ok(Self::Contact),
             "acquaintance" => Ok(Self::Acquaintance),
             "friend" => Ok(Self::Friend),
@@ -401,7 +401,7 @@ impl FromStr for ValueType {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        match s {
+        match &s.to_lowercase()[..] {
             "text" => Ok(Self::Text),
             "uri" => Ok(Self::Uri),
             "date" => Ok(Self::Date),
