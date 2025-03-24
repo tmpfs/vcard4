@@ -8,7 +8,7 @@ use vcard4::{
         Pid, RelatedType, TelephoneType, TimeZoneParameter, TypeParameter,
         ValueType,
     },
-    parse, Error,
+    parse, parse_loose, Error,
 };
 
 use test_helpers::{assert_language, assert_media_type, assert_round_trip};
@@ -365,6 +365,21 @@ END:VCARD"#;
         matches!(&err, Error::CharsetParameter(x) if x == "ISO-8859-1"),
         "Unexpected error: {err:?}"
     );
+
+    Ok(())
+}
+
+// SEE: https://github.com/tmpfs/vcard4/issues/21
+#[test]
+fn param_nextcloud_ignore_bad_value() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:3.0
+FN:Example Card2
+TEL;TYPE=CELL;VALUE=UNKNOWN:+01555123456
+END:VCARD"#;
+
+    assert!(parse(input).is_err());
+    assert!(parse_loose(input).is_ok());
 
     Ok(())
 }

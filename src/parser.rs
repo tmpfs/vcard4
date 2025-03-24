@@ -280,8 +280,15 @@ impl<'s> VcardParser<'s> {
                             params.language = Some(tag);
                         }
                         VALUE => {
-                            let value: ValueType = value.parse()?;
-                            params.value = Some(value);
+                            if self.strict {
+                                let value: ValueType = value.parse()?;
+                                params.value = Some(value);
+                            } else {
+                                if let Ok(value) = value.parse::<ValueType>()
+                                {
+                                    params.value = Some(value);
+                                }
+                            }
                         }
                         PREF => {
                             let value: u8 = value.parse()?;
