@@ -8,7 +8,9 @@ use vcard4::{
         Pid, RelatedType, TelephoneType, TimeZoneParameter, TypeParameter,
         ValueType,
     },
-    parse, parse_loose, Error,
+    parse, parse_loose,
+    property::{AnyProperty, TextOrUriProperty},
+    Error,
 };
 
 use test_helpers::{assert_language, assert_media_type, assert_round_trip};
@@ -380,6 +382,47 @@ END:VCARD"#;
 
     assert!(parse(input).is_err());
     assert!(parse_loose(input).is_ok());
+
+    Ok(())
+}
+
+// SEE: https://github.com/tmpfs/vcard4/issues/25
+#[test]
+fn param_tel_coalesce_custom_item() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:3.0
+FN:CustomTel
+TEL;type=CELL;type=VOICE;type=pref:555-555-5555
+item1.TEL:(123) 456-7890
+item1.X-ABLabel:my-custom-phone
+END:VCARD"#;
+
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+    let card = vcards.remove(0);
+
+    let grouped_items =
+        card.tel
+            .iter()
+            .filter_map(|tel| {
+                let TextOrUriProperty::Text(prop) = tel else {
+                    return None;
+                };
+                if let Some(extension) = card.extensions.iter().find(|ext| {
+                    prop.group.is_some() && ext.group == prop.group
+                }) {
+                    Some((prop, extension))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+
+    assert_eq!(1, grouped_items.len());
+    let item = grouped_items.get(0).unwrap();
+    assert_eq!("(123) 456-7890", item.0.value);
+    assert_eq!("X-ABLabel", item.1.name);
+    assert!(matches!(item.1.value, AnyProperty::Text(_)));
 
     Ok(())
 }
