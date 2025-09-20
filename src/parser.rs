@@ -169,11 +169,10 @@ impl<'s> VcardParser<'s> {
                 ],
             )?;
 
-            if let Err(e) = self.parse_property(lex, first, card) {
-                if self.strict {
+            if let Err(e) = self.parse_property(lex, first, card)
+                && self.strict {
                     return Err(e);
                 }
-            }
         }
         Ok(())
     }
@@ -283,11 +282,9 @@ impl<'s> VcardParser<'s> {
                             if self.strict {
                                 let value: ValueType = value.parse()?;
                                 params.value = Some(value);
-                            } else {
-                                if let Ok(value) = value.parse::<ValueType>()
-                                {
-                                    params.value = Some(value);
-                                }
+                            } else if let Ok(value) = value.parse::<ValueType>()
+                            {
+                                params.value = Some(value);
                             }
                         }
                         PREF => {
@@ -852,11 +849,10 @@ impl<'s> VcardParser<'s> {
                 card.uid = Some(text_or_uri);
             }
             CLIENTPIDMAP => {
-                if let Some(params) = &parameters {
-                    if params.pid.is_some() {
+                if let Some(params) = &parameters
+                    && params.pid.is_some() {
                         return Err(Error::ClientPidMapPidNotAllowed);
                     }
-                }
 
                 let value: ClientPidMap = value.as_ref().parse()?;
                 card.client_pid_map.push(ClientPidMapProperty {

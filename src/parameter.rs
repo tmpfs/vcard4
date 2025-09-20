@@ -622,7 +622,7 @@ fn escape_parameter(s: &str) -> String {
     s.replace('\n', "\\n")
 }
 
-fn comma_delimited(items: &Vec<impl std::fmt::Display>) -> String {
+fn comma_delimited(items: &[impl std::fmt::Display]) -> String {
     let mut value = String::new();
     for (index, item) in items.iter().enumerate() {
         value.push_str(&item.to_string());

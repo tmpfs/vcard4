@@ -154,11 +154,10 @@ pub fn parse_date(value: &str) -> Result<Date> {
         if *val == "-" {
             *val = "00";
         }
-        if let Some(val) = parts.get_mut(3) {
-            if *val == "-" {
+        if let Some(val) = parts.get_mut(3)
+            && *val == "-" {
                 *val = "01";
             }
-        }
 
         let value = parts.join("");
         do_parse_date(&value)
@@ -295,7 +294,7 @@ pub fn parse_timestamp(value: &str) -> Result<DateTime> {
     if let Ok(result) = OffsetDateTime::parse(value, &offset_format) {
         Ok(result.into())
     } else if let Ok(result) =
-        OffsetDateTime::parse(value, &offset_format_hours).into()
+        OffsetDateTime::parse(value, &offset_format_hours)
     {
         Ok(result.into())
     } else if let Ok(result) = PrimitiveDateTime::parse(value, &utc_format) {

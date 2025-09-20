@@ -41,7 +41,7 @@ impl fmt::Display for DateTime {
         write!(
             f,
             "{}",
-            self.0.format(&Rfc3339).map_err(|_| fmt::Error::default())?
+            self.0.format(&Rfc3339).map_err(|_| fmt::Error)?
         )
     }
 }
@@ -80,7 +80,7 @@ impl AsRef<time::Date> for Date {
 
 impl fmt::Display for Date {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0.to_string(),)
+        write!(f, "{}", self.0,)
     }
 }
 

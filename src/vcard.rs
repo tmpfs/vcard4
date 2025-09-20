@@ -297,17 +297,15 @@ impl Vcard {
         use crate::parameter::TypeParameter;
         let mut jpegs = Vec::new();
         for photo in self.photo.iter() {
-            if let TextOrUriProperty::Text(prop) = photo {
-                if let Some(params) = &prop.parameters {
-                    if let (Some(types), Some(extensions)) =
+            if let TextOrUriProperty::Text(prop) = photo
+                && let Some(params) = &prop.parameters
+                    && let (Some(types), Some(extensions)) =
                         (&params.types, &params.extensions)
-                    {
-                        if let (
+                        && let (
                             Some(TypeParameter::Extension(value)),
                             Some((name, values)),
                         ) = (types.first(), extensions.first())
-                        {
-                            if name.to_uppercase() == "ENCODING"
+                            && name.to_uppercase() == "ENCODING"
                                 && values.first() == Some(&"b".to_string())
                                 && &value.to_uppercase() == "JPEG"
                             {
@@ -316,10 +314,6 @@ impl Vcard {
                                     .decode(encoded)?;
                                 jpegs.push(buffer);
                             }
-                        }
-                    }
-                }
-            }
         }
         Ok(jpegs)
     }

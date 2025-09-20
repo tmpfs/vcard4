@@ -1,4 +1,4 @@
-/// Constants for property and parameter names.
+//! Constants for property and parameter names.
 
 pub(crate) const HOME: &str = "home";
 pub(crate) const WORK: &str = "work";
