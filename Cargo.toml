@@ -1,7 +1,7 @@
 [package]
 name = "vcard4"
 version = "0.7.2"
-edition = "2021"
+edition = "2024"
 description = "Fast and correct vCard parser for RFC6350"
 repository = "https://github.com/tmpfs/vcard4"
 keywords = ["vcard", "contact", "parser", "rfc6350"]

@@ -1,6 +1,6 @@
-extend= [
-  { path = "coverage_grcov.makefile.toml" }
-]
+[config]
+default_to_workspace = false
+skip_core_tasks = true
 
 [env]
 RUST_BACKTRACE = 0
@@ -52,14 +52,23 @@ dependencies = ["check-wasm", "test", "format", "clippy"]
 command = "cargo"
 args = ["check", "--target", "wasm32-unknown-unknown"]
 
-[tasks.genhtml]
+[tasks.clean-profraw]
 script = '''
-grcov . --source-dir src --binary-path ./target/cover/debug -t html --branch --ignore-not-existing -o ./target/coverage/
+rm -f *.profraw
 '''
 
-[tasks.clean-cover]
-command = "cargo"
-args = ["clean", "--target-dir", "target/cover"]
+[tasks.clean-coverage]
+script = '''
+rm -rf ./target/llvm-cov
+'''
+dependencies = ["clean-profraw"]
+
+[tasks.coverage]
+script = '''
+cargo llvm-cov clean
+cargo llvm-cov test
+cargo llvm-cov report --html
+'''
 
 [tasks.cover]
-dependencies = ["clean-cover", "coverage_grcov", "genhtml"]
+dependencies = ["clean-coverage", "coverage", "clean-profraw"]

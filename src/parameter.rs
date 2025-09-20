@@ -13,7 +13,7 @@ use language_tags::LanguageTag;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "serde")]
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::{DisplayFromStr, serde_as};
 
 #[cfg(feature = "zeroize")]
 use zeroize::{Zeroize, ZeroizeOnDrop};
@@ -22,9 +22,9 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 use mime::Mime;
 
 use crate::{
+    Error, Result, Uri,
     helper::format_utc_offset,
     name::{HOME, WORK},
-    Error, Result, Uri,
 };
 
 /// Names of properties that are allowed to specify a TYPE parameter.
@@ -80,9 +80,9 @@ impl fmt::Display for TypeParameter {
         match self {
             Self::Home => write!(f, "{}", HOME),
             Self::Work => write!(f, "{}", WORK),
-            Self::Telephone(ref tel) => write!(f, "{}", tel),
-            Self::Related(ref rel) => write!(f, "{}", rel),
-            Self::Extension(ref value) => write!(f, "X-{}", value),
+            Self::Telephone(tel) => write!(f, "{}", tel),
+            Self::Related(rel) => write!(f, "{}", rel),
+            Self::Extension(value) => write!(f, "X-{}", value),
         }
     }
 }
