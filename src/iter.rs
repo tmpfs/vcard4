@@ -1,7 +1,7 @@
 //! Iterator for parsing vCards.
 use crate::{
-    parser::{Token, VcardParser},
     Error, Result, Vcard,
+    parser::{Token, VcardParser},
 };
 use std::ops::Range;
 

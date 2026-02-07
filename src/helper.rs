@@ -1,11 +1,11 @@
 //! Utilities for parsing dates, times and primitive values.
 use std::fmt;
 use time::{
-    format_description::{self, well_known::Iso8601},
     Date, OffsetDateTime, PrimitiveDateTime, Time, UtcOffset,
+    format_description::{self, well_known::Iso8601},
 };
 
-use crate::{property::DateAndOrTime, DateTime, Error, Result};
+use crate::{DateTime, Error, Result, property::DateAndOrTime};
 
 // UTC OFFSET
 
@@ -155,9 +155,10 @@ pub fn parse_date(value: &str) -> Result<Date> {
             *val = "00";
         }
         if let Some(val) = parts.get_mut(3)
-            && *val == "-" {
-                *val = "01";
-            }
+            && *val == "-"
+        {
+            *val = "01";
+        }
 
         let value = parts.join("");
         do_parse_date(&value)
@@ -279,11 +280,11 @@ pub(crate) fn format_date_time_list(
 /// Parse a timestamp.
 pub fn parse_timestamp(value: &str) -> Result<DateTime> {
     let offset_format = format_description::parse(
-            "[year][month][day]T[hour][minute][second][offset_hour sign:mandatory][offset_minute]",
-        )?;
+        "[year][month][day]T[hour][minute][second][offset_hour sign:mandatory][offset_minute]",
+    )?;
     let offset_format_hours = format_description::parse(
-            "[year][month][day]T[hour][minute][second][offset_hour sign:mandatory]",
-        )?;
+        "[year][month][day]T[hour][minute][second][offset_hour sign:mandatory]",
+    )?;
     let utc_format = format_description::parse(
         "[year][month][day]T[hour][minute][second]Z",
     )?;

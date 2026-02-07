@@ -2,7 +2,7 @@ mod test_helpers;
 
 use anyhow::Result;
 use test_helpers::assert_round_trip;
-use vcard4::{parameter::TypeParameter, parse, property::*, Uri};
+use vcard4::{Uri, parameter::TypeParameter, parse, property::*};
 
 #[test]
 fn organizational_title() -> Result<()> {
@@ -61,10 +61,12 @@ END:VCARD"#;
         &logo1.value.to_string()
     );
 
-    assert!(logo2
-        .value
-        .to_string()
-        .starts_with("data:image/jpeg;base64,"));
+    assert!(
+        logo2
+            .value
+            .to_string()
+            .starts_with("data:image/jpeg;base64,")
+    );
     assert!(logo2.value.to_string().ends_with("TeXN0"));
 
     assert_round_trip(&card)?;

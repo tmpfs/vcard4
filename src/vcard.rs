@@ -8,9 +8,9 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "zeroize")]
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-use base64::{engine::general_purpose, Engine};
+use base64::{Engine, engine::general_purpose};
 
-use crate::{iter, property::*, Error, Result};
+use crate::{Error, Result, iter, property::*};
 
 /// The vCard type.
 #[derive(Debug, Default, Eq, PartialEq, Clone)]
@@ -299,21 +299,20 @@ impl Vcard {
         for photo in self.photo.iter() {
             if let TextOrUriProperty::Text(prop) = photo
                 && let Some(params) = &prop.parameters
-                    && let (Some(types), Some(extensions)) =
-                        (&params.types, &params.extensions)
-                        && let (
-                            Some(TypeParameter::Extension(value)),
-                            Some((name, values)),
-                        ) = (types.first(), extensions.first())
-                            && name.to_uppercase() == "ENCODING"
-                                && values.first() == Some(&"b".to_string())
-                                && &value.to_uppercase() == "JPEG"
-                            {
-                                let encoded = &prop.value;
-                                let buffer = general_purpose::STANDARD
-                                    .decode(encoded)?;
-                                jpegs.push(buffer);
-                            }
+                && let (Some(types), Some(extensions)) =
+                    (&params.types, &params.extensions)
+                && let (
+                    Some(TypeParameter::Extension(value)),
+                    Some((name, values)),
+                ) = (types.first(), extensions.first())
+                && name.to_uppercase() == "ENCODING"
+                && values.first() == Some(&"b".to_string())
+                && &value.to_uppercase() == "JPEG"
+            {
+                let encoded = &prop.value;
+                let buffer = general_purpose::STANDARD.decode(encoded)?;
+                jpegs.push(buffer);
+            }
         }
         Ok(jpegs)
     }
@@ -492,8 +491,11 @@ fn fold_line(line: String, wrap_at: usize) -> String {
     let mut folded_line = String::new();
     for grapheme in UnicodeSegmentation::graphemes(&line[..], true) {
         length += grapheme.len();
-        if length % wrap_at == 0 {
+        if length > wrap_at {
             folded_line.push_str("\r\n ");
+            // actual length of the next line
+            // including the leading space
+            length = 1 + grapheme.len();
         }
         folded_line.push_str(grapheme);
     }

@@ -13,13 +13,13 @@ use language_tags::LanguageTag;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "serde")]
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::{DisplayFromStr, serde_as};
 
 #[cfg(feature = "zeroize")]
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{
-    escape_value,
+    Date, DateTime, Error, Result, Uri, escape_value,
     helper::{
         format_date, format_date_and_or_time_list, format_date_list,
         format_date_time, format_date_time_list, format_float_list,
@@ -28,7 +28,6 @@ use crate::{
         parse_date_time, parse_time, parse_utc_offset,
     },
     parameter::Parameters,
-    Date, DateTime, Error, Result, Uri,
 };
 
 const INDIVIDUAL: &str = "individual";

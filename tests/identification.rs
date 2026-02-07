@@ -80,10 +80,12 @@ END:VCARD"#;
     }
 
     if let TextOrUriProperty::Uri(photo2) = card.photo.get(1).unwrap() {
-        assert!(photo2
-            .value
-            .to_string()
-            .starts_with("data:image/jpeg;base64,"));
+        assert!(
+            photo2
+                .value
+                .to_string()
+                .starts_with("data:image/jpeg;base64,")
+        );
         assert!(photo2.value.to_string().ends_with("TeXN0"));
     } else {
         panic!("expecting URI property");
