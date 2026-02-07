@@ -10,8 +10,8 @@ use language_tags::LanguageTag;
 use mime::Mime;
 
 use crate::{
-    error::LexError, escape_control, helper::*, name::*, parameter::*,
-    property::*, unescape_value, Error, Result, Uri, Vcard,
+    Error, Result, Uri, Vcard, error::LexError, escape_control, helper::*,
+    name::*, parameter::*, property::*, unescape_value,
 };
 
 type LexResult<T> = std::result::Result<T, LexError>;
@@ -33,7 +33,9 @@ pub(crate) enum Token {
     #[token("GEO")]
     Geo,
 
-    #[regex("(?i:([a-z0-9-]+\\.)?(SOURCE|KIND|FN|N|NICKNAME|PHOTO|BDAY|ANNIVERSARY|GENDER|ADR|TEL|EMAIL|IMPP|LANG|TITLE|ROLE|LOGO|ORG|MEMBER|RELATED|CATEGORIES|NOTE|PRODID|REV|SOUND|UID|CLIENTPIDMAP|URL|KEY|FBURL|CALADRURI|CALURI|XML|VERSION|(X-[a-z0-9-]+)))")]
+    #[regex(
+        "(?i:([a-z0-9-]+\\.)?(SOURCE|KIND|FN|N|NICKNAME|PHOTO|BDAY|ANNIVERSARY|GENDER|ADR|TEL|EMAIL|IMPP|LANG|TITLE|ROLE|LOGO|ORG|MEMBER|RELATED|CATEGORIES|NOTE|PRODID|REV|SOUND|UID|CLIENTPIDMAP|URL|KEY|FBURL|CALADRURI|CALURI|XML|VERSION|(X-[a-z0-9-]+)))"
+    )]
     PropertyName,
 
     #[regex("(?i:x-[a-z0-9-]+)")]
@@ -45,7 +47,9 @@ pub(crate) enum Token {
     #[token("\"")]
     DoubleQuote,
 
-    #[regex("(?i:LANGUAGE|VALUE|PREF|ALTID|PID|TYPE|MEDIATYPE|CALSCALE|SORT-AS|CHARSET|LABEL|ENCODING)")]
+    #[regex(
+        "(?i:LANGUAGE|VALUE|PREF|ALTID|PID|TYPE|MEDIATYPE|CALSCALE|SORT-AS|CHARSET|LABEL|ENCODING)"
+    )]
     ParameterKey,
 
     #[token("=")]
@@ -170,9 +174,10 @@ impl<'s> VcardParser<'s> {
             )?;
 
             if let Err(e) = self.parse_property(lex, first, card)
-                && self.strict {
-                    return Err(e);
-                }
+                && self.strict
+            {
+                return Err(e);
+            }
         }
         Ok(())
     }
@@ -282,7 +287,8 @@ impl<'s> VcardParser<'s> {
                             if self.strict {
                                 let value: ValueType = value.parse()?;
                                 params.value = Some(value);
-                            } else if let Ok(value) = value.parse::<ValueType>()
+                            } else if let Ok(value) =
+                                value.parse::<ValueType>()
                             {
                                 params.value = Some(value);
                             }
@@ -399,7 +405,7 @@ impl<'s> VcardParser<'s> {
                         _ => {
                             return Err(Error::UnknownParameter(
                                 parameter_name.to_string(),
-                            ))
+                            ));
                         }
                     }
                 }
@@ -710,7 +716,7 @@ impl<'s> VcardParser<'s> {
                             return Err(Error::UnsupportedValueType(
                                 value_type.to_string(),
                                 upper_name,
-                            ))
+                            ));
                         }
                     }
                 } else {
@@ -850,9 +856,10 @@ impl<'s> VcardParser<'s> {
             }
             CLIENTPIDMAP => {
                 if let Some(params) = &parameters
-                    && params.pid.is_some() {
-                        return Err(Error::ClientPidMapPidNotAllowed);
-                    }
+                    && params.pid.is_some()
+                {
+                    return Err(Error::ClientPidMapPidNotAllowed);
+                }
 
                 let value: ClientPidMap = value.as_ref().parse()?;
                 card.client_pid_map.push(ClientPidMapProperty {

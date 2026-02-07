@@ -1,9 +1,9 @@
 use crate::Error;
 use std::{fmt, str::FromStr};
-use time::{format_description::well_known::Rfc3339, OffsetDateTime};
+use time::{OffsetDateTime, format_description::well_known::Rfc3339};
 
 #[cfg(feature = "serde")]
-use serde_with::{serde_as, DeserializeFromStr, SerializeDisplay};
+use serde_with::{DeserializeFromStr, SerializeDisplay, serde_as};
 
 /// Date and time that serializes to and from RFC3339.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -38,11 +38,7 @@ impl AsRef<OffsetDateTime> for DateTime {
 
 impl fmt::Display for DateTime {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            self.0.format(&Rfc3339).map_err(|_| fmt::Error)?
-        )
+        write!(f, "{}", self.0.format(&Rfc3339).map_err(|_| fmt::Error)?)
     }
 }
 

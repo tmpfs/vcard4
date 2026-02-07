@@ -1,8 +1,8 @@
 //! Builder for creating vCards.
 //!
 use crate::{
-    property::{DeliveryAddress, Gender, Kind, TextListProperty},
     Date, DateTime, Uri, Vcard,
+    property::{DeliveryAddress, Gender, Kind, TextListProperty},
 };
 
 #[cfg(feature = "language-tags")]

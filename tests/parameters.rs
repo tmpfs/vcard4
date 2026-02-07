@@ -3,6 +3,7 @@ mod test_helpers;
 use anyhow::Result;
 
 use vcard4::{
+    Error,
     helper::parse_utc_offset,
     parameter::{
         Pid, RelatedType, TelephoneType, TimeZoneParameter, TypeParameter,
@@ -10,7 +11,6 @@ use vcard4::{
     },
     parse, parse_loose,
     property::{AnyProperty, TextOrUriProperty},
-    Error,
 };
 
 use test_helpers::{assert_language, assert_media_type, assert_round_trip};

@@ -5,7 +5,7 @@ const EXPECTED: &str = "BEGIN:VCARD\r\nVERSION:4.0\r\nFN:12345678901234567890123
 
 #[test]
 fn unicode_fold_line() -> Result<()> {
-    let line70 = "1234567890".repeat(7);  
+    let line70 = "1234567890".repeat(7);
     let line76 = format!("{line70}1ö{line70}{line70}{line70}{line70}");
     let mut card: Vcard = Default::default();
     card.formatted_name = vec![line76.into()];
